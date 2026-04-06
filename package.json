@@ -1,0 +1,23 @@
+{
+  "name": "ble-e2e-tests",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "npx playwright test",
+    "test:admin": "npx playwright test --project=admin-web",
+    "test:tenant": "npx playwright test --project=tenant-web",
+    "test:merchant": "npx playwright test --project=merchant-portal",
+    "test:api": "npx playwright test --project=api",
+    "report": "npx playwright show-report"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "@playwright/test": "^1.59.1",
+    "@types/node": "^25.5.2",
+    "typescript": "^6.0.2"
+  }
+}
