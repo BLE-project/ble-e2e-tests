@@ -1,11 +1,23 @@
 import { expect, Page } from '@playwright/test'
 
+import { loadSeedDataSync } from './seed-data'
+
 /**
- * Default dev tenant ID used across the E2E test suite.
- * Matches the seed data in ble-core-registry V100__test_fixtures.sql
- * and the DEV_TENANT_ID from ble-e2e-compose/.env.
+ * Default dev tenant ID — loaded from seed data file written by global-setup.
+ * Falls back to a placeholder UUID if seed data is not available.
  */
-export const DEV_TENANT_ID = process.env.DEV_TENANT_ID ?? '00000000-0000-0000-0000-000000000001'
+export const DEV_TENANT_ID_FALLBACK = '00000000-0000-0000-0000-000000000001'
+
+function resolveDevTenantId(): string {
+  // Check env first (set by global-setup in the main process)
+  if (process.env.DEV_TENANT_ID) return process.env.DEV_TENANT_ID
+  // Then try loading from seed data file
+  const seed = loadSeedDataSync()
+  if (seed) return seed.tenantId
+  return DEV_TENANT_ID_FALLBACK
+}
+
+export const DEV_TENANT_ID = resolveDevTenantId()
 
 /**
  * Login via the custom auth form used by admin-web and tenant-web.
@@ -56,10 +68,8 @@ export async function loginViaApi(
   )
 
   // Intercept all BFF API requests and add X-Tenant-Id header.
-  // The BFF requires this header for most endpoints (TenantRoutingFilter).
-  // Exempt paths (/auth, /sales-agents, /tenants/nearby, etc.) ignore the header.
-  // Use ** glob to match both proxy paths (/api/v1/...) and direct BFF calls (http://localhost:8080/api/v1/...).
-  const tenantId = DEV_TENANT_ID
+  // Uses the dynamically resolved tenant ID from seed data.
+  const tenantId = DEV_TENANT_ID !== DEV_TENANT_ID_FALLBACK ? DEV_TENANT_ID : DEV_TENANT_ID_FALLBACK
   const bffPattern = `${bffUrl}/api/**`
   await page.route(bffPattern, async (route) => {
     const headers = {

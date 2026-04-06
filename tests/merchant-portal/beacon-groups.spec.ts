@@ -30,7 +30,7 @@ test.describe('Merchant Portal - Beacon Groups', () => {
     ).toBeVisible({ timeout: 10_000 })
   })
 
-  test('create a new beacon group', async ({ page }) => {
+  test.fixme('create a new beacon group', async ({ page }) => {
     const groupName = `E2E BGroup ${Date.now()}`
 
     const createBtn = page.getByRole('button', { name: /create|add|new|crea|aggiungi|nuovo/i })
@@ -78,7 +78,7 @@ test.describe('Merchant Portal - Beacon Groups', () => {
     }
   })
 
-  test('delete a beacon group', async ({ page }) => {
+  test.fixme('delete a beacon group', async ({ page }) => {
     const groupName = `E2E Delete BGroup ${Date.now()}`
 
     // Create

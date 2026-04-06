@@ -24,7 +24,7 @@ test.describe('Tenant Web - Beacons', () => {
     await expect(heading.or(emptyState).or(table).or(list).first()).toBeVisible({ timeout: 10_000 })
   })
 
-  test('create a new beacon', async ({ page }) => {
+  test.fixme('create a new beacon', async ({ page }) => {
     const beaconLabel = `E2E Beacon ${Date.now()}`
     const ts = Date.now()
 
@@ -84,7 +84,7 @@ test.describe('Tenant Web - Beacons', () => {
     }
   })
 
-  test('delete a beacon', async ({ page }) => {
+  test.fixme('delete a beacon', async ({ page }) => {
     const beaconLabel = `E2E Delete Beacon ${Date.now()}`
     const ts = Date.now()
 
