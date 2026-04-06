@@ -58,7 +58,7 @@ test.describe('Tenant Web - Campaigns', () => {
     await expect(heading.or(emptyState).or(table).or(list).first()).toBeVisible({ timeout: 10_000 })
   })
 
-  test.fixme('create a new campaign', async ({ page }) => {
+  test('create a new campaign', async ({ page }) => {
     const campaignTitle = `E2E Campaign ${Date.now()}`
 
     // Click "+ Nuova campagna" button
@@ -103,7 +103,7 @@ test.describe('Tenant Web - Campaigns', () => {
     }
   })
 
-  test.fixme('delete a campaign', async ({ page }) => {
+  test('delete a campaign', async ({ page }) => {
     const campaignTitle = `E2E Delete Campaign ${Date.now()}`
 
     // Create

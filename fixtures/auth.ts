@@ -8,16 +8,19 @@ import { loadSeedDataSync } from './seed-data'
  */
 export const DEV_TENANT_ID_FALLBACK = '00000000-0000-0000-0000-000000000001'
 
-function resolveDevTenantId(): string {
-  // Check env first (set by global-setup in the main process)
+/**
+ * Resolve tenant ID — called lazily on first access, NOT at import time.
+ * This ensures the global-setup has written the seed data file before we read it.
+ */
+export function getDevTenantId(): string {
   if (process.env.DEV_TENANT_ID) return process.env.DEV_TENANT_ID
-  // Then try loading from seed data file
   const seed = loadSeedDataSync()
   if (seed) return seed.tenantId
   return DEV_TENANT_ID_FALLBACK
 }
 
-export const DEV_TENANT_ID = resolveDevTenantId()
+// Re-export for backward compatibility — lazy getter
+export let DEV_TENANT_ID = DEV_TENANT_ID_FALLBACK
 
 /**
  * Login via the custom auth form used by admin-web and tenant-web.
@@ -68,8 +71,8 @@ export async function loginViaApi(
   )
 
   // Intercept all BFF API requests and add X-Tenant-Id header.
-  // Uses the dynamically resolved tenant ID from seed data.
-  const tenantId = DEV_TENANT_ID !== DEV_TENANT_ID_FALLBACK ? DEV_TENANT_ID : DEV_TENANT_ID_FALLBACK
+  // Resolved LAZILY so global-setup has time to write the seed file.
+  const tenantId = getDevTenantId()
   const bffPattern = `${bffUrl}/api/**`
   await page.route(bffPattern, async (route) => {
     const headers = {
