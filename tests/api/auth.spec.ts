@@ -55,7 +55,7 @@ test.describe('API - Auth', () => {
   test('POST /api/v1/auth/refresh with valid token returns 200 and new token', async ({
     request,
   }) => {
-    // First login to get a token
+    // First login to get a token and refreshToken
     const loginResponse = await request.post(`${BFF_URL}/api/v1/auth/login`, {
       data: {
         username: DEV_USERS[0].username,
@@ -63,11 +63,12 @@ test.describe('API - Auth', () => {
       },
     })
     expect(loginResponse.ok()).toBeTruthy()
-    const { token } = await loginResponse.json()
+    const loginBody = await loginResponse.json()
+    const refreshToken = loginBody.refreshToken
 
-    // Now refresh
+    // Now refresh — the endpoint expects { "refreshToken": "<jwt>" } in the body
     const refreshResponse = await request.post(`${BFF_URL}/api/v1/auth/refresh`, {
-      headers: { Authorization: `Bearer ${token}` },
+      data: { refreshToken },
     })
 
     expect(refreshResponse.status()).toBe(200)

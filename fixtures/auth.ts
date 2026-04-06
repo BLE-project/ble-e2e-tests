@@ -1,6 +1,13 @@
 import { expect, Page } from '@playwright/test'
 
 /**
+ * Default dev tenant ID used across the E2E test suite.
+ * Matches the seed data in ble-core-registry V100__test_fixtures.sql
+ * and the DEV_TENANT_ID from ble-e2e-compose/.env.
+ */
+export const DEV_TENANT_ID = process.env.DEV_TENANT_ID ?? '00000000-0000-0000-0000-000000000001'
+
+/**
  * Login via the custom auth form used by admin-web and tenant-web.
  * Fills username/password and clicks the sign-in button.
  */
@@ -23,6 +30,9 @@ export async function loginViaForm(
  * Login via the BFF REST API and inject the token into localStorage.
  * Faster than form-based login; use for tests that don't specifically
  * test the login UI.
+ *
+ * Also sets up a route handler that adds X-Tenant-Id header to all
+ * API requests (required by the BFF TenantRoutingFilter).
  */
 export async function loginViaApi(
   page: Page,
@@ -44,14 +54,39 @@ export async function loginViaApi(
     ([key, tkn]) => localStorage.setItem(key, tkn),
     [storageKey, token],
   )
+
+  // Intercept all BFF API requests and add X-Tenant-Id header.
+  // The BFF requires this header for most endpoints (TenantRoutingFilter).
+  // Exempt paths (/auth, /sales-agents, /tenants/nearby, etc.) ignore the header.
+  // Use ** glob to match both proxy paths (/api/v1/...) and direct BFF calls (http://localhost:8080/api/v1/...).
+  const tenantId = DEV_TENANT_ID
+  const bffPattern = `${bffUrl}/api/**`
+  await page.route(bffPattern, async (route) => {
+    const headers = {
+      ...route.request().headers(),
+      'x-tenant-id': tenantId,
+    }
+    await route.continue({ headers })
+  })
+  // Also match Vite-proxied requests (page origin /api/...)
+  await page.route('**/api/**', async (route) => {
+    const headers = {
+      ...route.request().headers(),
+      'x-tenant-id': tenantId,
+    }
+    await route.continue({ headers })
+  })
+
   await page.reload()
   return token
 }
 
 /**
  * Login via Keycloak OIDC redirect flow used by the merchant-portal.
- * Navigates to the app, follows the redirect to KC, fills the form,
- * and waits for the redirect back.
+ * 1. Navigate to the merchant-portal
+ * 2. Click "Sign in with Keycloak" button (initiates PKCE redirect)
+ * 3. Fill the Keycloak login form (#username, #password, #kc-login)
+ * 4. Wait for redirect back to the merchant-portal
  */
 export async function loginViaKeycloak(
   page: Page,
@@ -59,20 +94,30 @@ export async function loginViaKeycloak(
   password: string,
 ) {
   const kcUrl = process.env.KC_URL ?? 'http://localhost:8180'
+  const merchantUrl = process.env.MERCHANT_URL ?? 'http://localhost:5175'
 
-  await page.goto('/')
-  // Wait for redirect to Keycloak
+  // 1. Navigate to merchant portal
+  await page.goto(merchantUrl)
+  await page.waitForLoadState('networkidle')
+
+  // 2. Click "Sign in with Keycloak" — this initiates the OIDC PKCE redirect
+  const signInBtn = page.getByRole('button', { name: /Sign in with Keycloak/i })
+  await expect(signInBtn).toBeVisible({ timeout: 10_000 })
+  await signInBtn.click()
+
+  // 3. Wait for redirect to Keycloak login page
   await page.waitForURL(new RegExp(kcUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')), {
     timeout: 15_000,
   })
 
-  await page.getByLabel(/username|email/i).fill(username)
-  await page.getByLabel(/password/i).fill(password)
-  await page.getByRole('button', { name: /sign in|log in|login/i }).click()
+  // 4. Fill the Keycloak login form using direct selectors
+  await page.locator('#username').fill(username)
+  await page.locator('#password').fill(password)
+  await page.locator('#kc-login').click()
 
-  // Wait for redirect back to merchant-portal
-  const merchantUrl = process.env.MERCHANT_URL ?? 'http://localhost:5175'
+  // 5. Wait for redirect back to merchant-portal
   await page.waitForURL(new RegExp(merchantUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')), {
     timeout: 15_000,
   })
+  await page.waitForLoadState('networkidle')
 }

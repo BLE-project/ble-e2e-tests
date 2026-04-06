@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { ApiClient } from '../../helpers/api-client'
+import { DEV_TENANT_ID } from '../../fixtures/auth'
 
 const BFF_URL = process.env.BFF_URL ?? 'http://localhost:8080'
 const ADMIN_USER = process.env.ADMIN_USER ?? 'dev-super-admin'
@@ -23,16 +24,20 @@ test.describe('API - Proxy Routing', () => {
     const response = await adminClient.get('/api/v1/tenants')
     expect(response.status()).toBe(200)
     const body = await response.json()
-    // Should return an array or object with tenant data
+    // Should return an array (possibly empty) or object with tenant data
     expect(body).toBeDefined()
+    // An empty array is a valid response
+    expect(Array.isArray(body) || typeof body === 'object').toBeTruthy()
   })
 
   test('GET /api/v1/users reaches identity-access (200)', async () => {
-    // identity-access requires a tenant context header
+    // identity-access requires a valid tenant context header (use the dev tenant ID)
     const response = await tenantClient.get('/api/v1/users', {
-      'X-Tenant-Id': 'default',
+      'X-Tenant-Id': DEV_TENANT_ID,
     })
-    // 200 OK or 403 (if the tenant header value is wrong but the route is reachable)
+    // 200 OK means the route is reachable and the tenant header is valid
+    // 403 means the route is reachable but the user doesn't have permission
+    // Both confirm the proxy routing works correctly
     expect([200, 403]).toContain(response.status())
   })
 
@@ -43,13 +48,15 @@ test.describe('API - Proxy Routing', () => {
   })
 
   test('GET /api/v1/beacon-groups reaches notification-service', async () => {
-    const response = await tenantClient.get('/api/v1/beacon-groups')
+    const response = await tenantClient.get('/api/v1/beacon-groups', {
+      'X-Tenant-Id': DEV_TENANT_ID,
+    })
     // Reachable: should not be a gateway error
     expect(response.status()).toBeLessThan(500)
   })
 
   test('GET /api/v1/badges/{tenantId} reaches gamification', async () => {
-    const response = await adminClient.get('/api/v1/badges/default')
+    const response = await adminClient.get(`/api/v1/badges/${DEV_TENANT_ID}`)
     // Reachable
     expect(response.status()).toBeLessThan(500)
   })

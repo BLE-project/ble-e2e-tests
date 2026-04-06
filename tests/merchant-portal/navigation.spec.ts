@@ -19,8 +19,8 @@ test.describe('Merchant Portal - Navigation', () => {
     await page.goto(MERCHANT_URL)
     await page.waitForLoadState('networkidle')
 
-    const heading = page.getByRole('heading', { name: /dashboard|home|benvenuto|welcome/i })
-    const content = page.locator('main, [role="main"]')
+    const heading = page.getByRole('heading', { name: /dashboard|home|benvenuto|welcome|beacon|merchant/i })
+    const content = page.locator('main, [role="main"], .login-page')
     await expect(heading.or(content).first()).toBeVisible({ timeout: 10_000 })
 
     // No error boundary

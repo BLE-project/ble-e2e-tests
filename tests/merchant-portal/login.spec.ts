@@ -7,7 +7,7 @@ const MERCHANT_URL = process.env.MERCHANT_URL ?? 'http://localhost:5175'
 const KC_URL = process.env.KC_URL ?? 'http://localhost:8180'
 
 test.describe('Merchant Portal - Login (OIDC/Keycloak)', () => {
-  test('accessing portal without token redirects to Keycloak login', async ({ page }) => {
+  test('accessing portal without token shows login page with Keycloak button', async ({ page }) => {
     // Clear any stored OIDC state
     await page.goto(MERCHANT_URL)
     await page.evaluate(() => {
@@ -16,14 +16,20 @@ test.describe('Merchant Portal - Login (OIDC/Keycloak)', () => {
     })
     await page.goto(MERCHANT_URL)
 
-    // Should redirect to Keycloak
+    // The merchant-portal shows a login page with "Sign in with Keycloak" button
+    // (it does NOT auto-redirect to Keycloak)
+    const signInBtn = page.getByRole('button', { name: /Sign in with Keycloak/i })
+    await expect(signInBtn).toBeVisible({ timeout: 10_000 })
+
+    // Click to verify it redirects to Keycloak
+    await signInBtn.click()
     await page.waitForURL(new RegExp(KC_URL.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')), {
       timeout: 15_000,
     })
 
     // Keycloak login page should have username/password fields
-    await expect(page.getByLabel(/username|email/i)).toBeVisible({ timeout: 10_000 })
-    await expect(page.getByLabel(/password/i)).toBeVisible()
+    await expect(page.locator('#username')).toBeVisible({ timeout: 10_000 })
+    await expect(page.locator('#password')).toBeVisible()
   })
 
   test('login via Keycloak redirects back to merchant dashboard', async ({ page }) => {
@@ -40,7 +46,7 @@ test.describe('Merchant Portal - Login (OIDC/Keycloak)', () => {
     await expect(page).toHaveURL(new RegExp(MERCHANT_URL.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))
 
     // Dashboard content should be visible
-    const dashboard = page.getByRole('heading', { name: /dashboard|home|benvenuto|welcome/i })
+    const dashboard = page.getByRole('heading', { name: /dashboard|home|benvenuto|welcome|beacon/i })
     const content = page.locator('main, [role="main"]')
     await expect(dashboard.or(content).first()).toBeVisible({ timeout: 10_000 })
   })

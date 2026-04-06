@@ -14,56 +14,57 @@ test.describe('Tenant Web - Users', () => {
   })
 
   test('merchant users list page loads', async ({ page }) => {
-    const heading = page.getByRole('heading', { name: /user|utent/i })
+    // Heading is "Utenti Merchant" (Italian)
+    const heading = page.getByRole('heading', { name: /utenti merchant|user|utent/i })
+    const emptyState = page.getByText(/nessun utente/i)
     const table = page.locator('table')
     const list = page.locator('[data-testid*="user"], [class*="user"]')
-    await expect(heading.or(table).or(list).first()).toBeVisible({ timeout: 10_000 })
+    await expect(heading.or(emptyState).or(table).or(list).first()).toBeVisible({ timeout: 10_000 })
   })
 
   test('create a new merchant user', async ({ page }) => {
     const username = `e2e-user-${Date.now()}`
     const email = `${username}@e2e-test.local`
 
-    const createBtn = page.getByRole('button', { name: /create|add|new|crea|aggiungi|nuovo/i })
-    await createBtn.click()
+    // Click "+ Nuovo utente" button
+    await page.getByRole('button', { name: /Nuovo utente/i }).click()
 
-    // Fill username
-    const usernameField = page.getByLabel(/username/i)
-    await usernameField.fill(username)
+    // Form uses generated inputs from an array:
+    // [username, Username *, text], [email, Email *, email], [firstName, Nome, text], [lastName, Cognome, text]
+    const form = page.locator('form')
+    await expect(form).toBeVisible({ timeout: 5_000 })
 
-    // Fill email
-    const emailField = page.getByLabel(/email/i)
-    await emailField.fill(email)
+    // Fill "Username *"
+    const usernameInput = form.locator('label').filter({ hasText: /^Username \*$/ }).locator('..').locator('input')
+    await usernameInput.fill(username)
 
-    // Select role if available
-    const roleField = page.getByLabel(/role|ruolo/i)
-    if (await roleField.isVisible({ timeout: 3_000 }).catch(() => false)) {
-      await roleField.selectOption({ index: 1 })
+    // Fill "Email *"
+    const emailInput = form.locator('label').filter({ hasText: /^Email \*$/ }).locator('..').locator('input')
+    await emailInput.fill(email)
+
+    // Fill "Nome" (first name, optional)
+    const firstNameInput = form.locator('label').filter({ hasText: /^Nome$/ }).locator('..').locator('input')
+    if (await firstNameInput.isVisible({ timeout: 2_000 }).catch(() => false)) {
+      await firstNameInput.fill('E2E')
     }
 
-    // Fill password if required
-    const passwordField = page.getByLabel(/password/i).first()
-    if (await passwordField.isVisible({ timeout: 3_000 }).catch(() => false)) {
-      await passwordField.fill('Test1234!')
+    // Fill "Cognome" (last name, optional)
+    const lastNameInput = form.locator('label').filter({ hasText: /^Cognome$/ }).locator('..').locator('input')
+    if (await lastNameInput.isVisible({ timeout: 2_000 }).catch(() => false)) {
+      await lastNameInput.fill('TestUser')
     }
 
-    // Submit
-    await page.getByRole('button', { name: /save|create|submit|salva|crea|conferma/i }).click()
+    // Role select — "Ruolo *" — default is MERCHANT_USER, leave as-is
+
+    // Submit with "Crea utente" button
+    await page.getByRole('button', { name: /Crea utente/i }).click()
     await page.waitForLoadState('networkidle')
+    await page.waitForTimeout(1_000)
 
-    // Verify
+    // Verify — the success banner or the user list should show the username
     await page.goto('/users')
     await page.waitForLoadState('networkidle')
     await expect(page.getByText(username)).toBeVisible({ timeout: 10_000 })
-
-    // Cleanup: delete or disable
-    await page.getByText(username).click()
-    const deleteBtn = page.getByRole('button', { name: /delete|remove|elimina|rimuovi/i })
-    if (await deleteBtn.isVisible({ timeout: 5_000 }).catch(() => false)) {
-      await deleteBtn.click()
-      const confirmBtn = page.getByRole('button', { name: /confirm|yes|ok|conferma|si/i })
-      if (await confirmBtn.isVisible()) await confirmBtn.click()
-    }
   })
 
   test('disable a merchant user', async ({ page }) => {
@@ -71,39 +72,37 @@ test.describe('Tenant Web - Users', () => {
     const username = `e2e-disable-${Date.now()}`
     const email = `${username}@e2e-test.local`
 
-    const createBtn = page.getByRole('button', { name: /create|add|new|crea|aggiungi|nuovo/i })
-    await createBtn.click()
-    await page.getByLabel(/username/i).fill(username)
-    await page.getByLabel(/email/i).fill(email)
-    const passwordField = page.getByLabel(/password/i).first()
-    if (await passwordField.isVisible({ timeout: 3_000 }).catch(() => false)) {
-      await passwordField.fill('Test1234!')
-    }
-    await page.getByRole('button', { name: /save|create|submit|salva|crea|conferma/i }).click()
+    await page.getByRole('button', { name: /Nuovo utente/i }).click()
+
+    const form = page.locator('form')
+    await expect(form).toBeVisible({ timeout: 5_000 })
+
+    const usernameInput = form.locator('label').filter({ hasText: /^Username \*$/ }).locator('..').locator('input')
+    await usernameInput.fill(username)
+
+    const emailInput = form.locator('label').filter({ hasText: /^Email \*$/ }).locator('..').locator('input')
+    await emailInput.fill(email)
+
+    await page.getByRole('button', { name: /Crea utente/i }).click()
     await page.waitForLoadState('networkidle')
+    await page.waitForTimeout(1_000)
 
     // Navigate and disable
     await page.goto('/users')
     await page.waitForLoadState('networkidle')
-    await page.getByText(username).click()
+    await expect(page.getByText(username)).toBeVisible({ timeout: 10_000 })
 
-    const disableBtn = page.getByRole('button', { name: /disable|suspend|disabilita|sospendi/i })
+    // Disable — "Disabilita" button on the user row (uses window.confirm)
+    page.on('dialog', dialog => dialog.accept())
+    const userRow = page.getByText(username).locator('..').locator('..')
+    const disableBtn = userRow.getByRole('button', { name: 'Disabilita' })
     if (await disableBtn.isVisible({ timeout: 5_000 }).catch(() => false)) {
       await disableBtn.click()
-      const confirmBtn = page.getByRole('button', { name: /confirm|yes|ok|conferma|si/i })
-      if (await confirmBtn.isVisible()) await confirmBtn.click()
+      await page.waitForLoadState('networkidle')
+      await page.waitForTimeout(1_000)
 
-      await expect(
-        page.getByText(/disabled|suspended|disabilitato|sospeso/i),
-      ).toBeVisible({ timeout: 10_000 })
-    }
-
-    // Cleanup: delete
-    const deleteBtn = page.getByRole('button', { name: /delete|remove|elimina|rimuovi/i })
-    if (await deleteBtn.isVisible({ timeout: 5_000 }).catch(() => false)) {
-      await deleteBtn.click()
-      const confirmDel = page.getByRole('button', { name: /confirm|yes|ok|conferma|si/i })
-      if (await confirmDel.isVisible()) await confirmDel.click()
+      // Check status changed to "Disabilitato"
+      await expect(page.getByText('Disabilitato').first()).toBeVisible({ timeout: 10_000 })
     }
   })
 })

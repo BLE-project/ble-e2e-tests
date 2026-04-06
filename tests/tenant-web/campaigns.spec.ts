@@ -1,12 +1,48 @@
 import { test, expect } from '@playwright/test'
-import { loginViaApi } from '../../fixtures/auth'
+import { loginViaApi, DEV_TENANT_ID } from '../../fixtures/auth'
+import { ApiClient } from '../../helpers/api-client'
 
 const TENANT_USER = process.env.TENANT_USER ?? 'dev-tenant-admin'
 const TENANT_PASS = process.env.TENANT_PASS ?? 'dev-pass'
 const BASE_URL = process.env.TENANT_URL ?? 'http://localhost:5173'
+const BFF_URL = process.env.BFF_URL ?? 'http://localhost:8080'
 const STORAGE_KEY = 'ble_tenant_token'
 
+let territoryId: string | null = null
+
 test.describe('Tenant Web - Campaigns', () => {
+  // Ensure a territory exists for the select dropdown
+  test.beforeAll(async ({ request }) => {
+    const client = new ApiClient(request, BFF_URL)
+    await client.login(TENANT_USER, TENANT_PASS)
+
+    const createRes = await client.post(
+      '/api/v1/territories',
+      { name: `E2E Campaign Territory ${Date.now()}`, tenantId: DEV_TENANT_ID },
+      { 'X-Tenant-Id': DEV_TENANT_ID },
+    )
+    if (createRes.ok()) {
+      const body = await createRes.json()
+      territoryId = body.id
+    } else {
+      const listRes = await client.get('/api/v1/territories', { 'X-Tenant-Id': DEV_TENANT_ID })
+      if (listRes.ok()) {
+        const territories = await listRes.json()
+        if (Array.isArray(territories) && territories.length > 0) {
+          territoryId = territories[0].id
+        }
+      }
+    }
+  })
+
+  test.afterAll(async ({ request }) => {
+    if (territoryId) {
+      const client = new ApiClient(request, BFF_URL)
+      await client.login(TENANT_USER, TENANT_PASS)
+      await client.delete(`/api/v1/territories/${territoryId}`, { 'X-Tenant-Id': DEV_TENANT_ID }).catch(() => {})
+    }
+  })
+
   test.beforeEach(async ({ page }) => {
     await loginViaApi(page, BASE_URL, TENANT_USER, TENANT_PASS, STORAGE_KEY)
     await page.goto('/campaigns')
@@ -14,50 +50,56 @@ test.describe('Tenant Web - Campaigns', () => {
   })
 
   test('campaigns list page loads', async ({ page }) => {
-    const heading = page.getByRole('heading', { name: /campaign|campagna/i })
+    // Page heading is "Campagne" (Italian)
+    const heading = page.getByRole('heading', { name: /campagne/i })
+    const emptyState = page.getByText(/nessuna campagna/i)
     const table = page.locator('table')
     const list = page.locator('[data-testid*="campaign"], [class*="campaign"]')
-    await expect(heading.or(table).or(list).first()).toBeVisible({ timeout: 10_000 })
+    await expect(heading.or(emptyState).or(table).or(list).first()).toBeVisible({ timeout: 10_000 })
   })
 
   test('create a new campaign', async ({ page }) => {
     const campaignTitle = `E2E Campaign ${Date.now()}`
 
-    const createBtn = page.getByRole('button', { name: /create|add|new|crea|aggiungi|nuovo/i })
-    await createBtn.click()
+    // Click "+ Nuova campagna" button
+    await page.getByRole('button', { name: /Nuova campagna/i }).click()
 
-    // Fill title
-    const titleField = page.getByLabel(/title|titolo|name|nome/i).first()
-    await titleField.fill(campaignTitle)
+    // Fill "Titolo *" — find the first required text input in the form
+    const titleInput = page.locator('form input[required]').first()
+    await titleInput.fill(campaignTitle)
 
-    // Fill body/description
-    const bodyField = page.getByLabel(/body|description|corpo|descrizione|content|contenuto/i)
-    if (await bodyField.isVisible({ timeout: 3_000 }).catch(() => false)) {
-      await bodyField.fill('E2E test campaign description body content')
+    // Territory is a required select — pick first option if available
+    const territorySelect = page.locator('form select').first()
+    if (await territorySelect.isVisible({ timeout: 3_000 }).catch(() => false)) {
+      const optionCount = await territorySelect.locator('option').count()
+      if (optionCount > 1) {
+        await territorySelect.selectOption({ index: 1 })
+      }
     }
 
-    // Select category if available
-    const categoryField = page.getByLabel(/category|categoria/i)
-    if (await categoryField.isVisible({ timeout: 3_000 }).catch(() => false)) {
-      await categoryField.selectOption({ index: 1 })
+    // Fill "Messaggio" textarea (optional)
+    const messageArea = page.locator('form textarea').first()
+    if (await messageArea.isVisible({ timeout: 3_000 }).catch(() => false)) {
+      await messageArea.fill('E2E test campaign body')
     }
 
-    // Submit
-    await page.getByRole('button', { name: /save|create|submit|salva|crea|conferma/i }).click()
+    // Submit with "Crea campagna" button
+    await page.getByRole('button', { name: /Crea campagna/i }).click()
     await page.waitForLoadState('networkidle')
+    await page.waitForTimeout(1_000)
 
     // Verify
     await page.goto('/campaigns')
     await page.waitForLoadState('networkidle')
     await expect(page.getByText(campaignTitle)).toBeVisible({ timeout: 10_000 })
 
-    // Cleanup: delete
-    await page.getByText(campaignTitle).click()
-    const deleteBtn = page.getByRole('button', { name: /delete|remove|elimina|rimuovi/i })
+    // Cleanup: delete (uses window.confirm with "Elimina" button)
+    page.on('dialog', dialog => dialog.accept())
+    const row = page.getByText(campaignTitle).locator('..').locator('..')
+    const deleteBtn = row.getByRole('button', { name: 'Elimina' })
     if (await deleteBtn.isVisible({ timeout: 5_000 }).catch(() => false)) {
       await deleteBtn.click()
-      const confirmBtn = page.getByRole('button', { name: /confirm|yes|ok|conferma|si/i })
-      if (await confirmBtn.isVisible()) await confirmBtn.click()
+      await page.waitForLoadState('networkidle')
     }
   })
 
@@ -65,25 +107,27 @@ test.describe('Tenant Web - Campaigns', () => {
     const campaignTitle = `E2E Delete Campaign ${Date.now()}`
 
     // Create
-    const createBtn = page.getByRole('button', { name: /create|add|new|crea|aggiungi|nuovo/i })
-    await createBtn.click()
-    await page.getByLabel(/title|titolo|name|nome/i).first().fill(campaignTitle)
-    const bodyField = page.getByLabel(/body|description|corpo|descrizione|content|contenuto/i)
-    if (await bodyField.isVisible({ timeout: 3_000 }).catch(() => false)) {
-      await bodyField.fill('To be deleted')
+    await page.getByRole('button', { name: /Nuova campagna/i }).click()
+    const titleInput = page.locator('form input[required]').first()
+    await titleInput.fill(campaignTitle)
+
+    const territorySelect = page.locator('form select').first()
+    if (await territorySelect.isVisible({ timeout: 3_000 }).catch(() => false)) {
+      const optionCount = await territorySelect.locator('option').count()
+      if (optionCount > 1) await territorySelect.selectOption({ index: 1 })
     }
-    await page.getByRole('button', { name: /save|create|submit|salva|crea|conferma/i }).click()
+    await page.getByRole('button', { name: /Crea campagna/i }).click()
     await page.waitForLoadState('networkidle')
+    await page.waitForTimeout(1_000)
 
     // Delete
     await page.goto('/campaigns')
     await page.waitForLoadState('networkidle')
-    await page.getByText(campaignTitle).click()
 
-    const deleteBtn = page.getByRole('button', { name: /delete|remove|elimina|rimuovi/i })
-    await deleteBtn.click()
-    const confirmBtn = page.getByRole('button', { name: /confirm|yes|ok|conferma|si/i })
-    if (await confirmBtn.isVisible()) await confirmBtn.click()
+    page.on('dialog', dialog => dialog.accept())
+    const row = page.getByText(campaignTitle).locator('..').locator('..')
+    await row.getByRole('button', { name: 'Elimina' }).click()
+    await page.waitForLoadState('networkidle')
 
     // Verify removed
     await page.goto('/campaigns')
