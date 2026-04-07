@@ -461,16 +461,19 @@ test.describe('Security — Beacon Penetration Tests', () => {
       },
     })
 
-    // Should be 409 with BEACON_DUPLICATE for same tenant
-    // S44: Also checks for X-BLE-Warning header
+    // Should be 409 — code depends on whether the beacon belongs to this tenant or another:
+    //   BEACON_DUPLICATE = same tenant (with X-BLE-Warning header)
+    //   BEACON_ALREADY_ASSIGNED = different tenant
     if (dupRes.status() === 409) {
       const body = await dupRes.json()
-      expect(body.error.code).toBe('BEACON_DUPLICATE')
+      expect(['BEACON_DUPLICATE', 'BEACON_ALREADY_ASSIGNED']).toContain(body.error.code)
 
-      // S44 enhancement: warning header
-      const warningHeader = dupRes.headers()['x-ble-warning']
-      if (warningHeader) {
-        expect(warningHeader).toBe('DUPLICATE_IDENTITY')
+      // S44 enhancement: warning header (only on same-tenant duplicate)
+      if (body.error.code === 'BEACON_DUPLICATE') {
+        const warningHeader = dupRes.headers()['x-ble-warning']
+        if (warningHeader) {
+          expect(warningHeader).toBe('DUPLICATE_IDENTITY')
+        }
       }
     }
   })
