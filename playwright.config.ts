@@ -81,5 +81,12 @@ export default defineConfig({
         baseURL: process.env.BFF_URL ?? 'http://localhost:8080',
       },
     },
+    {
+      name: 'territory-isolation',
+      testDir: './tests/territory-isolation',
+      use: {
+        baseURL: process.env.BFF_URL ?? 'http://localhost:8080',
+      },
+    },
   ],
 })

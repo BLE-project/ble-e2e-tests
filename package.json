@@ -14,6 +14,7 @@
     "test:security": "npx playwright test --project=security",
     "test:beacon-real": "npx playwright test --project=beacon-real",
     "test:beacon-management": "npx playwright test --project=beacon-management",
+    "test:territory-isolation": "npx playwright test --project=territory-isolation",
     "test:load-beacon": "k6 run load-tests/beacon-load.js",
     "report": "npx playwright show-report"
   },
