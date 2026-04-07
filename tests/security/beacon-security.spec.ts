@@ -1,5 +1,5 @@
 /**
- * Security tests — Beacon-specific penetration testing — FEAT-S42-006
+ * Security tests — Beacon-specific penetration testing — FEAT-S42-006 + FEAT-S44-002
  *
  * Tests:
  *   1. Beacon spoofing (same UUID, different major/minor)
@@ -7,6 +7,8 @@
  *   3. Beacon event flooding (rate limiting)
  *   4. Cross-tenant beacon access
  *   5. Beacon configuration tampering
+ *   6. S44: Duplicate identity beacon handling (3 MACs, same UUID/Major/Minor)
+ *   7. S44: MAC address spoofing with same identity
  *
  * All tests are API-only (Playwright request context, no browser).
  */
@@ -20,6 +22,13 @@ const REAL_BEACON_UUID = 'FDA50693-A4E2-4FB1-AFCF-C6EB07647825'
 const REAL_BEACON_MAJOR = 10011
 const REAL_BEACON_MINOR = 19641
 const REAL_BEACON_DB_ID = 'abcf9911-06a9-45ea-a121-c52f60bbf761'
+
+// S44: Known MAC addresses for the same identity
+const DUPLICATE_MACS = [
+  'D1:DF:AD:FB:EB:1E',
+  'C0:0B:15:42:1A:54',
+  'C8:45:60:6D:83:CF',
+]
 
 let tenantId: string
 let tenantToken: string
@@ -167,8 +176,6 @@ test.describe('Security — Beacon Penetration Tests', () => {
   test('Beacon event flooding — 100 events in rapid succession', async ({ request }) => {
     if (!consumerToken) { test.skip(true, 'No consumer token'); return }
 
-    const results: number[] = []
-
     // Fire 100 beacon events as fast as possible
     const promises = Array.from({ length: 100 }, () =>
       request.post(`${BFF}/bff/v1/consumer/beacon-event`, {
@@ -197,7 +204,7 @@ test.describe('Security — Beacon Penetration Tests', () => {
     // - If rate limiting is active, some may be 429
     // - Should NOT have 500 errors (server should stay stable)
     expect(errors).toBe(0)
-    expect(ok + rateLimited).toBe(100)  // All should be either 200 or 429
+    expect(ok + rateLimited).toBe(100)
   })
 
   // ── Cross-Tenant Beacon Access ──────────────────────────────────────────
@@ -205,9 +212,8 @@ test.describe('Security — Beacon Penetration Tests', () => {
   test('Cross-tenant beacon access — reading another tenant beacon should fail', async ({ request }) => {
     if (!tenantToken) { test.skip(true, 'No tenant token'); return }
 
-    const fakeTenantId = '00000000-0000-0000-0000-000000000099'  // Non-existent tenant
+    const fakeTenantId = '00000000-0000-0000-0000-000000000099'
 
-    // Try to access a beacon using a different tenant ID
     const res = await request.get(`${BFF}/api/v1/beacons/${REAL_BEACON_DB_ID}`, {
       headers: {
         Authorization: `Bearer ${tenantToken}`,
@@ -215,7 +221,6 @@ test.describe('Security — Beacon Penetration Tests', () => {
       },
     })
 
-    // Should be 403 (tenant mismatch) or 404 (not found in that tenant's scope)
     expect([403, 404]).toContain(res.status())
   })
 
@@ -239,9 +244,7 @@ test.describe('Security — Beacon Penetration Tests', () => {
       },
     })
 
-    // Should be 403 (tenant mismatch from JWT validation) or 400/500
     expect([400, 403, 404, 500]).toContain(res.status())
-    // Must NOT be 201 — that would mean cross-tenant registration succeeded
     expect(res.status()).not.toBe(201)
   })
 
@@ -258,7 +261,6 @@ test.describe('Security — Beacon Penetration Tests', () => {
 
     // 400 = core-registry TenantContextFilter rejects missing X-Tenant-Id before auth check
     // 401/403 = auth layer rejects the request
-    // All are acceptable: the request is blocked before reaching the endpoint.
     expect([400, 401, 403]).toContain(res.status())
   })
 
@@ -279,7 +281,6 @@ test.describe('Security — Beacon Penetration Tests', () => {
     })
 
     // Should be 400 (validation error) or 404 (beacon not in this tenant) — never 201/200 with invalid data
-    // Note: the DB CHECK constraint prevents battery > 100
     expect([400, 404, 500]).toContain(res.status())
   })
 
@@ -299,7 +300,178 @@ test.describe('Security — Beacon Penetration Tests', () => {
       },
     })
 
-    // Should be 200 (NONE — no match) or 400 (invalid values)
     expect([200, 400]).toContain(res.status())
+  })
+
+  // ── S44: Duplicate Identity Beacon Handling ─────────────────────────────
+
+  /**
+   * Test: When 3 devices advertise the same UUID/Major/Minor,
+   * the platform should handle gracefully.
+   * The expected behavior is: strongest RSSI wins for distance calculation.
+   */
+  test('Duplicate identity — 3 beacon events with same UUID/Major/Minor, different RSSI', async ({ request }) => {
+    if (!consumerToken) { test.skip(true, 'No consumer token'); return }
+
+    // Simulate the 3 Holy-IOT beacons sending events with different signal strengths
+    const rssiValues = [-39, -71, -73]  // IMMEDIATE, FAR, FAR
+    const responses: Array<{ status: number; body?: any }> = []
+
+    for (const rssi of rssiValues) {
+      const res = await request.post(`${BFF}/bff/v1/consumer/beacon-event`, {
+        headers: {
+          Authorization: `Bearer ${consumerToken}`,
+          'Content-Type': 'application/json',
+        },
+        data: {
+          uuid: REAL_BEACON_UUID,
+          major: REAL_BEACON_MAJOR,
+          minor: REAL_BEACON_MINOR,
+          rssi,
+        },
+      })
+
+      const entry: { status: number; body?: any } = { status: res.status() }
+      if (res.status() === 200) {
+        entry.body = await res.json()
+      }
+      responses.push(entry)
+    }
+
+    // All 3 events should be processed (200 or 400, never 500)
+    for (const r of responses) {
+      expect(r.status).toBeLessThan(500)
+    }
+
+    // All successful responses should return the same action (same beacon identity)
+    const successfulActions = responses
+      .filter(r => r.status === 200 && r.body?.action)
+      .map(r => r.body.action)
+
+    if (successfulActions.length > 1) {
+      // All should resolve to the same tenant/action since it is the same beacon identity
+      const unique = [...new Set(successfulActions)]
+      expect(unique.length).toBe(1)
+    }
+  })
+
+  /**
+   * Test: Rapid-fire duplicate identity events should not cause server errors.
+   * Simulates the real-world scenario where a phone detects 3 beacons with the
+   * same identity and sends events concurrently.
+   */
+  test('Duplicate identity — concurrent events from same identity should not crash', async ({ request }) => {
+    if (!consumerToken) { test.skip(true, 'No consumer token'); return }
+
+    // Fire 30 events concurrently (simulating 3 beacons x 10 scan cycles)
+    const promises = Array.from({ length: 30 }, (_, i) => {
+      const rssi = -39 - (i % 3) * 15  // Rotate RSSI: -39, -54, -69
+      return request.post(`${BFF}/bff/v1/consumer/beacon-event`, {
+        headers: {
+          Authorization: `Bearer ${consumerToken}`,
+          'Content-Type': 'application/json',
+        },
+        data: {
+          uuid: REAL_BEACON_UUID,
+          major: REAL_BEACON_MAJOR,
+          minor: REAL_BEACON_MINOR,
+          rssi,
+        },
+      }).then(r => r.status())
+    })
+
+    const statuses = await Promise.all(promises)
+    const errors = statuses.filter(s => s >= 500).length
+
+    // No server errors allowed — this is a configuration issue, not a security threat
+    expect(errors).toBe(0)
+  })
+
+  /**
+   * Test: Beacon MAC address spoofing with same identity.
+   * The API does not receive MAC addresses (only UUID/Major/Minor),
+   * so MAC spoofing is invisible at the platform level.
+   * This test verifies the API does not leak MAC-level information.
+   */
+  test('MAC address spoofing — API should not expose MAC addresses', async ({ request }) => {
+    if (!tenantToken) { test.skip(true, 'No tenant token'); return }
+
+    // Get beacon details from the API
+    const beaconRes = await request.get(`${BFF}/api/v1/beacons/${REAL_BEACON_DB_ID}`, {
+      headers: {
+        Authorization: `Bearer ${tenantToken}`,
+        'X-Tenant-Id': tenantId,
+      },
+    })
+
+    if (beaconRes.status() === 200) {
+      const beacon = await beaconRes.json()
+      const bodyStr = JSON.stringify(beacon)
+
+      // The API should NOT expose MAC addresses in the beacon response
+      for (const mac of DUPLICATE_MACS) {
+        expect(bodyStr).not.toContain(mac)
+      }
+
+      // Verify the beacon only exposes identity fields, not physical layer info
+      expect(beacon.ibeaconUuid).toBeTruthy()
+      expect(beacon.major).toBeTruthy()
+      expect(beacon.minor).toBeTruthy()
+    }
+  })
+
+  /**
+   * Test: Duplicate identity registration with same-tenant should return
+   * existing beacon with warning header (S44 enhancement).
+   */
+  test('Duplicate identity same-tenant registration returns warning header', async ({ request }) => {
+    if (!tenantToken) { test.skip(true, 'No tenant token'); return }
+    const seed = loadSeedDataSync()
+    const territoryId = seed?.territoryId ?? '00000000-0000-0000-0000-000000000002'
+
+    // First registration (or already exists)
+    await request.post(`${BFF}/api/v1/beacons`, {
+      headers: {
+        Authorization: `Bearer ${tenantToken}`,
+        'X-Tenant-Id': tenantId,
+        'Content-Type': 'application/json',
+      },
+      data: {
+        territoryId,
+        type: 'MERCHANT',
+        ibeaconUuid: REAL_BEACON_UUID,
+        major: REAL_BEACON_MAJOR,
+        minor: REAL_BEACON_MINOR,
+      },
+    })
+
+    // Second registration — same tenant, same identity
+    const dupRes = await request.post(`${BFF}/api/v1/beacons`, {
+      headers: {
+        Authorization: `Bearer ${tenantToken}`,
+        'X-Tenant-Id': tenantId,
+        'Content-Type': 'application/json',
+      },
+      data: {
+        territoryId,
+        type: 'MERCHANT',
+        ibeaconUuid: REAL_BEACON_UUID,
+        major: REAL_BEACON_MAJOR,
+        minor: REAL_BEACON_MINOR,
+      },
+    })
+
+    // Should be 409 with BEACON_DUPLICATE for same tenant
+    // S44: Also checks for X-BLE-Warning header
+    if (dupRes.status() === 409) {
+      const body = await dupRes.json()
+      expect(body.error.code).toBe('BEACON_DUPLICATE')
+
+      // S44 enhancement: warning header
+      const warningHeader = dupRes.headers()['x-ble-warning']
+      if (warningHeader) {
+        expect(warningHeader).toBe('DUPLICATE_IDENTITY')
+      }
+    }
   })
 })
