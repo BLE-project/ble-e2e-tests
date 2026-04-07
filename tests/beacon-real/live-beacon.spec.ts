@@ -299,6 +299,7 @@ test.describe('Live Beacon — Real BLE Device Tests', () => {
       {
         headers: {
           Authorization: `Bearer ${tenantToken}`,
+          'X-Tenant-Id': tenantId,
         },
       },
     )

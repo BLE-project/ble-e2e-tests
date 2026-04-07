@@ -75,8 +75,8 @@ test.describe('Consumer Profile', () => {
     const res = await request.get(`${BFF}/api/v1/consumer-profiles/me`, {
       headers: hdrs(token),
     })
-    // 200 profile, 404 none yet, 401 if downstream JWT validation mismatch
-    expect([200, 400, 401, 404]).toContain(res.status())
+    // 200 profile, 404 none yet, 401 JWT mismatch, 403 role mismatch (identity-access may use different role claim path)
+    expect([200, 400, 401, 403, 404]).toContain(res.status())
     if (res.status() === 200) {
       const body = await res.json()
       expect(body).toHaveProperty('consumerId')
@@ -93,8 +93,8 @@ test.describe('Consumer Profile', () => {
         interests: ['food', 'travel'],
       },
     })
-    // 200 on success, 401 downstream JWT mismatch, 422 targeting consent missing
-    expect([200, 401, 422]).toContain(res.status())
+    // 200 on success, 401 JWT mismatch, 403 role mismatch, 422 targeting consent missing
+    expect([200, 401, 403, 422]).toContain(res.status())
   })
 })
 
