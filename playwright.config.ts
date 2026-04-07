@@ -16,6 +16,13 @@ export default defineConfig({
   },
   projects: [
     {
+      name: 'smoke',
+      testDir: './tests/smoke',
+      use: {
+        baseURL: process.env.BFF_URL ?? 'http://localhost:8080',
+      },
+    },
+    {
       name: 'admin-web',
       testDir: './tests/admin-web',
       use: {

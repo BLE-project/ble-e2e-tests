@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "npx playwright test",
+    "test:smoke": "npx playwright test --project=smoke",
     "test:admin": "npx playwright test --project=admin-web",
     "test:tenant": "npx playwright test --project=tenant-web",
     "test:merchant": "npx playwright test --project=merchant-portal",
