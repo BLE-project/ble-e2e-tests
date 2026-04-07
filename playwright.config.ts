@@ -60,5 +60,12 @@ export default defineConfig({
         baseURL: process.env.BFF_URL ?? 'http://localhost:8080',
       },
     },
+    {
+      name: 'beacon-real',
+      testDir: './tests/beacon-real',
+      use: {
+        baseURL: process.env.BFF_URL ?? 'http://localhost:8080',
+      },
+    },
   ],
 })
