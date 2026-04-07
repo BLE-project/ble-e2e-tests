@@ -10,6 +10,7 @@
     "test:merchant": "npx playwright test --project=merchant-portal",
     "test:api": "npx playwright test --project=api",
     "test:mobile-api": "npx playwright test --project=mobile-api",
+    "test:security": "npx playwright test --project=security",
     "report": "npx playwright show-report"
   },
   "keywords": [],

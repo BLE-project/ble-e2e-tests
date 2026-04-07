@@ -53,5 +53,12 @@ export default defineConfig({
         baseURL: process.env.BFF_URL ?? 'http://localhost:8080',
       },
     },
+    {
+      name: 'security',
+      testDir: './tests/security',
+      use: {
+        baseURL: process.env.BFF_URL ?? 'http://localhost:8080',
+      },
+    },
   ],
 })
