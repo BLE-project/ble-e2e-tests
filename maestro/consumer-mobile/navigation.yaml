@@ -1,0 +1,63 @@
+appId: com.ble.consumer
+---
+# Consumer Mobile — Navigation flow
+# Navigate through all main tabs after login.
+#
+# Tab bar (from _layout.tsx):
+#   Nearby | Wallet | Discover | History | Territory | Prefs | Offers | Profilo
+
+- launchApp
+
+# Login first
+- tapOn:
+    text: "Email"
+- inputText: "dev-consumer"
+- tapOn:
+    text: "Password"
+- inputText: "dev-pass"
+- tapOn: "Sign in"
+- assertVisible:
+    text: "Nearby"
+    timeout: 15000
+
+# ── Navigate to Wallet tab ──────────────────────────────────────────────────
+- tapOn: "Wallet"
+- assertVisible:
+    text: "Wallet"
+    timeout: 10000
+
+# ── Navigate to Discover tab (nearby tenants) ──────────────────────────────
+- tapOn: "Discover"
+- assertVisible:
+    text: "Discover"
+    timeout: 10000
+
+# ── Navigate to History tab ─────────────────────────────────────────────────
+- tapOn: "History"
+- assertVisible:
+    text: "History"
+    timeout: 10000
+
+# ── Navigate to Profilo tab ─────────────────────────────────────────────────
+- tapOn: "Profilo"
+- assertVisible:
+    text: "Profilo"
+    timeout: 10000
+
+# ── Navigate to Offers / Notifications tab ──────────────────────────────────
+- tapOn: "Offers"
+- assertVisible:
+    text: "Notifications"
+    timeout: 10000
+
+# ── Navigate to Preferences tab ────────────────────────────────────────────
+- tapOn: "Prefs"
+- assertVisible:
+    text: "Preferences"
+    timeout: 10000
+
+# ── Return to Nearby (home) tab ────────────────────────────────────────────
+- tapOn: "Nearby"
+- assertVisible:
+    text: "Nearby"
+    timeout: 10000

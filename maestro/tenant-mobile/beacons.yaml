@@ -1,0 +1,89 @@
+appId: com.ble.tenant
+---
+# Tenant Mobile — Beacon CRUD flow
+# Source: ble-tenant-mobile/app/(app)/beacons.tsx
+#
+# Beacons screen layout:
+#   Header: "Beacon Registry" + "+ Add" button (visible to TENANT_ADMIN)
+#   List: FlatList of beacons showing type badge + UUID + major/minor
+#   Create modal:
+#     Fields: UUID, Major, Minor, Label (optional), Territory ID
+#     Type chips: TRACKING | MERCHANT | INFO | ENTRANCE
+#     Button: "Create beacon"
+#     Button: "Cancel"
+#
+# Tab bar: Home | Territories | Beacons | Theme | Settings | Report
+
+- launchApp
+
+# Login first
+- tapOn:
+    text: "Email"
+- inputText: "dev-tenant-admin"
+- tapOn:
+    text: "Password"
+- inputText: "dev-pass"
+- tapOn: "Sign in"
+- assertVisible:
+    text: "Home"
+    timeout: 15000
+
+# ── Navigate to Beacons tab ────────────────────────────────────────────────
+- tapOn: "Beacons"
+- assertVisible:
+    text: "Beacon Registry"
+    timeout: 10000
+
+# ── Open create modal ──────────────────────────────────────────────────────
+- tapOn: "+ Add"
+- assertVisible:
+    text: "New Beacon"
+    timeout: 5000
+
+# ── Fill in beacon fields ──────────────────────────────────────────────────
+# UUID field
+- tapOn:
+    text: "UUID"
+    index: 1
+- inputText: "E2E-MAESTRO-TEST-0000-000000000001"
+
+# Major field (default is 100)
+- tapOn:
+    text: "Major"
+    index: 1
+- clearText
+- inputText: "150"
+
+# Minor field (default is 1)
+- tapOn:
+    text: "Minor"
+    index: 1
+- clearText
+- inputText: "42"
+
+# Label (optional)
+- tapOn:
+    text: "Label (optional)"
+    index: 1
+- inputText: "Maestro Test Beacon"
+
+# Select beacon type — tap MERCHANT chip
+- tapOn: "MERCHANT"
+
+# Verify type hint changes
+- assertVisible: "Major 200"
+
+# ── Submit the form ────────────────────────────────────────────────────────
+- tapOn: "Create beacon"
+
+# Either we return to the list (success) or see an error
+# On success the modal closes and we should see the beacon list again
+- assertVisible:
+    text: "Beacon Registry"
+    timeout: 10000
+
+# ── Cancel flow (verify cancel works) ─────────────────────────────────────
+- tapOn: "+ Add"
+- assertVisible: "New Beacon"
+- tapOn: "Cancel"
+- assertVisible: "Beacon Registry"

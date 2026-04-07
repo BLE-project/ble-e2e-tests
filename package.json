@@ -9,6 +9,7 @@
     "test:tenant": "npx playwright test --project=tenant-web",
     "test:merchant": "npx playwright test --project=merchant-portal",
     "test:api": "npx playwright test --project=api",
+    "test:mobile-api": "npx playwright test --project=mobile-api",
     "report": "npx playwright show-report"
   },
   "keywords": [],

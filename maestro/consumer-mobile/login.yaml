@@ -1,0 +1,35 @@
+appId: com.ble.consumer
+---
+# Consumer Mobile — Login flow
+# Source: ble-consumer-mobile/app/login.tsx
+#
+# Login screen layout:
+#   Title: "BLE"
+#   Subtitle: "Discover nearby offers"
+#   Input: placeholder "Email" (email-address keyboard)
+#   Input: placeholder "Password" (secureTextEntry)
+#   Button: "Sign in"
+
+- launchApp
+
+# Verify login screen is visible
+- assertVisible: "BLE"
+- assertVisible: "Discover nearby offers"
+
+# Enter credentials
+- tapOn:
+    text: "Email"
+- inputText: "dev-consumer"
+
+- tapOn:
+    text: "Password"
+- inputText: "dev-pass"
+
+# Submit login
+- tapOn: "Sign in"
+
+# Wait for login to complete and verify we are on the home screen
+# The consumer app tab bar shows: Nearby, Wallet, Discover, History, etc.
+- assertVisible:
+    text: "Nearby"
+    timeout: 15000

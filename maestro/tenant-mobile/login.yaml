@@ -1,0 +1,35 @@
+appId: com.ble.tenant
+---
+# Tenant Mobile — Login flow
+# Source: ble-tenant-mobile/app/login.tsx
+#
+# Login screen layout:
+#   Title: "BLE Tenant"
+#   Subtitle: "Tenant admin portal"
+#   Input: placeholder "Email" (email-address keyboard)
+#   Input: placeholder "Password" (secureTextEntry)
+#   Button: "Sign in"
+
+- launchApp
+
+# Verify login screen is visible
+- assertVisible: "BLE Tenant"
+- assertVisible: "Tenant admin portal"
+
+# Enter credentials
+- tapOn:
+    text: "Email"
+- inputText: "dev-tenant-admin"
+
+- tapOn:
+    text: "Password"
+- inputText: "dev-pass"
+
+# Submit login
+- tapOn: "Sign in"
+
+# Wait for login to complete — tenant app home tab is "Home"
+# Tab bar: Home | Territories | Beacons | Theme | Settings | Report
+- assertVisible:
+    text: "Home"
+    timeout: 15000

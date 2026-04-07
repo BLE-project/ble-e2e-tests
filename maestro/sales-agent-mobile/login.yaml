@@ -1,0 +1,36 @@
+appId: com.ble.salesagent
+---
+# Sales Agent Mobile — Login flow
+# Source: ble-sales-agent-mobile/app/login.tsx
+#
+# Login screen layout:
+#   Brand: "Terrio"
+#   Subtitle: "Agente Commerciale"
+#   Input: placeholder "Username" (testID: username-input)
+#   Input: placeholder "Password" (testID: password-input)
+#   Button: "Accedi" (testID: login-btn)
+
+- launchApp
+
+# Verify login screen is visible
+- assertVisible: "Terrio"
+- assertVisible: "Agente Commerciale"
+
+# Enter credentials using testID selectors
+- tapOn:
+    id: "username-input"
+- inputText: "dev-sales-agent"
+
+- tapOn:
+    id: "password-input"
+- inputText: "dev-pass"
+
+# Submit login
+- tapOn:
+    id: "login-btn"
+
+# Wait for login to complete — sales agent home tab is "Home" (Dashboard)
+# Tab bar: Home | Richieste | Merchant | Royalties | Profilo
+- assertVisible:
+    text: "Home"
+    timeout: 15000

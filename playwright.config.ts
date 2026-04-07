@@ -46,5 +46,12 @@ export default defineConfig({
         baseURL: process.env.BFF_URL ?? 'http://localhost:8080',
       },
     },
+    {
+      name: 'mobile-api',
+      testDir: './tests/mobile-api',
+      use: {
+        baseURL: process.env.BFF_URL ?? 'http://localhost:8080',
+      },
+    },
   ],
 })

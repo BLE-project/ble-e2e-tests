@@ -1,0 +1,79 @@
+appId: com.ble.salesagent
+---
+# Sales Agent Mobile — Registration Requests flow
+# Source: ble-sales-agent-mobile/app/(app)/requests.tsx
+#
+# Requests screen layout:
+#   Horizontal filter buttons: ALL | PENDING | IN_REVIEW | APPROVED | REJECTED
+#   FlatList of request cards showing:
+#     - businessName + status badge
+#     - ownerName + businessType
+#     - email
+#     - date
+#   Tapping a card navigates to /request/[id] detail screen
+#
+# Tab bar: Home | Richieste | Merchant | Royalties | Profilo
+
+- launchApp
+
+# Login first using testID selectors
+- tapOn:
+    id: "username-input"
+- inputText: "dev-sales-agent"
+- tapOn:
+    id: "password-input"
+- inputText: "dev-pass"
+- tapOn:
+    id: "login-btn"
+- assertVisible:
+    text: "Home"
+    timeout: 15000
+
+# ── Navigate to Richieste tab ──────────────────────────────────────────────
+- tapOn: "Richieste"
+- assertVisible:
+    text: "Richieste"
+    timeout: 10000
+
+# ── Test status filters ────────────────────────────────────────────────────
+# Default filter is PENDING
+- assertVisible: "PENDING"
+
+# Tap ALL filter
+- tapOn: "ALL"
+
+# Tap IN_REVIEW filter
+- tapOn: "IN_REVIEW"
+
+# Tap APPROVED filter
+- tapOn: "APPROVED"
+
+# Tap REJECTED filter
+- tapOn: "REJECTED"
+
+# Return to PENDING filter
+- tapOn: "PENDING"
+
+# ── Navigate to Merchant tab ───────────────────────────────────────────────
+- tapOn: "Merchant"
+- assertVisible:
+    text: "Merchant"
+    timeout: 10000
+
+# ── Navigate to Royalties tab ─────────────────────────────────────────────
+- tapOn: "Royalties"
+- assertVisible:
+    text: "Royalties"
+    timeout: 10000
+
+# ── Navigate to Profilo tab ───────────────────────────────────────────────
+- tapOn: "Profilo"
+- assertVisible:
+    text: "Profilo"
+    timeout: 10000
+
+# ── Return to Home ────────────────────────────────────────────────────────
+- tapOn: "Home"
+- assertVisible:
+    text: "Dashboard"
+    timeout: 10000
