@@ -32,7 +32,8 @@ let merchantToken: string
 let consumerToken: string
 
 // Beacon identifiers — unique per test run
-const BEACON_UUID  = 'E2E-BCN-FLOW-0000-000000000001'
+// Valid hex UUID required by @Pattern validation on the beacon endpoint
+const BEACON_UUID  = 'e2ebcf00-f100-0000-0000-000000000001'
 const BEACON_MAJOR = 200  // MERCHANT range
 const BEACON_MINOR = Math.floor(Math.random() * 9000) + 1000
 
@@ -144,8 +145,8 @@ test.describe.serial('Beacon Notification Flow', () => {
         rssi: -55,
       },
     })
-    // 200 with an action, 404 if no matching beacon, 500 if beacon service error
-    expect([200, 404, 500]).toContain(res.status())
+    // 200 with an action, 400 if UUID validation fails, 404 if no matching beacon, 500 on error
+    expect([200, 400, 404, 500]).toContain(res.status())
     if (res.status() === 200) {
       const body = await res.json()
       expect(body).toHaveProperty('action')

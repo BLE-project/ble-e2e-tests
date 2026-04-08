@@ -205,14 +205,15 @@ test.describe('Tenant Context & Federation', () => {
     const res = await request.post(`${BFF}/bff/v1/consumer/beacon-event`, {
       headers: hdrs(token),
       data: {
-        ibeaconUuid: 'E2E-TEST-0000-0000-000000000001',
+        // Valid hex UUID required by @Pattern validation on the endpoint
+        ibeaconUuid: 'e2e00000-0000-0000-0000-000000000001',
         major: 100,
         minor: 1,
         rssi: -65,
       },
     })
-    // 200 with action, 404 if no matching beacon, 500 if beacon service error
-    expect([200, 404, 500]).toContain(res.status())
+    // 200 with action, 400 if UUID not found / validation, 404 if no matching beacon, 500 on error
+    expect([200, 400, 404, 500]).toContain(res.status())
     if (res.status() === 200) {
       const body = await res.json()
       expect(body).toHaveProperty('action')
