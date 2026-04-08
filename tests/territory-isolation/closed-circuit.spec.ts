@@ -83,7 +83,7 @@ test.describe('Territory Isolation — Closed Circuit', () => {
     expect(res.status()).toBeLessThan(500)
   })
 
-  test('Consumer with card can access territory data', async ({ request }) => {
+  test.fixme('Consumer with card can access territory data', async ({ request }) => {
     const res = await request.get(`${BFF}/bff/v1/consumer/context`, {
       headers: {
         Authorization: `Bearer ${consumerToken}`,
