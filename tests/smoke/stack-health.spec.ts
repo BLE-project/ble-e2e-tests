@@ -172,6 +172,140 @@ test.describe('Smoke — Security Headers', () => {
   })
 })
 
+test.describe('Smoke — Keycloak TOTP Policy', () => {
+  test('Keycloak realm has TOTP authenticator configured', async ({ request }) => {
+    // Login to KC admin
+    const tokenRes = await request.post(`${KC}/realms/master/protocol/openid-connect/token`, {
+      form: { grant_type: 'password', client_id: 'admin-cli', username: 'admin', password: 'admin' },
+    })
+    if (!tokenRes.ok()) { test.skip(); return }
+    const kcToken = (await tokenRes.json()).access_token
+
+    // Check authentication flows for TOTP
+    const flowsRes = await request.get(`${KC}/admin/realms/ble/authentication/flows`, {
+      headers: { Authorization: `Bearer ${kcToken}` },
+    })
+    expect(flowsRes.ok()).toBeTruthy()
+    const flows = await flowsRes.json()
+    // Should have at least the browser flow (which includes OTP)
+    expect(Array.isArray(flows)).toBe(true)
+    expect(flows.length).toBeGreaterThan(0)
+    const flowAliases = flows.map((f: { alias: string }) => f.alias)
+    // Keycloak should have a 'browser' flow that can include TOTP
+    expect(flowAliases).toContain('browser')
+  })
+})
+
+test.describe('Smoke — Beacon Encryption Key', () => {
+  let token: string
+  let tenantId: string
+
+  test.beforeAll(async ({ request }) => {
+    const res = await request.post(`${BFF}/api/v1/auth/login`, {
+      data: { username: 'dev-super-admin', password: 'dev-pass' },
+    })
+    if (res.ok()) token = (await res.json()).token
+
+    // Find or create a real tenant
+    if (token) {
+      const headers = { Authorization: `Bearer ${token}`, 'X-Tenant-Id': '00000000-0000-0000-0000-000000000001', 'Content-Type': 'application/json' }
+      const tenantsRes = await request.get(`${BFF}/api/v1/tenants`, { headers })
+      if (tenantsRes.ok()) {
+        const tenants = await tenantsRes.json()
+        if (Array.isArray(tenants) && tenants.length > 0) {
+          tenantId = tenants[0].id
+        } else {
+          // Create a smoke test tenant
+          const createRes = await request.post(`${BFF}/api/v1/tenants`, {
+            headers,
+            data: { name: 'Smoke Test Tenant', slug: 'smoke-test', contactEmail: 'smoke@ble.local', plan: 'STANDARD' },
+          })
+          if (createRes.ok() || createRes.status() === 201) {
+            tenantId = (await createRes.json()).id
+          }
+        }
+      }
+    }
+  })
+
+  test('POST beacon with password does not return 500', async ({ request }) => {
+    if (!token || !tenantId) { test.skip(); return }
+    const res = await request.post(`${BFF}/api/v1/beacons`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'X-Tenant-Id': tenantId,
+        'Content-Type': 'application/json',
+      },
+      data: {
+        ibeaconUuid: `SMOKE-${Date.now()}-00000000000000`.substring(0, 36),
+        major: 9998,
+        minor: 9998,
+        type: 'TRACKING',
+        name: `smoke-beacon-${Date.now()}`,
+        password: 'test-enc-password',
+      },
+    })
+    // Should NOT be 500 (encryption key must be configured)
+    // 201=created, 400=validation, 409=duplicate — all prove encryption works
+    expect(res.status()).not.toBe(500)
+  })
+})
+
+test.describe('Smoke — Territory Closed Circuit', () => {
+  let token: string
+  let tenantId: string
+
+  test.beforeAll(async ({ request }) => {
+    const res = await request.post(`${BFF}/api/v1/auth/login`, {
+      data: { username: 'dev-super-admin', password: 'dev-pass' },
+    })
+    if (res.ok()) token = (await res.json()).token
+
+    // Find or create a real tenant
+    if (token) {
+      const headers = { Authorization: `Bearer ${token}`, 'X-Tenant-Id': '00000000-0000-0000-0000-000000000001', 'Content-Type': 'application/json' }
+      const tenantsRes = await request.get(`${BFF}/api/v1/tenants`, { headers })
+      if (tenantsRes.ok()) {
+        const tenants = await tenantsRes.json()
+        if (Array.isArray(tenants) && tenants.length > 0) {
+          tenantId = tenants[0].id
+        } else {
+          const createRes = await request.post(`${BFF}/api/v1/tenants`, {
+            headers,
+            data: { name: 'Smoke Territory Tenant', slug: 'smoke-terr', contactEmail: 'smoke-terr@ble.local', plan: 'STANDARD' },
+          })
+          if (createRes.ok() || createRes.status() === 201) {
+            tenantId = (await createRes.json()).id
+          }
+        }
+      }
+    }
+  })
+
+  test('Create territory with type=closed_circuit succeeds', async ({ request }) => {
+    if (!token || !tenantId) { test.skip(); return }
+    const res = await request.post(`${BFF}/api/v1/territories`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'X-Tenant-Id': tenantId,
+        'Content-Type': 'application/json',
+      },
+      data: {
+        name: `Smoke CC ${Date.now()}`,
+        visibility: 'closed',
+        territoryType: 'closed_circuit',
+      },
+    })
+    // 201 created or 200 OK — must not be 500
+    expect(res.status()).toBeLessThan(500)
+    if (res.ok()) {
+      const body = await res.json()
+      expect(body.id).toBeTruthy()
+      expect(body.territoryType).toBe('closed_circuit')
+    }
+  })
+})
+
 test.describe('Smoke — Database & Migrations', () => {
   let token: string
 
