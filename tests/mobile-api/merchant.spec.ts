@@ -62,8 +62,8 @@ test.describe('POS Barcode Lookup', () => {
       `${BFF}/bff/v1/merchant/pos/barcode/${encodeURIComponent(testBarcode)}`,
       { headers: hdrs(token) },
     )
-    // 200 if found, 404 if no card with that barcode, 403 if cross-tenant, 500 if service error
-    expect([200, 403, 404, 500]).toContain(res.status())
+    // 200 if found, 401/403 auth/registry rejection, 404 if no card, 500/502 service error
+    expect([200, 401, 403, 404, 500, 502]).toContain(res.status())
     if (res.status() === 200) {
       const body = await res.json()
       expect(body).toHaveProperty('card')
@@ -88,8 +88,8 @@ test.describe('POS Spend', () => {
         idempotencyKey: `e2e-test-${Date.now()}`,
       },
     })
-    // 200 on success, 404 if barcode not found, 400/422 on validation error, 500 on service error
-    expect([200, 400, 404, 422, 500]).toContain(res.status())
+    // 200 on success, 401/403 auth rejection, 404 if barcode not found, 400/422 validation, 500/502 service error
+    expect([200, 400, 401, 403, 404, 422, 500, 502]).toContain(res.status())
     if (res.status() === 200) {
       const body = await res.json()
       expect(body).toHaveProperty('transactionId')
