@@ -1,19 +1,28 @@
-appId: com.ble.merchant
+appId: host.exp.exponent
 ---
-# Merchant Mobile — Login flow
+# Merchant Mobile — Login flow (Expo Go on emulator)
 # Source: ble-merchant-mobile/app/login.tsx
 #
-# Login screen layout:
-#   Title: "BLE Merchant"
-#   Subtitle: "Merchant portal"
-#   Input: placeholder "Email" (email-address keyboard)
-#   Input: placeholder "Password" (secureTextEntry)
-#   Button: "Sign in"
+# Prerequisites:
+#   - Expo dev server running: EXPO_PUBLIC_GATEWAY_URL=http://10.0.2.2:8080 npx expo start --port 19010
+#   - BFF stack running on localhost:8080
 
-- launchApp
+# Dismiss any ANR dialogs
+- runFlow:
+    when:
+      visible: "Wait"
+    commands:
+      - tapOn: "Wait"
 
-# Verify login screen is visible
-- assertVisible: "BLE Merchant"
+# Open the merchant-mobile bundle in Expo Go
+- openLink: "exp://10.0.2.2:19010"
+
+# Wait for JS bundle to load and render login screen
+- extendedWaitUntil:
+    visible: "BLE Merchant"
+    timeout: 30000
+
+# Verify login screen elements
 - assertVisible: "Merchant portal"
 
 # Enter credentials
@@ -28,8 +37,7 @@ appId: com.ble.merchant
 # Submit login
 - tapOn: "Sign in"
 
-# Wait for login to complete — merchant app home tab is "Home" (Dashboard)
-# Tab bar: Home | Health | Beacons | POS | Billing | Report
-- assertVisible:
-    text: "Home"
-    timeout: 15000
+# Wait for login to complete — merchant app shows dashboard
+- extendedWaitUntil:
+    visible: "Home"
+    timeout: 20000
