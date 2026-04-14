@@ -1,22 +1,19 @@
-appId: host.exp.exponent
+appId: com.terrio.consumer
 ---
 # Consumer Mobile — Login flow + immediate navigation verification
-# Validates BUG-003 fix: login must navigate without manual refresh
+# Validates BUG-003 fix: login must navigate WITHOUT manual refresh
 
-- runFlow:
-    when:
-      visible: "Wait"
-    commands:
-      - tapOn: "Wait"
+- launchApp:
+    clearState: true
 
-- openLink: "exp://10.0.2.2:19000"
-
+# Wait for login screen to load
 - extendedWaitUntil:
-    visible: "BLE"
+    visible: "TERRIO"
     timeout: 30000
 
 - assertVisible: "Discover nearby offers"
 
+# Enter credentials
 - tapOn:
     text: "Email"
 - inputText: "dev-consumer"
@@ -25,9 +22,10 @@ appId: host.exp.exponent
     text: "Password"
 - inputText: "dev-pass"
 
+# Submit login
 - tapOn: "Sign in"
 
-# BUG-003: This MUST succeed within 8s (no manual refresh needed on iOS)
+# BUG-003: login must navigate within 8 seconds (no manual refresh needed)
 - extendedWaitUntil:
     visible: "Nearby"
     timeout: 8000

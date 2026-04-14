@@ -1,0 +1,57 @@
+appId: com.terrio.salesagent
+---
+# Sales Agent Mobile — Full tab navigation
+# Tab bar: Home | Richieste | Merchant | Royalties | Beacon | Profilo
+
+- launchApp:
+    clearState: true
+
+- extendedWaitUntil:
+    visible: "Terrio"
+    timeout: 30000
+
+- tapOn:
+    id: "username-input"
+- inputText: "dev-sales-agent"
+- tapOn:
+    id: "password-input"
+- inputText: "dev-pass"
+- tapOn:
+    id: "login-btn"
+
+- extendedWaitUntil:
+    visible: "Home"
+    timeout: 8000
+
+# ── Tab navigation ─────────────────────────────────────────────────────────
+
+- tapOn: "Richieste"
+- extendedWaitUntil:
+    visible: "Richieste"
+    timeout: 5000
+
+- tapOn: "Merchant"
+- extendedWaitUntil:
+    visible: "Merchant"
+    timeout: 5000
+
+- tapOn: "Royalties"
+- extendedWaitUntil:
+    visible: "Royalties"
+    timeout: 5000
+
+- tapOn: "Beacon"
+- extendedWaitUntil:
+    visible: "Beacon"
+    timeout: 5000
+
+- tapOn: "Profilo"
+- extendedWaitUntil:
+    visible: "Profilo"
+    timeout: 5000
+
+# Return to home
+- tapOn: "Home"
+- extendedWaitUntil:
+    visible: "Dashboard"
+    timeout: 5000

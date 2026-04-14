@@ -1,67 +1,56 @@
-appId: com.terrio.consumer
+appId: com.terrio.tenant
 ---
-# Consumer Mobile — Full navigation flow
-# Tab bar: Nearby | Wallet | Discover | History | Territory | Prefs | Offers | Profilo
+# Tenant Mobile — Full tab navigation
+# Tab bar: Home | Territories | Beacons | Theme | Settings | Report
 
 - launchApp:
     clearState: true
 
 - extendedWaitUntil:
-    visible: "TERRIO"
+    visible: "TERRIO Tenant"
     timeout: 30000
 
-# Login
 - tapOn:
     text: "Email"
-- inputText: "dev-consumer"
+- inputText: "dev-tenant-admin"
 - tapOn:
     text: "Password"
 - inputText: "dev-pass"
 - tapOn: "Sign in"
 
 - extendedWaitUntil:
-    visible: "Nearby"
+    visible: "Home"
     timeout: 8000
 
 # ── Tab navigation ─────────────────────────────────────────────────────────
 
-- tapOn: "Wallet"
+- tapOn: "Territories"
 - extendedWaitUntil:
-    visible: "Wallet"
+    visible: "Territories"
     timeout: 5000
 
-- tapOn: "Discover"
+- tapOn: "Beacons"
 - extendedWaitUntil:
-    visible: "Discover"
+    visible: "Beacons"
     timeout: 5000
 
-- tapOn: "History"
+- tapOn: "Theme"
 - extendedWaitUntil:
-    visible: "History"
+    visible: "White-label"
     timeout: 5000
 
-- tapOn: "Territory"
+- tapOn: "Settings"
 - extendedWaitUntil:
-    visible: "Territory"
+    visible: "Settings"
     timeout: 5000
 
-- tapOn: "Profilo"
+- tapOn: "Report"
 - extendedWaitUntil:
-    visible: "Profilo"
-    timeout: 5000
-
-- tapOn: "Offers"
-- extendedWaitUntil:
-    visible: "Notifications"
-    timeout: 5000
-
-- tapOn: "Prefs"
-- extendedWaitUntil:
-    visible: "Preferences"
+    visible: "Report Bug"
     timeout: 5000
 
 # Return to home
-- tapOn: "Nearby"
+- tapOn: "Home"
 - extendedWaitUntil:
-    visible: "Nearby"
+    visible: "Home"
     timeout: 5000

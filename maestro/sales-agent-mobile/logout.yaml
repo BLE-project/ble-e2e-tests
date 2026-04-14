@@ -1,6 +1,6 @@
 appId: com.terrio.salesagent
 ---
-# Sales Agent Mobile — Registration Requests flow + status filters
+# Sales Agent Mobile — Logout flow
 
 - launchApp:
     clearState: true
@@ -22,16 +22,23 @@ appId: com.terrio.salesagent
     visible: "Home"
     timeout: 8000
 
-# Navigate to Richieste tab
-- tapOn: "Richieste"
+- tapOn: "Profilo"
 - extendedWaitUntil:
-    visible: "Richieste"
+    visible: "Profilo"
     timeout: 5000
 
-# Test status filters
-- assertVisible: "PENDING"
-- tapOn: "ALL"
-- tapOn: "IN_REVIEW"
-- tapOn: "APPROVED"
-- tapOn: "REJECTED"
-- tapOn: "PENDING"
+- runFlow:
+    when:
+      visible: "Logout"
+    commands:
+      - tapOn: "Logout"
+
+- runFlow:
+    when:
+      visible: "Esci"
+    commands:
+      - tapOn: "Esci"
+
+- extendedWaitUntil:
+    visible: "Agente Commerciale"
+    timeout: 8000

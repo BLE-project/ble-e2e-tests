@@ -1,31 +1,16 @@
-appId: host.exp.exponent
+appId: com.terrio.merchant
 ---
-# Merchant Mobile — Login flow (Expo Go on emulator)
-# Source: ble-merchant-mobile/app/login.tsx
-#
-# Prerequisites:
-#   - Expo dev server running: EXPO_PUBLIC_GATEWAY_URL=http://10.0.2.2:8080 npx expo start --port 19010
-#   - BFF stack running on localhost:8080
+# Merchant Mobile — Login flow + BUG-003 verification
 
-# Dismiss any ANR dialogs
-- runFlow:
-    when:
-      visible: "Wait"
-    commands:
-      - tapOn: "Wait"
+- launchApp:
+    clearState: true
 
-# Open the merchant-mobile bundle in Expo Go
-- openLink: "exp://10.0.2.2:19010"
-
-# Wait for JS bundle to load and render login screen
 - extendedWaitUntil:
-    visible: "BLE Merchant"
+    visible: "TERRIO Merchant"
     timeout: 30000
 
-# Verify login screen elements
 - assertVisible: "Merchant portal"
 
-# Enter credentials
 - tapOn:
     text: "Email"
 - inputText: "dev-merchant"
@@ -34,10 +19,9 @@ appId: host.exp.exponent
     text: "Password"
 - inputText: "dev-pass"
 
-# Submit login
 - tapOn: "Sign in"
 
-# Wait for login to complete — merchant app shows dashboard
+# BUG-003: login must navigate within 8s
 - extendedWaitUntil:
     visible: "Home"
-    timeout: 20000
+    timeout: 8000

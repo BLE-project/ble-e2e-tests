@@ -1,0 +1,57 @@
+appId: com.terrio.consumer
+---
+# Consumer Mobile — BLE beacon scanning flow
+# Requires physical iBeacon devices in range (Holy-IOT or similar)
+# Verifies the app detects and displays nearby beacons.
+
+- launchApp:
+    clearState: true
+
+- extendedWaitUntil:
+    visible: "TERRIO"
+    timeout: 30000
+
+# Login
+- tapOn:
+    text: "Email"
+- inputText: "dev-consumer"
+- tapOn:
+    text: "Password"
+- inputText: "dev-pass"
+- tapOn: "Sign in"
+
+- extendedWaitUntil:
+    visible: "Nearby"
+    timeout: 10000
+
+# Grant Bluetooth permission if dialog appears
+- runFlow:
+    when:
+      visible: "Allow"
+    commands:
+      - tapOn: "Allow"
+
+# Grant Location permission (required for BLE scan on Android)
+- runFlow:
+    when:
+      visible: "While using the app"
+    commands:
+      - tapOn: "While using the app"
+
+- runFlow:
+    when:
+      visible: "Precise"
+    commands:
+      - tapOn: "Precise"
+      - tapOn: "While using the app"
+
+# Wait for beacon scan results to populate (scanner runs 2s ON / 8s OFF)
+# Up to 30s for at least one beacon detection
+- extendedWaitUntil:
+    visible:
+      text: "Holy-IOT|Beacon|Tenant|offer"
+      enabled: true
+    timeout: 30000
+
+# Verify we're still on Nearby tab after scan
+- assertVisible: "Nearby"

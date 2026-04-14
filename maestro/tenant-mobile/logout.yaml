@@ -1,6 +1,6 @@
 appId: com.terrio.tenant
 ---
-# Tenant Mobile — Beacon list navigation + create modal flow
+# Tenant Mobile — Logout flow
 
 - launchApp:
     clearState: true
@@ -21,20 +21,23 @@ appId: com.terrio.tenant
     visible: "Home"
     timeout: 8000
 
-# Navigate to Beacons tab
-- tapOn: "Beacons"
+- tapOn: "Settings"
 - extendedWaitUntil:
-    visible: "Beacon Registry"
+    visible: "Settings"
     timeout: 5000
 
-# Open create modal
-- tapOn: "+ Add"
-- extendedWaitUntil:
-    visible: "New Beacon"
-    timeout: 5000
+- runFlow:
+    when:
+      visible: "Logout"
+    commands:
+      - tapOn: "Logout"
 
-# Cancel to test modal dismissal
-- tapOn: "Cancel"
+- runFlow:
+    when:
+      visible: "Esci"
+    commands:
+      - tapOn: "Esci"
+
 - extendedWaitUntil:
-    visible: "Beacon Registry"
-    timeout: 5000
+    visible: "Tenant admin portal"
+    timeout: 8000

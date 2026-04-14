@@ -1,0 +1,47 @@
+appId: com.terrio.consumer
+---
+# Consumer Mobile — Logout flow
+# Login → navigate to Profilo → tap Logout → verify back to login screen
+
+- launchApp:
+    clearState: true
+
+- extendedWaitUntil:
+    visible: "TERRIO"
+    timeout: 30000
+
+- tapOn:
+    text: "Email"
+- inputText: "dev-consumer"
+- tapOn:
+    text: "Password"
+- inputText: "dev-pass"
+- tapOn: "Sign in"
+
+- extendedWaitUntil:
+    visible: "Nearby"
+    timeout: 8000
+
+# Go to Profilo tab
+- tapOn: "Profilo"
+- extendedWaitUntil:
+    visible: "Profilo"
+    timeout: 5000
+
+# Tap logout (if exists — app may use different label)
+- runFlow:
+    when:
+      visible: "Logout"
+    commands:
+      - tapOn: "Logout"
+
+- runFlow:
+    when:
+      visible: "Esci"
+    commands:
+      - tapOn: "Esci"
+
+# After logout we should see login screen again
+- extendedWaitUntil:
+    visible: "Discover nearby offers"
+    timeout: 8000

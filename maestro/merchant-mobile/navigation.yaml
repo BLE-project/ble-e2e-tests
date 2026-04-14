@@ -1,67 +1,61 @@
-appId: com.terrio.consumer
+appId: com.terrio.merchant
 ---
-# Consumer Mobile — Full navigation flow
-# Tab bar: Nearby | Wallet | Discover | History | Territory | Prefs | Offers | Profilo
+# Merchant Mobile — Full tab navigation
+# Tab bar: Home | Health | Beacons | POS | Billing | Cashback | Report
 
 - launchApp:
     clearState: true
 
 - extendedWaitUntil:
-    visible: "TERRIO"
+    visible: "TERRIO Merchant"
     timeout: 30000
 
-# Login
 - tapOn:
     text: "Email"
-- inputText: "dev-consumer"
+- inputText: "dev-merchant"
 - tapOn:
     text: "Password"
 - inputText: "dev-pass"
 - tapOn: "Sign in"
 
 - extendedWaitUntil:
-    visible: "Nearby"
+    visible: "Home"
     timeout: 8000
 
 # ── Tab navigation ─────────────────────────────────────────────────────────
 
-- tapOn: "Wallet"
+- tapOn: "Health"
 - extendedWaitUntil:
-    visible: "Wallet"
+    visible: "Health"
     timeout: 5000
 
-- tapOn: "Discover"
+- tapOn: "Beacons"
 - extendedWaitUntil:
-    visible: "Discover"
+    visible: "Beacons"
     timeout: 5000
 
-- tapOn: "History"
+- tapOn: "POS"
 - extendedWaitUntil:
-    visible: "History"
+    visible: "Loyalty POS"
     timeout: 5000
 
-- tapOn: "Territory"
+- tapOn: "Billing"
 - extendedWaitUntil:
-    visible: "Territory"
+    visible: "Billing"
     timeout: 5000
 
-- tapOn: "Profilo"
+- tapOn: "Cashback"
 - extendedWaitUntil:
-    visible: "Profilo"
+    visible: "Cashback"
     timeout: 5000
 
-- tapOn: "Offers"
+- tapOn: "Report"
 - extendedWaitUntil:
-    visible: "Notifications"
-    timeout: 5000
-
-- tapOn: "Prefs"
-- extendedWaitUntil:
-    visible: "Preferences"
+    visible: "Report Bug"
     timeout: 5000
 
 # Return to home
-- tapOn: "Nearby"
+- tapOn: "Home"
 - extendedWaitUntil:
-    visible: "Nearby"
+    visible: "Dashboard"
     timeout: 5000
