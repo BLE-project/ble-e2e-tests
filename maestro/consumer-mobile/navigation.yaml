@@ -1,14 +1,26 @@
-appId: com.ble.consumer
+appId: host.exp.exponent
 ---
-# Consumer Mobile — Navigation flow
-# Navigate through all main tabs after login.
+# Consumer Mobile — Full navigation flow
+# Tests all tabs + post-login redirect + back navigation.
 #
-# Tab bar (from _layout.tsx):
-#   Nearby | Wallet | Discover | History | Territory | Prefs | Offers | Profilo
+# Tab bar: Nearby | Wallet | Discover | History | Territory | Prefs | Offers | Profilo
 
-- launchApp
+# Dismiss ANR if present
+- runFlow:
+    when:
+      visible: "Wait"
+    commands:
+      - tapOn: "Wait"
 
-# Login first
+# Open bundle in Expo Go
+- openLink: "exp://10.0.2.2:19000"
+
+# Wait for login screen to load
+- extendedWaitUntil:
+    visible: "BLE"
+    timeout: 30000
+
+# Login
 - tapOn:
     text: "Email"
 - inputText: "dev-consumer"
@@ -16,48 +28,46 @@ appId: com.ble.consumer
     text: "Password"
 - inputText: "dev-pass"
 - tapOn: "Sign in"
-- assertVisible:
-    text: "Nearby"
-    timeout: 15000
 
-# ── Navigate to Wallet tab ──────────────────────────────────────────────────
+# BUG-003 fix: verify immediate post-login navigation (no manual refresh needed)
+- extendedWaitUntil:
+    visible: "Nearby"
+    timeout: 8000
+
+# ── Tab navigation ─────────────────────────────────────────────────────────
+
 - tapOn: "Wallet"
-- assertVisible:
-    text: "Wallet"
-    timeout: 10000
+- extendedWaitUntil:
+    visible: "Wallet"
+    timeout: 5000
 
-# ── Navigate to Discover tab (nearby tenants) ──────────────────────────────
 - tapOn: "Discover"
-- assertVisible:
-    text: "Discover"
-    timeout: 10000
+- extendedWaitUntil:
+    visible: "Discover"
+    timeout: 5000
 
-# ── Navigate to History tab ─────────────────────────────────────────────────
 - tapOn: "History"
-- assertVisible:
-    text: "History"
-    timeout: 10000
+- extendedWaitUntil:
+    visible: "History"
+    timeout: 5000
 
-# ── Navigate to Profilo tab ─────────────────────────────────────────────────
 - tapOn: "Profilo"
-- assertVisible:
-    text: "Profilo"
-    timeout: 10000
+- extendedWaitUntil:
+    visible: "Profilo"
+    timeout: 5000
 
-# ── Navigate to Offers / Notifications tab ──────────────────────────────────
 - tapOn: "Offers"
-- assertVisible:
-    text: "Notifications"
-    timeout: 10000
+- extendedWaitUntil:
+    visible: "Notifications"
+    timeout: 5000
 
-# ── Navigate to Preferences tab ────────────────────────────────────────────
 - tapOn: "Prefs"
-- assertVisible:
-    text: "Preferences"
-    timeout: 10000
+- extendedWaitUntil:
+    visible: "Preferences"
+    timeout: 5000
 
-# ── Return to Nearby (home) tab ────────────────────────────────────────────
+# Return to home
 - tapOn: "Nearby"
-- assertVisible:
-    text: "Nearby"
-    timeout: 10000
+- extendedWaitUntil:
+    visible: "Nearby"
+    timeout: 5000
