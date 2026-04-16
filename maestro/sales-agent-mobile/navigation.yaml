@@ -4,24 +4,40 @@ appId: com.terrio.salesagent
 # Tab bar: Home | Richieste | Merchant | Royalties | Beacon | Profilo
 
 - launchApp:
-    clearState: true
+    stopApp: true
 
 - extendedWaitUntil:
-    visible: "Terrio"
+    visible:
+      text: "Terrio|Agente Commerciale|Dashboard"
     timeout: 30000
 
-- tapOn:
-    id: "username-input"
-- inputText: "dev-sales-agent"
-- tapOn:
-    id: "password-input"
-- inputText: "dev-pass"
-- tapOn:
-    id: "login-btn"
+# Previous flows may have persisted auth tokens in SecureStore. Only run
+# the login steps if the login screen is actually showing.
+- runFlow:
+    when:
+      visible: "Agente Commerciale"
+    commands:
+      - tapOn:
+          id: "username-input"
+      - inputText: "dev-sales-agent"
+      - hideKeyboard
+      - tapOn:
+          id: "password-input"
+      - inputText: "dev-pass"
+      - hideKeyboard
+      - tapOn:
+          id: "login-btn"
+      - extendedWaitUntil:
+          visible: "Dashboard"
+          timeout: 10000
 
-- extendedWaitUntil:
-    visible: "Home"
-    timeout: 8000
+# Gboard's clipboard suggestion panel can linger after inputText and cover
+# the bottom tab bar. Dismiss it if present before interacting with tabs.
+- runFlow:
+    when:
+      visible: "Clipboard"
+    commands:
+      - pressKey: Back
 
 # ── Tab navigation ─────────────────────────────────────────────────────────
 

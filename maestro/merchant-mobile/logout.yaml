@@ -3,38 +3,41 @@ appId: com.terrio.merchant
 # Merchant Mobile — Logout flow
 
 - launchApp:
-    clearState: true
+    stopApp: true
 
+# Warm launches skip the splash and boot directly into Dashboard.
 - extendedWaitUntil:
-    visible: "TERRIO Merchant"
+    visible:
+      text: "TERRIO Merchant|Merchant portal|Dashboard"
     timeout: 30000
 
-- tapOn:
-    text: "Email"
-- inputText: "dev-merchant"
-- tapOn:
-    text: "Password"
-- inputText: "dev-pass"
-- tapOn: "Sign in"
+# Previous flows may have persisted auth tokens in SecureStore. Only run
+# the login steps if the login screen is actually showing.
+- runFlow:
+    when:
+      visible: "Merchant portal"
+    commands:
+      - tapOn:
+          text: "Email"
+      - inputText: "dev-merchant"
+      - hideKeyboard
+      - tapOn:
+          text: "Password"
+      - inputText: "dev-pass"
+      - hideKeyboard
+      - tapOn: "Sign in"
+      - extendedWaitUntil:
+          visible: "Dashboard"
+          timeout: 8000
 
-- extendedWaitUntil:
-    visible: "Home"
-    timeout: 8000
-
-# Navigate to Home and find logout
+# Navigate to Home tab (Dashboard) — the logout button "Sign out" lives in
+# the welcome header band there.
 - tapOn: "Home"
+- extendedWaitUntil:
+    visible: "Dashboard"
+    timeout: 5000
 
-- runFlow:
-    when:
-      visible: "Logout"
-    commands:
-      - tapOn: "Logout"
-
-- runFlow:
-    when:
-      visible: "Esci"
-    commands:
-      - tapOn: "Esci"
+- tapOn: "Sign out"
 
 # Back to login
 - extendedWaitUntil:

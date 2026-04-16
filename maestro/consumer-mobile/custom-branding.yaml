@@ -1,0 +1,90 @@
+appId: com.terrio.consumer
+---
+# Consumer Mobile — Custom branding verification (Fase 4.3)
+#
+# Verifies that the consumer app picks up the tenant's custom branding
+# row (FEAT-BRAND-001) and re-themes the UI end-to-end:
+#   fixture → PUT /api/v1/tenants/{id}/branding
+#   consumer app → GET /bff/v1/consumer/brand → BrandingContext → useTheme
+#   visible brand-tag chip on the Nearby header
+#
+# Prerequisites:
+#   Run `npx tsx fixtures/seed-custom-branding-fixtures.ts` BEFORE this
+#   flow (run-all.sh handles it automatically). The fixture PUTs the
+#   canonical "E2E Brand" payload on the E2E tenant's branding row.
+#
+# What this flow asserts:
+#   1. Cold-start boots cleanly (no crash from useTheme() reading an
+#      empty BrandingContext).
+#   2. Login succeeds.
+#   3. On the Nearby screen (index.tsx), the testID="brand-tag" element
+#      becomes visible with text "E2E Brand" — proving the round-trip
+#      fixture → API → context → UI works.
+#
+# What this flow does NOT assert:
+#   Exact hex colors in the rendered tree (Maestro has no DOM color
+#   introspection). A manual visual pass or a future screenshot-diff
+#   harness would catch those.
+
+- launchApp:
+    stopApp: true
+
+# Wait for login screen to load — same sentinel the login flow uses.
+- extendedWaitUntil:
+    visible: "TERRIO"
+    timeout: 30000
+
+- assertVisible: "Discover nearby offers"
+
+# ── Login ───────────────────────────────────────────────────────────────
+- tapOn:
+    text: "Email"
+- inputText: "dev-consumer"
+- hideKeyboard
+
+- tapOn:
+    text: "Password"
+- inputText: "dev-pass"
+- hideKeyboard
+
+- tapOn: "Sign in"
+
+# Wait for Nearby tab to be reachable.
+- extendedWaitUntil:
+    visible: "Nearby"
+    timeout: 10000
+
+# Some devices surface a clipboard permission sheet on first input —
+# dismiss it if present so it doesn't block our assertion below.
+- runFlow:
+    when:
+      visible: "Clipboard"
+    commands:
+      - pressKey: Back
+
+# Make sure we're actually on the Nearby screen.
+- tapOn: "Nearby"
+- extendedWaitUntil:
+    visible: "Nearby"
+    timeout: 5000
+
+# ── Brand tag assertion ─────────────────────────────────────────────────
+#
+# The testID="brand-tag" element is rendered by app/(app)/index.tsx only
+# when theme.appName is non-null. Since the fixture sets
+# appNameOverride="E2E Brand", the chip must be visible with that text.
+#
+# A 15s window gives BrandingProvider time to:
+#   - fetch /bff/v1/consumer/brand after the tenant context is resolved
+#   - push the resolved branding through React state
+#   - re-render the Nearby header with the new chip
+- extendedWaitUntil:
+    visible:
+      id: "brand-tag"
+    timeout: 15000
+
+- assertVisible: "E2E Brand"
+
+# Sanity: the "Nearby" screen title is still visible (we did not replace
+# it, only added the chip beside it).
+- assertVisible: "Nearby"

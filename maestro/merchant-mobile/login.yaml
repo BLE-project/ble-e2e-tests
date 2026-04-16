@@ -3,7 +3,7 @@ appId: com.terrio.merchant
 # Merchant Mobile — Login flow + BUG-003 verification
 
 - launchApp:
-    clearState: true
+    stopApp: true
 
 - extendedWaitUntil:
     visible: "TERRIO Merchant"

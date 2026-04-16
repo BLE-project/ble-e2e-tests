@@ -1,47 +1,52 @@
 appId: com.terrio.consumer
 ---
 # Consumer Mobile — Logout flow
-# Login → navigate to Profilo → tap Logout → verify back to login screen
+# The "Sign out" button lives on the Home (Nearby) tab header, not on
+# Profilo. Navigate there, tap Sign out, verify return to login screen.
 
 - launchApp:
-    clearState: true
+    stopApp: true
 
 - extendedWaitUntil:
-    visible: "TERRIO"
+    visible:
+      text: "TERRIO|Discover nearby offers|Nearby"
     timeout: 30000
 
-- tapOn:
-    text: "Email"
-- inputText: "dev-consumer"
-- tapOn:
-    text: "Password"
-- inputText: "dev-pass"
-- tapOn: "Sign in"
+# Previous flows may have persisted auth tokens in SecureStore. Only run
+# the login steps if the login screen is actually showing.
+- runFlow:
+    when:
+      visible: "Discover nearby offers"
+    commands:
+      - tapOn:
+          text: "Email"
+      - inputText: "dev-consumer"
+      - hideKeyboard
+      - tapOn:
+          text: "Password"
+      - inputText: "dev-pass"
+      - hideKeyboard
+      - tapOn: "Sign in"
+      - extendedWaitUntil:
+          visible: "Nearby"
+          timeout: 10000
 
-- extendedWaitUntil:
-    visible: "Nearby"
-    timeout: 8000
+# Dismiss Gboard clipboard overlay if still covering the bottom of screen.
+- runFlow:
+    when:
+      visible: "Clipboard"
+    commands:
+      - pressKey: Back
 
-# Go to Profilo tab
-- tapOn: "Profilo"
+# Ensure we're on the Nearby/Home tab where "Sign out" lives.
+- tapOn: "Nearby"
 - extendedWaitUntil:
-    visible: "Profilo"
+    visible: "Sign out"
     timeout: 5000
 
-# Tap logout (if exists — app may use different label)
-- runFlow:
-    when:
-      visible: "Logout"
-    commands:
-      - tapOn: "Logout"
+- tapOn: "Sign out"
 
-- runFlow:
-    when:
-      visible: "Esci"
-    commands:
-      - tapOn: "Esci"
-
-# After logout we should see login screen again
+# After logout we should see login screen again.
 - extendedWaitUntil:
     visible: "Discover nearby offers"
     timeout: 8000

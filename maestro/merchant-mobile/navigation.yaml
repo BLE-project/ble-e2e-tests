@@ -4,23 +4,33 @@ appId: com.terrio.merchant
 # Tab bar: Home | Health | Beacons | POS | Billing | Cashback | Report
 
 - launchApp:
-    clearState: true
+    stopApp: true
 
+# Warm launches skip the splash and boot directly into Dashboard, so accept
+# any of: splash brand, login screen, or post-login Dashboard as "ready".
 - extendedWaitUntil:
-    visible: "TERRIO Merchant"
+    visible:
+      text: "TERRIO Merchant|Merchant portal|Dashboard"
     timeout: 30000
 
-- tapOn:
-    text: "Email"
-- inputText: "dev-merchant"
-- tapOn:
-    text: "Password"
-- inputText: "dev-pass"
-- tapOn: "Sign in"
-
-- extendedWaitUntil:
-    visible: "Home"
-    timeout: 8000
+# Previous flows may have persisted auth tokens in SecureStore. Only run
+# the login steps if the login screen is actually showing.
+- runFlow:
+    when:
+      visible: "Merchant portal"
+    commands:
+      - tapOn:
+          text: "Email"
+      - inputText: "dev-merchant"
+      - hideKeyboard
+      - tapOn:
+          text: "Password"
+      - inputText: "dev-pass"
+      - hideKeyboard
+      - tapOn: "Sign in"
+      - extendedWaitUntil:
+          visible: "Dashboard"
+          timeout: 8000
 
 # ── Tab navigation ─────────────────────────────────────────────────────────
 

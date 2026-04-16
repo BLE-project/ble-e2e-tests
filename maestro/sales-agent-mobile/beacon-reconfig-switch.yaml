@@ -1,0 +1,117 @@
+appId: com.terrio.salesagent
+---
+# Fase 3.0b.6: Sales Agent Mobile — Beacon reconfigure + territory switch
+#
+# Preconditions (seeded by `fixtures/seed-dual-territory-fixtures.ts`):
+#   - Tenant:    "E2E Dev Tenant"
+#   - Territories: "E2E Territory A (Alpha)" and "E2E Territory B (Beta)"
+#   - Beacons:   "E2E Alpha Beacon" in A, "E2E Beta Beacon" in B
+#
+# What this flow exercises:
+#   1. Login as sales agent (conditional — skipped when SecureStore already has a token)
+#   2. Navigate to the Beacon tab → beacon-config screen
+#   3. Assert both seeded beacons are visible
+#   4. Open the reconfigure modal on the Alpha beacon
+#   5. Switch its territory from "E2E Territory A (Alpha)" to "E2E Territory B (Beta)"
+#   6. Tap the Randomize button so the new identity triple can't collide with Beta
+#   7. Save and verify the success alert
+#   8. Assert the Alpha card now shows "Territory: E2E Territory B (Beta)"
+
+- launchApp:
+    stopApp: true
+
+- extendedWaitUntil:
+    visible:
+      text: "Terrio|Agente Commerciale|Dashboard"
+    timeout: 30000
+
+# Conditional login — skip if a previous flow already authenticated us.
+- runFlow:
+    when:
+      visible: "Agente Commerciale"
+    commands:
+      - tapOn:
+          id: "username-input"
+      - inputText: "dev-sales-agent"
+      - hideKeyboard
+      - tapOn:
+          id: "password-input"
+      - inputText: "dev-pass"
+      - hideKeyboard
+      - tapOn:
+          id: "login-btn"
+      - extendedWaitUntil:
+          visible: "Dashboard"
+          timeout: 10000
+
+# Dismiss Gboard clipboard panel if it's still covering the tab bar.
+- runFlow:
+    when:
+      visible: "Clipboard"
+    commands:
+      - pressKey: Back
+
+# ── Navigate to Beacon tab ──────────────────────────────────────────────────
+
+- tapOn: "Beacon"
+- extendedWaitUntil:
+    visible: "Beacon Configuration"
+    timeout: 8000
+
+# Both seeded beacons must be visible before we start reconfiguring.
+- assertVisible: "E2E Alpha Beacon"
+- assertVisible: "E2E Beta Beacon"
+
+# ── Open the reconfigure modal on the Alpha beacon ─────────────────────────
+#
+# "Reconfigure" appears on every beacon card, so we target the button that
+# lives in the same container as the "E2E Alpha Beacon" title. Maestro's
+# `containerDescendants` resolves the closest ancestor that has the matching
+# child, then picks the first tappable Reconfigure inside it.
+
+- tapOn:
+    text: "Reconfigure"
+    containerDescendants:
+      - "E2E Alpha Beacon"
+
+- extendedWaitUntil:
+    visible: "Reconfigure Beacon"
+    timeout: 5000
+
+# The modal should show the current territory (Alpha) highlighted.
+- assertVisible: "E2E Territory A (Alpha)"
+- assertVisible: "E2E Territory B (Beta)"
+
+# ── Switch territory: A → B ────────────────────────────────────────────────
+
+- tapOn: "E2E Territory B (Beta)"
+
+# Randomize so the new (uuid, major, minor) triple can't collide with the
+# Beta beacon that already lives in Territory B.
+- tapOn:
+    id: "config-randomize-btn"
+
+# Save and wait for the React Query mutation round-trip.
+- tapOn:
+    id: "config-save-btn"
+
+- extendedWaitUntil:
+    visible: "Beacon reconfigured successfully"
+    timeout: 10000
+
+# Dismiss the alert if it's still modal.
+- runFlow:
+    when:
+      visible: "OK"
+    commands:
+      - tapOn: "OK"
+
+# ── Verify the Alpha card now points at Territory B ───────────────────────
+#
+# The beacon-config screen invalidates its React Query key on success and
+# re-renders each row with the updated territory name — this assertion
+# proves the end-to-end path (sales-agent → BFF → core-registry → DB → list).
+
+- assertVisible: "E2E Alpha Beacon"
+- assertVisible:
+    text: "Territory: E2E Territory B (Beta)"

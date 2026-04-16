@@ -4,7 +4,7 @@ appId: com.terrio.salesagent
 # Uses testID selectors: username-input, password-input, login-btn
 
 - launchApp:
-    clearState: true
+    stopApp: true
 
 - extendedWaitUntil:
     visible: "Terrio"

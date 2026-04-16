@@ -3,40 +3,41 @@ appId: com.terrio.tenant
 # Tenant Mobile — Logout flow
 
 - launchApp:
-    clearState: true
+    stopApp: true
 
+# Warm launches skip the splash and boot directly into Home.
 - extendedWaitUntil:
-    visible: "TERRIO Tenant"
+    visible:
+      text: "TERRIO Tenant|Tenant admin portal|Welcome back"
     timeout: 30000
 
-- tapOn:
-    text: "Email"
-- inputText: "dev-tenant-admin"
-- tapOn:
-    text: "Password"
-- inputText: "dev-pass"
-- tapOn: "Sign in"
-
-- extendedWaitUntil:
-    visible: "Home"
-    timeout: 8000
+# Previous flows may have persisted auth tokens in SecureStore, so the app
+# can auto-log-in and skip the login screen entirely. Only perform the
+# login steps if the login screen is actually visible.
+- runFlow:
+    when:
+      visible: "Tenant admin portal"
+    commands:
+      - tapOn:
+          text: "Email"
+      - inputText: "dev-tenant-admin"
+      - hideKeyboard
+      - tapOn:
+          text: "Password"
+      - inputText: "dev-pass"
+      - hideKeyboard
+      - tapOn: "Sign in"
+      - extendedWaitUntil:
+          visible: "Welcome back"
+          timeout: 8000
 
 - tapOn: "Settings"
 - extendedWaitUntil:
-    visible: "Settings"
+    visible: "Account"
     timeout: 5000
 
-- runFlow:
-    when:
-      visible: "Logout"
-    commands:
-      - tapOn: "Logout"
-
-- runFlow:
-    when:
-      visible: "Esci"
-    commands:
-      - tapOn: "Esci"
+# Settings tab exposes a red "Sign out" button directly (no Logout/Esci).
+- tapOn: "Sign out"
 
 - extendedWaitUntil:
     visible: "Tenant admin portal"

@@ -1,27 +1,44 @@
 appId: com.terrio.consumer
 ---
 # Consumer Mobile — Full navigation flow
-# Tab bar: Nearby | Wallet | Discover | History | Territory | Prefs | Offers | Profilo
+# Tab bar (9 tabs, may truncate): Nearby | Wallet | Discover | History |
+# Territory | Prefs | Offers | Profilo | Report
+# NOTE: on narrow devices some labels truncate ("Discover" → "Disco…",
+# "Territory" → "Terri…") so we use substring selectors for those.
 
 - launchApp:
-    clearState: true
+    stopApp: true
 
 - extendedWaitUntil:
-    visible: "TERRIO"
+    visible:
+      text: "TERRIO|Discover nearby offers|Nearby"
     timeout: 30000
 
-# Login
-- tapOn:
-    text: "Email"
-- inputText: "dev-consumer"
-- tapOn:
-    text: "Password"
-- inputText: "dev-pass"
-- tapOn: "Sign in"
+# Previous flows may have persisted auth tokens in SecureStore. Only run
+# the login steps if the login screen is actually showing.
+- runFlow:
+    when:
+      visible: "Discover nearby offers"
+    commands:
+      - tapOn:
+          text: "Email"
+      - inputText: "dev-consumer"
+      - hideKeyboard
+      - tapOn:
+          text: "Password"
+      - inputText: "dev-pass"
+      - hideKeyboard
+      - tapOn: "Sign in"
+      - extendedWaitUntil:
+          visible: "Nearby"
+          timeout: 10000
 
-- extendedWaitUntil:
-    visible: "Nearby"
-    timeout: 8000
+# Dismiss Gboard clipboard overlay if it's still covering the tab bar.
+- runFlow:
+    when:
+      visible: "Clipboard"
+    commands:
+      - pressKey: Back
 
 # ── Tab navigation ─────────────────────────────────────────────────────────
 
@@ -30,19 +47,32 @@ appId: com.terrio.consumer
     visible: "Wallet"
     timeout: 5000
 
-- tapOn: "Discover"
+# "Discover" truncates to "Disco…" on narrow tab bars — use substring.
+- tapOn:
+    text: "Disco"
 - extendedWaitUntil:
-    visible: "Discover"
+    visible:
+      text: "Discover|Nearby Programmes|Disco"
     timeout: 5000
+
+# Dismiss any "Could not load nearby programmes" error modal.
+- runFlow:
+    when:
+      visible: "OK"
+    commands:
+      - tapOn: "OK"
 
 - tapOn: "History"
 - extendedWaitUntil:
     visible: "History"
     timeout: 5000
 
-- tapOn: "Territory"
+# "Territory" truncates to "Terri…" — screen title is "My Territory".
+- tapOn:
+    text: "Terri"
 - extendedWaitUntil:
-    visible: "Territory"
+    visible:
+      text: "My Territory|Territory|Terri"
     timeout: 5000
 
 - tapOn: "Profilo"

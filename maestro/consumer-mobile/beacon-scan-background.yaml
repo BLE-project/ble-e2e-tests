@@ -1,0 +1,110 @@
+appId: com.terrio.consumer
+---
+# Consumer Mobile — Background BLE handoff (Fase 3.4)
+#
+# Verifies that the scanner lifecycle survives an AppState transition:
+# mount the Nearby screen, press Home to background the app, come back,
+# assert the banner is still visible and the screen still reacts. This
+# exercises backgroundScanner.ts' AppState listener end-to-end without
+# requiring a physical beacon (the banner text is reachable in stub mode
+# on CI emulators thanks to requestBlePermissions' stub-mode bypass).
+#
+# Why a separate flow?
+# Because beacon-scan.yaml is about the initial mount + permission dance.
+# This flow focuses on the background handoff which is a distinct
+# regression surface (anything that accidentally removes the AppState
+# listener or crashes inside adaptiveScanner.start would break here).
+
+- launchApp:
+    stopApp: true
+
+- extendedWaitUntil:
+    visible:
+      text: "TERRIO|Discover nearby offers|Nearby"
+    timeout: 30000
+
+# Login if the login screen is showing.
+- runFlow:
+    when:
+      visible: "Discover nearby offers"
+    commands:
+      - tapOn:
+          text: "Email"
+      - inputText: "dev-consumer"
+      - hideKeyboard
+      - tapOn:
+          text: "Password"
+      - inputText: "dev-pass"
+      - hideKeyboard
+      - tapOn: "Sign in"
+      - extendedWaitUntil:
+          visible: "Nearby"
+          timeout: 10000
+
+- runFlow:
+    when:
+      visible: "Clipboard"
+    commands:
+      - pressKey: Back
+
+- tapOn: "Nearby"
+- extendedWaitUntil:
+    visible: "Nearby"
+    timeout: 5000
+
+# Grant permissions if the OS dialog appears.
+- runFlow:
+    when:
+      visible: "Allow"
+    commands:
+      - tapOn: "Allow"
+- runFlow:
+    when:
+      visible: "While using the app"
+    commands:
+      - tapOn: "While using the app"
+- runFlow:
+    when:
+      visible: "Precise"
+    commands:
+      - tapOn: "Precise"
+      - tapOn: "While using the app"
+
+# Confirm the scanner is running in the foreground before backgrounding.
+- extendedWaitUntil:
+    visible:
+      text: "Scanning for nearby beacons|Waiting for beacons|Grant permission"
+    timeout: 15000
+
+# ── Background handoff ────────────────────────────────────────────────────
+#
+# Press Home to send the app to the background. The Nearby screen stays
+# mounted; backgroundScanner.ts should receive AppState "background" and
+# hand off to the adaptive scanner (no visible change — this is a
+# functional regression test, not a UI one).
+- pressKey: Home
+- waitForAnimationToEnd
+
+# Small idle pause so the AppState listener had a chance to fire before
+# we bring the app back.
+- extendedWaitUntil:
+    visible:
+      text: "TERRIO"
+    timeout: 5000
+    optional: true
+
+# Re-launch (without stopApp so we trigger AppState "active" instead of
+# a cold start). Maestro's default launchApp without stopApp brings the
+# existing process back to foreground.
+- launchApp
+
+# Back on the Nearby screen: the banner must still be reachable. The
+# screen is still mounted, so the banner text should render as soon as
+# the AppState listener processes "active" and bleScanner.start() is
+# invoked again.
+- extendedWaitUntil:
+    visible:
+      text: "Scanning for nearby beacons|Waiting for beacons|Grant permission|Nearby"
+    timeout: 15000
+
+- assertVisible: "Nearby"

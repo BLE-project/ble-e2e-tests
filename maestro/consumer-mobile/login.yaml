@@ -4,7 +4,7 @@ appId: com.terrio.consumer
 # Validates BUG-003 fix: login must navigate WITHOUT manual refresh
 
 - launchApp:
-    clearState: true
+    stopApp: true
 
 # Wait for login screen to load
 - extendedWaitUntil:
