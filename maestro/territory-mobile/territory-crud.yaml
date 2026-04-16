@@ -1,0 +1,90 @@
+appId: com.terrio.territory
+---
+# Territory Mobile — CRUD happy-path
+# Session 52 — verifies create → edit → delete against the real backend.
+# Must run with a TENANT_ADMIN account (dev-tenant-admin) because the FAB
+# and the delete button are gated.
+
+- launchApp:
+    stopApp: true
+
+- extendedWaitUntil:
+    visible:
+      text: "Terrio|Territory Manager|Territori"
+    timeout: 30000
+
+- runFlow:
+    when:
+      visible: "Territory Manager"
+    commands:
+      - tapOn:
+          id: "username-input"
+      - inputText: "dev-tenant-admin"
+      - hideKeyboard
+      - tapOn:
+          id: "password-input"
+      - inputText: "dev-pass"
+      - hideKeyboard
+      - tapOn:
+          id: "login-btn"
+      - extendedWaitUntil:
+          visible: "Territori"
+          timeout: 10000
+
+# ── Create ─────────────────────────────────────────────────────────────────
+- tapOn:
+    id: "territory-list-new"
+
+- extendedWaitUntil:
+    visible: "Nuovo territorio"
+    timeout: 5000
+
+- tapOn:
+    id: "territory-form-name"
+- inputText: "Maestro Smoke Zone"
+- hideKeyboard
+
+- tapOn:
+    id: "territory-form-visibility-closed"
+
+- tapOn:
+    id: "territory-form-submit"
+
+- extendedWaitUntil:
+    visible: "Maestro Smoke Zone"
+    timeout: 10000
+
+# ── Edit ───────────────────────────────────────────────────────────────────
+- tapOn:
+    id: "territory-detail-edit"
+
+- extendedWaitUntil:
+    visible: "Modifica territorio"
+    timeout: 5000
+
+- tapOn:
+    id: "territory-form-name"
+- eraseText
+- inputText: "Maestro Smoke Zone Edited"
+- hideKeyboard
+
+- tapOn:
+    id: "territory-form-submit"
+
+- extendedWaitUntil:
+    visible: "Maestro Smoke Zone Edited"
+    timeout: 10000
+
+# ── Delete ─────────────────────────────────────────────────────────────────
+- tapOn:
+    id: "territory-detail-delete"
+
+- extendedWaitUntil:
+    visible: "Eliminare territorio?"
+    timeout: 5000
+
+- tapOn: "Elimina"
+
+- extendedWaitUntil:
+    visible: "Territori"
+    timeout: 10000

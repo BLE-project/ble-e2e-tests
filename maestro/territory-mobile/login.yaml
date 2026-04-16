@@ -1,0 +1,31 @@
+appId: com.terrio.territory
+---
+# Territory Mobile — Login flow
+# Uses testID selectors: username-input, password-input, login-btn
+# Session 52 — added after terrio-territory-mobile reached v0.2 with CRUD wiring.
+
+- launchApp:
+    stopApp: true
+
+- extendedWaitUntil:
+    visible: "Terrio"
+    timeout: 30000
+
+- assertVisible: "Territory Manager"
+
+- tapOn:
+    id: "username-input"
+- inputText: "dev-territory-admin"
+
+- tapOn:
+    id: "password-input"
+- inputText: "dev-pass"
+
+- tapOn:
+    id: "login-btn"
+
+# After login the territory-list screen renders; the header reads "Territori"
+# via the Stack screenOptions. 8s matches the rest of the mobile suite.
+- extendedWaitUntil:
+    visible: "Territori"
+    timeout: 8000

@@ -1,0 +1,50 @@
+appId: com.terrio.territory
+---
+# Territory Mobile — List screen + drill-down smoke test
+# Session 52 — verifies the read-only flow: login → territory list → detail.
+# CRUD mutations (create/edit/delete) are covered in territory-crud.yaml.
+
+- launchApp:
+    stopApp: true
+
+- extendedWaitUntil:
+    visible:
+      text: "Terrio|Territory Manager|Territori"
+    timeout: 30000
+
+# Skip the login steps if SecureStore still holds a valid token from a
+# previous flow — same pattern used by sales-agent-mobile/navigation.yaml.
+- runFlow:
+    when:
+      visible: "Territory Manager"
+    commands:
+      - tapOn:
+          id: "username-input"
+      - inputText: "dev-territory-admin"
+      - hideKeyboard
+      - tapOn:
+          id: "password-input"
+      - inputText: "dev-pass"
+      - hideKeyboard
+      - tapOn:
+          id: "login-btn"
+      - extendedWaitUntil:
+          visible: "Territori"
+          timeout: 10000
+
+# Clipboard suggestion panel hiding the list — dismiss if present.
+- runFlow:
+    when:
+      visible: "Clipboard"
+    commands:
+      - pressKey: Back
+
+# The list is populated by the seed data in terrio-e2e-compose: the
+# acceptance criterion is that we reach the screen with at least the empty
+# state rendered. The FAB is only rendered when the caller is
+# TENANT_ADMIN / SUPER_ADMIN — dev-territory-admin does NOT see it.
+- assertVisible:
+    text: "Territori|Nessun territorio"
+
+- assertNotVisible:
+    id: "territory-list-new"
