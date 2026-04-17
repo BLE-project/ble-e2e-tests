@@ -1,0 +1,94 @@
+appId: com.terrio.territory
+---
+# Territory Mobile — Navigation smoke test
+# Verifies the stack navigation: list → detail → back → list → new → back → list.
+# Does NOT mutate state (create/update/delete are covered by territory-crud.yaml).
+# Session 55 — added to align territory-mobile with the 5-flow baseline.
+
+- launchApp:
+    stopApp: true
+
+- extendedWaitUntil:
+    visible:
+      text: "Terrio|Territory Manager|Territori"
+    timeout: 30000
+
+# Login as TENANT_ADMIN so we can see the "+" FAB (create path).
+# If we came in authenticated as a different user, logout first.
+- runFlow:
+    when:
+      visible: "Esci"
+    commands:
+      - tapOn: "Esci"
+      - extendedWaitUntil:
+          visible: "Territory Manager"
+          timeout: 10000
+
+- runFlow:
+    when:
+      visible: "Territory Manager"
+    commands:
+      - tapOn:
+          id: "username-input"
+      - inputText: "dev-tenant-admin"
+      - hideKeyboard
+      - tapOn:
+          id: "password-input"
+      - inputText: "dev-pass"
+      - hideKeyboard
+      - runFlow:
+          when:
+            visible: "Clipboard"
+          commands:
+            - pressKey: Back
+      - tapOn:
+          id: "login-btn"
+      - extendedWaitUntil:
+          visible: "Territori"
+          timeout: 15000
+
+# ── Stack navigation: list → new → back to list ───────────────────────────
+
+- tapOn:
+    id: "territory-list-new"
+
+- extendedWaitUntil:
+    visible: "Nuovo territorio"
+    timeout: 5000
+
+# Cancel out of the "new" form — we don't want to create a real territory here
+- tapOn:
+    id: "territory-form-cancel"
+
+- extendedWaitUntil:
+    visible: "Territori"
+    timeout: 5000
+
+# ── Pull-to-refresh: verify the list reloads cleanly ──────────────────────
+# Maestro's scroll is a proxy for pull-to-refresh on iOS/Android; the app's
+# RefreshControl handles the gesture the same way.
+- scroll
+
+- extendedWaitUntil:
+    visible:
+      text: "Territori|Nessun territorio"
+    timeout: 5000
+
+# ── List → detail (only if there is at least one territory row) ───────────
+# Use a soft assertion: if the list is empty we skip the detail leg.
+- runFlow:
+    when:
+      notVisible: "Nessun territorio"
+    commands:
+      # Tap the first territory row. We match by the testID pattern
+      # `territory-row-*`; Maestro allows regex on the id property.
+      - tapOn:
+          id: "territory-row-.*"
+      - extendedWaitUntil:
+          visible: "Dettaglio"
+          timeout: 8000
+      # Back out of the detail screen via the stack navigator
+      - back
+      - extendedWaitUntil:
+          visible: "Territori"
+          timeout: 5000
