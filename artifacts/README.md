@@ -49,3 +49,24 @@ cd ../terrio-e2e-tests
 npx tsx fixtures/seed-four-physical-beacons.ts
 maestro test maestro/consumer-mobile/beacon-notification-background.yaml
 ```
+
+## Verifica interattiva S56 (follow-up 2026-04-18)
+
+**La notifica cattura in questo screenshot NON è cliccabile sull'app
+consumer né visibile al suo processo.** Verificato via:
+
+- `adb shell dumpsys notification --noredact`: `pkg=com.android.shell,
+  uid=2000, opPkg=com.android.shell, channel=shell_cmd`.
+- Tap fisico sulla notifica: apre `com.terrio.territory/.MainActivity`
+  (ultima app attiva) come fallback — nessun PendingIntent legato a
+  `com.terrio.consumer`.
+
+In altre parole, lo screenshot documenta **la forma UI** di una
+notifica nel system tray (dark theme, badge count, posizione nello
+shade) ma NON prova il flow funzionale beacon→SDK→localNotification.
+Per una notifica realmente tappabile → `com.terrio.consumer` servono
+tutti i passi elencati in §"Come riprodurre" sopra (dev-client + BLE-plx
++ seed + permessi + foreground service).
+
+Questo file è stato prodotto per chiarire la domanda "la notifica è
+cliccabile e visibile sulla relativa app?" emersa alla chiusura di S56.
