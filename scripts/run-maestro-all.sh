@@ -51,10 +51,24 @@ for APP in consumer merchant tenant sales-agent territory; do
   "$ADB" uninstall "$PKG" >/dev/null 2>&1 || true
   "$ADB" install "$APK" 2>&1 | tail -1
 
+  # FIX-S56-001: pre-grant runtime permissions so native Android
+  # permission prompts (location, BLE, notifications) never block the
+  # Maestro flows. Without these, the first navigation to a
+  # location-aware screen triggers a prompt that Maestro cannot
+  # dismiss (native widget outside the RN accessibility tree).
+  for perm in ACCESS_FINE_LOCATION ACCESS_COARSE_LOCATION BLUETOOTH_SCAN \
+              BLUETOOTH_CONNECT BLUETOOTH_ADVERTISE POST_NOTIFICATIONS; do
+    "$ADB" shell pm grant "$PKG" "android.permission.$perm" 2>/dev/null || true
+  done
+
   cd "$E2E_DIR"
   "$MAESTRO" test "maestro/$FOLDER/" 2>&1 | tee "/tmp/maestro-$APP.log" | tail -5
 
-  if grep -q "Flow Failed" "/tmp/maestro-$APP.log"; then
+  # FIX-S56-002: correct pass/fail detection — match "Flows Failed" (plural)
+  # which is what Maestro prints in the batch summary. The previous "Flow
+  # Failed" (singular) token never matched so every app reported "Passed"
+  # regardless of actual failures.
+  if grep -qE "[0-9]+/[0-9]+ Flows Failed" "/tmp/maestro-$APP.log"; then
     FAILED_APPS+=("$APP")
   else
     PASSED_APPS+=("$APP")

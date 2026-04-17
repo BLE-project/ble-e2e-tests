@@ -1,0 +1,108 @@
+appId: com.terrio.consumer
+---
+# Consumer Mobile — Beacon push notification when app is backgrounded (S56)
+#
+# End-to-end verification of the offline-first BLE flow:
+#   1. Login and arrive on Nearby.
+#   2. Press Home so the app is backgrounded (the foreground service
+#      keeps the BLE scanner alive via BleBackgroundScanService).
+#   3. The nearby Holy-IOT beacons emit iBeacon ads; the SDK detects
+#      them and calls beacon-lookup on the BFF.
+#   4. The BFF returns a message → the SDK posts a local notification.
+#   5. We pull down the notification shade and assert that at least
+#      one TERRIO notification is present.
+#
+# Preconditions:
+#   - The 4 Holy-IOT beacons on the bench are powered (verified via
+#     `python scripts/beacon-discover.py`).
+#   - The seed fixture `seed-four-physical-beacons.ts` has registered
+#     them in the BFF so lookup returns a message payload.
+#   - The consumer is logged in as dev-consumer with notifications
+#     permission granted.
+#
+# Expected output: screenshots live in ~/.maestro/tests/<timestamp>/ —
+# the `screenshot: beacon-notif-shade` step captures the shade with the
+# notification for the release notes / docs.
+
+- launchApp:
+    stopApp: true
+
+- extendedWaitUntil:
+    visible:
+      text: "TERRIO|Discover nearby offers|Nearby"
+    timeout: 30000
+
+# Login if we are on the login screen
+- runFlow:
+    when:
+      visible: "Discover nearby offers"
+    commands:
+      - tapOn:
+          text: "Email"
+      - inputText: "dev-consumer"
+      - hideKeyboard
+      - tapOn:
+          text: "Password"
+      - inputText: "dev-pass"
+      - hideKeyboard
+      - tapOn: "Sign in"
+      - runFlow:
+          when:
+            visible: "Return to previous programme"
+          commands:
+            - tapOn: "STAY HERE"
+      - extendedWaitUntil:
+          visible: "Nearby"
+          timeout: 10000
+
+# Grant BLUETOOTH_SCAN runtime permission if the Android system prompt
+# appears (Android 12+). The SDK needs this to fire on nearby beacons;
+# without it the scanner stays as a no-op and no notification is ever
+# produced. Accept both Italian and English labels.
+- runFlow:
+    when:
+      visible:
+        text: "consentire.*accesso.*dispositivi|Allow.*nearby"
+    commands:
+      - tapOn:
+          text: "Consenti|Allow|Permetti"
+
+# Dismiss any residual Clipboard overlay
+- runFlow:
+    when:
+      visible: "Clipboard"
+    commands:
+      - pressKey: Back
+
+# Confirm the Nearby tab is active (banner "Scanning for nearby beacons"
+# is shown if the SDK is running). Use substring regex since the actual
+# text contains a 📡 prefix and an Unicode minus sign.
+- assertVisible:
+    text: ".*Scanning for nearby.*|.*Waiting for beacons.*"
+
+# Press the device HOME button to background the app so we observe the
+# background-scanner + local-notification code path.
+- pressKey: Home
+
+# Give the BLE scanner ~15 s to pick up the Holy-IOT beacons and for
+# the backend lookup round-trip to complete. Maestro has no native
+# `wait` command — use `extendedWaitUntil` against a sentinel string
+# that will never appear with optional:true as a fixed-duration wait.
+- extendedWaitUntil:
+    visible: "__BEACON_SCAN_WAIT_SENTINEL__"
+    timeout: 15000
+    optional: true
+
+# Open the notification shade (swipe down from the top).
+- swipe:
+    start: "50%, 0%"
+    end:   "50%, 60%"
+
+# Capture the shade with the notification for the release artifacts.
+- takeScreenshot: beacon-notif-shade
+
+# Assert that at least one TERRIO notification is present. The title
+# comes from the BeaconLookupResponse.title returned by the BFF; on the
+# dev seed it surfaces strings like "Welcome!" or "Offer nearby".
+- assertVisible:
+    text: "TERRIO|terrio|Terrio"

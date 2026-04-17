@@ -5,13 +5,6 @@ appId: com.terrio.tenant
 - launchApp:
     stopApp: true
 
-# FIX-S55-003: dismiss RN red-screen if it appears on cold launch
-- runFlow:
-    when:
-      visible: "addViewAt"
-    commands:
-      - pressKey: Escape
-
 # Warm launches skip the splash and boot directly into Home.
 - extendedWaitUntil:
     visible:

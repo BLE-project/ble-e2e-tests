@@ -6,9 +6,26 @@ appId: com.terrio.salesagent
 - launchApp:
     stopApp: true
 
+# FIX-S56-007: if a previous flow left the app logged in, logout first so
+# we land on the login screen for this smoke test.
 - extendedWaitUntil:
-    visible: "Terrio"
+    visible:
+      text: "Terrio|Home|Agente Commerciale"
     timeout: 30000
+
+- runFlow:
+    when:
+      visible: "Home"
+    commands:
+      # sales-agent uses the Profilo tab for sign out
+      - tapOn: "Profilo"
+      - extendedWaitUntil:
+          visible: "Esci"
+          timeout: 5000
+      - tapOn: "Esci"
+      - extendedWaitUntil:
+          visible: "Agente Commerciale"
+          timeout: 10000
 
 - assertVisible: "Agente Commerciale"
 

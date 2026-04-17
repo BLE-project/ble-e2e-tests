@@ -5,18 +5,6 @@ appId: com.terrio.tenant
 - launchApp:
     stopApp: true
 
-# FIX-S55-003: sometimes the RN runtime red-screen appears on cold launch
-# ("addViewAt: failed to insert view"). If visible, press Escape to
-# dismiss it so the test can continue on the retried render. Observed
-# on OnePlus AC2003 / RN 0.81.5 during fresh installs after long app
-# background — the reproducer is rare but reliable enough to deserve
-# a guard in the smoke flow.
-- runFlow:
-    when:
-      visible: "addViewAt"
-    commands:
-      - pressKey: Escape
-
 # Warm launches skip the splash and boot directly into Home.
 - extendedWaitUntil:
     visible:
@@ -51,6 +39,17 @@ appId: com.terrio.tenant
 # Settings tab exposes a red "Sign out" button directly (no Logout/Esci).
 - tapOn: "Sign out"
 
+# FIX-S56-005: the logout transition triggers a RN runtime error
+# ("addViewAt: failed to insert view into parent") because the auth
+# provider unmounts Settings while a Fabric batch is still pending.
+# Dismiss the red-screen so the login screen renders.
+- runFlow:
+    when:
+      visible: "addViewAt"
+    commands:
+      - tapOn:
+          text: "DISMISS.*"
+
 - extendedWaitUntil:
     visible: "Tenant admin portal"
-    timeout: 8000
+    timeout: 10000

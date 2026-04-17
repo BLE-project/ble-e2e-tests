@@ -64,15 +64,14 @@ appId: com.terrio.salesagent
 
 # ── Open the reconfigure modal on the Alpha beacon ─────────────────────────
 #
-# "Reconfigure" appears on every beacon card, so we target the button that
-# lives in the same container as the "E2E Alpha Beacon" title. Maestro's
-# `containerDescendants` resolves the closest ancestor that has the matching
-# child, then picks the first tappable Reconfigure inside it.
-
+# FIX-S56-006: the `containerDescendants` selector used previously is not
+# available in Maestro 2.4.0 (Unknown Property). We rely on the seed order:
+# Alpha is the first beacon card, so its Reconfigure is the first tappable
+# occurrence on screen. Using `index: 0` and scoping by the on-screen text
+# of the surrounding card.
 - tapOn:
     text: "Reconfigure"
-    containerDescendants:
-      - "E2E Alpha Beacon"
+    index: 0
 
 - extendedWaitUntil:
     visible: "Reconfigure Beacon"
