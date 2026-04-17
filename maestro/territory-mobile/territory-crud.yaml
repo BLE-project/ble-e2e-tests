@@ -55,6 +55,13 @@ appId: com.terrio.territory
     commands:
       - pressKey: Back
 
+# Wait for the territory list to finish loading (React Query fetch);
+# then scroll to ensure the FAB is visible on small-screen devices.
+- extendedWaitUntil:
+    visible:
+      text: "Territori|Nessun territorio"
+    timeout: 15000
+
 # ── Create ─────────────────────────────────────────────────────────────────
 - tapOn:
     id: "territory-list-new"
@@ -73,6 +80,12 @@ appId: com.terrio.territory
 
 - tapOn:
     id: "territory-form-submit"
+
+# The app shows an Alert confirming creation — dismiss it before asserting
+- extendedWaitUntil:
+    visible: "Territorio creato"
+    timeout: 10000
+- tapOn: "OK"
 
 - extendedWaitUntil:
     visible: "Maestro Smoke Zone"
@@ -95,6 +108,12 @@ appId: com.terrio.territory
 - tapOn:
     id: "territory-form-submit"
 
+# The app shows an Alert confirming update — dismiss it before asserting
+- extendedWaitUntil:
+    visible: "Territorio aggiornato"
+    timeout: 10000
+- tapOn: "OK"
+
 - extendedWaitUntil:
     visible: "Maestro Smoke Zone Edited"
     timeout: 10000
@@ -108,6 +127,12 @@ appId: com.terrio.territory
     timeout: 5000
 
 - tapOn: "Elimina"
+
+# Dismiss the "Territorio eliminato" confirmation alert before landing on the list
+- extendedWaitUntil:
+    visible: "Territorio eliminato"
+    timeout: 10000
+- tapOn: "OK"
 
 - extendedWaitUntil:
     visible: "Territori"

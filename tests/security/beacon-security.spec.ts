@@ -173,7 +173,10 @@ test.describe('Security — Beacon Penetration Tests', () => {
 
   // ── Beacon Event Flooding ────────────────────────────────────────────────
 
+  // FIX-S54-002: increased timeout from default 30s to 60s — the 100 concurrent
+  // requests can exceed 30s on single-threaded BFF under Docker resource limits.
   test('Beacon event flooding — 100 events in rapid succession', async ({ request }) => {
+    test.setTimeout(60_000)
     if (!consumerToken) { test.skip(true, 'No consumer token'); return }
 
     // Fire 100 beacon events as fast as possible
