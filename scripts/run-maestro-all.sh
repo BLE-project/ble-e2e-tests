@@ -48,8 +48,18 @@ for APP in consumer merchant tenant sales-agent territory; do
   fi
 
   echo "=== $APP ==="
+
+  # FIX-S56-008: give the device a moment to settle between apps —
+  # kill all background apps, clear ADB keep-alive, wait ~3 s. Without
+  # this, rapid install/uninstall cycles cause ActivityManager to throw
+  # "Unable to launch app" on the following flow.
+  "$ADB" shell am kill-all 2>/dev/null || true
+  "$ADB" shell am force-stop "$PKG" 2>/dev/null || true
+  sleep 3
+
   "$ADB" uninstall "$PKG" >/dev/null 2>&1 || true
   "$ADB" install "$APK" 2>&1 | tail -1
+  sleep 2
 
   # FIX-S56-001: pre-grant runtime permissions so native Android
   # permission prompts (location, BLE, notifications) never block the
@@ -73,6 +83,10 @@ for APP in consumer merchant tenant sales-agent territory; do
   else
     PASSED_APPS+=("$APP")
   fi
+
+  # Cool-down before the next app
+  "$ADB" shell am force-stop "$PKG" 2>/dev/null || true
+  sleep 5
 done
 
 echo ""
