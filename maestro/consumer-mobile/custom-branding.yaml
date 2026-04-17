@@ -49,6 +49,13 @@ appId: com.terrio.consumer
 
 - tapOn: "Sign in"
 
+# FIX-S55-001: federation auto-switch prompt may appear after login
+- runFlow:
+    when:
+      visible: "Return to previous programme"
+    commands:
+      - tapOn: "STAY HERE"
+
 # Wait for Nearby tab to be reachable.
 - extendedWaitUntil:
     visible: "Nearby"

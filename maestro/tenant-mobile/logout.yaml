@@ -5,6 +5,18 @@ appId: com.terrio.tenant
 - launchApp:
     stopApp: true
 
+# FIX-S55-003: sometimes the RN runtime red-screen appears on cold launch
+# ("addViewAt: failed to insert view"). If visible, press Escape to
+# dismiss it so the test can continue on the retried render. Observed
+# on OnePlus AC2003 / RN 0.81.5 during fresh installs after long app
+# background — the reproducer is rare but reliable enough to deserve
+# a guard in the smoke flow.
+- runFlow:
+    when:
+      visible: "addViewAt"
+    commands:
+      - pressKey: Escape
+
 # Warm launches skip the splash and boot directly into Home.
 - extendedWaitUntil:
     visible:

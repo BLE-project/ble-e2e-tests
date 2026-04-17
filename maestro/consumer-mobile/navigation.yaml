@@ -29,9 +29,22 @@ appId: com.terrio.consumer
       - inputText: "dev-pass"
       - hideKeyboard
       - tapOn: "Sign in"
+      # FIX-S55-001: federation auto-switch prompt after login
+      - runFlow:
+          when:
+            visible: "Return to previous programme"
+          commands:
+            - tapOn: "STAY HERE"
       - extendedWaitUntil:
           visible: "Nearby"
           timeout: 10000
+
+# FIX-S55-001: dismiss the federation prompt if it surfaces on already-auth launch
+- runFlow:
+    when:
+      visible: "Return to previous programme"
+    commands:
+      - tapOn: "STAY HERE"
 
 # Dismiss Gboard clipboard overlay if it's still covering the tab bar.
 - runFlow:

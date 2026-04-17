@@ -36,6 +36,18 @@ appId: com.terrio.merchant
     visible: "Loyalty POS"
     timeout: 5000
 
+# FIX-S55-002: POS is a 3-step wizard with persistent state. If a previous
+# transaction left it on STEP 3 (success), tap "Nuova Operazione" to
+# rewind to STEP 1 before asserting.
+- runFlow:
+    when:
+      visible: "Nuova Operazione"
+    commands:
+      - tapOn: "Nuova Operazione"
+      - extendedWaitUntil:
+          visible: "Identifica il Cliente"
+          timeout: 5000
+
 - assertVisible: "Identifica il Cliente"
 - assertVisible: "Scansiona Tessera"
 

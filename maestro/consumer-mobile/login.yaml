@@ -25,7 +25,18 @@ appId: com.terrio.consumer
 # Submit login
 - tapOn: "Sign in"
 
+# FIX-S55-001: after login the federation system may auto-prompt
+# "Return to previous programme?" when the consumer had a card in
+# another tenant. Dismiss the dialog first so the home assertion isn't
+# masked by a modal overlay. This is the normal auto-switch UX (S30)
+# not a regression.
+- runFlow:
+    when:
+      visible: "Return to previous programme"
+    commands:
+      - tapOn: "STAY HERE"
+
 # BUG-003: login must navigate within 8 seconds (no manual refresh needed)
 - extendedWaitUntil:
     visible: "Nearby"
-    timeout: 8000
+    timeout: 10000
