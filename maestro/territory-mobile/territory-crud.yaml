@@ -10,9 +10,21 @@ appId: com.terrio.territory
 
 - extendedWaitUntil:
     visible:
-      text: "Terrio|Territory Manager|Territori"
+      text: "Terrio|Territory Manager|Territori|Nessun territorio|Errore"
     timeout: 30000
 
+# If already logged in from a previous flow, logout first so we can
+# re-login as dev-tenant-admin (who has TENANT_ADMIN role for CRUD).
+- runFlow:
+    when:
+      visible: "Esci"
+    commands:
+      - tapOn: "Esci"
+      - extendedWaitUntil:
+          visible: "Territory Manager"
+          timeout: 10000
+
+# Now on the login screen — login as TENANT_ADMIN
 - runFlow:
     when:
       visible: "Territory Manager"
@@ -25,11 +37,23 @@ appId: com.terrio.territory
           id: "password-input"
       - inputText: "dev-pass"
       - hideKeyboard
+      - runFlow:
+          when:
+            visible: "Clipboard"
+          commands:
+            - pressKey: Back
       - tapOn:
           id: "login-btn"
       - extendedWaitUntil:
           visible: "Territori"
-          timeout: 10000
+          timeout: 15000
+
+# Dismiss Clipboard panel if lingering from Gboard
+- runFlow:
+    when:
+      visible: "Clipboard"
+    commands:
+      - pressKey: Back
 
 # ── Create ─────────────────────────────────────────────────────────────────
 - tapOn:

@@ -1,14 +1,20 @@
 /**
+ * Session 53 update: identities realigned to the factory configuration of
+ * the four Holy-IOT units actually on the bench today. They broadcast the
+ * vendor default UUID (FDA50693-A4E2-4FB1-AFCF-C6EB07647825) with
+ * major 1-2 and minor 101/102/201/202 — confirmed by a live
+ * `beacon-discover.py` scan on 2026-04-16. The seed keeps all four units
+ * in the single E2E territory (cross-major is ignored at this layer; the
+ * dual-territory fixture covers that case separately), so the tests
+ * resolve the physical hardware without any re-flashing step.
+ *
  * Fase 3.1: Seed the 4 physical Holy-IOT beacons in the E2E tenant.
  *
  * The hardware reconfiguration step (Fase 3.1) originally assumed somebody
  * would walk up to each beacon with the Holy-IOT Android app and flash a
- * new UUID/major/minor. Since that's a physical task and the user asked us
- * to do the reconfiguration in software, this script enrolls 4 beacon
- * records in the backend with canonical identities that match what the
- * hardware *should* broadcast. Once the physical units are flashed to the
- * same triples (or cloned into a closed-circuit territory), the mobile apps
- * will resolve them against these records.
+ * new UUID/major/minor. Since the on-site units still carry the factory
+ * identity, session 53 aligned the seed to the actual broadcast values —
+ * no manual re-flash required before running the real-beacon suite.
  *
  * BeaconType enum (src/main/java/com/ble/core/beacon/BeaconType.java) only
  * accepts three values: MERCHANT, TOURIST_INFO, TRACKING. The 4 physical
@@ -53,38 +59,44 @@ export interface PhysicalBeaconSeed {
   minor: number
 }
 
+/**
+ * Canonical factory UUID for this batch of Holy-IOT units.
+ * Re-verified on 2026-04-16 via `python scripts/beacon-discover.py`.
+ */
+export const HOLYIOT_FACTORY_UUID = 'FDA50693-A4E2-4FB1-AFCF-C6EB07647825'
+
 export const FOUR_PHYSICAL_BEACONS: PhysicalBeaconSeed[] = [
   {
     code: 'H-01',
     name: 'Holy-IOT H-01 — Ingresso Principale',
     type: 'TRACKING',
-    ibeaconUuid: 'E2E10000-0000-4000-A000-000000000001',
-    major: 11001,
-    minor: 1,
+    ibeaconUuid: HOLYIOT_FACTORY_UUID,
+    major: 1,
+    minor: 101,
   },
   {
     code: 'H-02',
     name: 'Holy-IOT H-02 — Cassa Bar',
     type: 'MERCHANT',
-    ibeaconUuid: 'E2E10000-0000-4000-A000-000000000002',
-    major: 11002,
-    minor: 2,
+    ibeaconUuid: HOLYIOT_FACTORY_UUID,
+    major: 1,
+    minor: 102,
   },
   {
     code: 'H-03',
     name: 'Holy-IOT H-03 — Punto Info',
     type: 'TOURIST_INFO',
-    ibeaconUuid: 'E2E10000-0000-4000-A000-000000000003',
-    major: 11003,
-    minor: 3,
+    ibeaconUuid: HOLYIOT_FACTORY_UUID,
+    major: 2,
+    minor: 201,
   },
   {
     code: 'H-04',
     name: 'Holy-IOT H-04 — Uscita Parcheggio',
     type: 'TRACKING',
-    ibeaconUuid: 'E2E10000-0000-4000-A000-000000000004',
-    major: 11004,
-    minor: 4,
+    ibeaconUuid: HOLYIOT_FACTORY_UUID,
+    major: 2,
+    minor: 202,
   },
 ]
 

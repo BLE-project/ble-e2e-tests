@@ -16,16 +16,26 @@ appId: com.terrio.territory
 - tapOn:
     id: "username-input"
 - inputText: "dev-territory-admin"
+- hideKeyboard
 
 - tapOn:
     id: "password-input"
 - inputText: "dev-pass"
+- hideKeyboard
+
+# Gboard's clipboard suggestion panel can linger over the login button.
+# Dismiss it before tapping login — same pattern used in sales-agent flows.
+- runFlow:
+    when:
+      visible: "Clipboard"
+    commands:
+      - pressKey: Back
 
 - tapOn:
     id: "login-btn"
 
 # After login the territory-list screen renders; the header reads "Territori"
-# via the Stack screenOptions. 8s matches the rest of the mobile suite.
+# via the Stack screenOptions. 15s allows for Keycloak token exchange latency.
 - extendedWaitUntil:
     visible: "Territori"
-    timeout: 8000
+    timeout: 15000
