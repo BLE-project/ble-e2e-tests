@@ -8,8 +8,20 @@ appId: com.terrio.territory
     stopApp: true
 
 - extendedWaitUntil:
-    visible: "Terrio"
+    visible:
+      text: "Terrio|Territory Manager|Territori"
     timeout: 30000
+
+# If a previous flow left the app authenticated, logout first so we land
+# on the login screen for this smoke test.
+- runFlow:
+    when:
+      visible: "Esci"
+    commands:
+      - tapOn: "Esci"
+      - extendedWaitUntil:
+          visible: "Territory Manager"
+          timeout: 10000
 
 - assertVisible: "Territory Manager"
 

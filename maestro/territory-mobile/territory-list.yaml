@@ -9,11 +9,22 @@ appId: com.terrio.territory
 
 - extendedWaitUntil:
     visible:
-      text: "Terrio|Territory Manager|Territori"
+      text: "Terrio|Territory Manager|Territori|Nessun territorio"
     timeout: 30000
 
-# Skip the login steps if SecureStore still holds a valid token from a
-# previous flow — same pattern used by sales-agent-mobile/navigation.yaml.
+# If a previous flow (e.g. territory-crud) left the app authenticated
+# as dev-tenant-admin, logout first so the assertion below runs against
+# dev-territory-admin (who does NOT see the "+" FAB).
+- runFlow:
+    when:
+      visible: "Esci"
+    commands:
+      - tapOn: "Esci"
+      - extendedWaitUntil:
+          visible: "Territory Manager"
+          timeout: 10000
+
+# Login as dev-territory-admin (restricted role, no create permission).
 - runFlow:
     when:
       visible: "Territory Manager"
@@ -26,11 +37,16 @@ appId: com.terrio.territory
           id: "password-input"
       - inputText: "dev-pass"
       - hideKeyboard
+      - runFlow:
+          when:
+            visible: "Clipboard"
+          commands:
+            - pressKey: Back
       - tapOn:
           id: "login-btn"
       - extendedWaitUntil:
           visible: "Territori"
-          timeout: 10000
+          timeout: 15000
 
 # Clipboard suggestion panel hiding the list — dismiss if present.
 - runFlow:
