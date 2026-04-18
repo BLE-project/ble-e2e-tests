@@ -1,0 +1,7 @@
+# OWASP ZAP baseline rules — ignore false positives specific to Terrio.
+# Format: RULE_ID	WARN|IGNORE|FAIL	URL_REGEX (optional)
+
+10021	IGNORE	.*	# X-Content-Type-Options header — covered by BFF
+10020	IGNORE	.*	# X-Frame-Options — we set CSP frame-ancestors
+10016	IGNORE	.*/q/health	# Informational for health endpoint
+10063	IGNORE	.*	# Permissions-Policy — tracked separately
