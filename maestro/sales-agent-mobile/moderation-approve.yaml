@@ -1,0 +1,76 @@
+appId: com.terrio.salesagent
+tags:
+  - moderation
+  - p0
+---
+# §9bis M8 P0 — Moderation APPROVE flow.
+# Precondition: at least 1 ADV PENDING_HUMAN seeded via BFF, TOTP enrolled.
+# Login fixture: dev-sales-agent / dev-pass (FIX-S56-007 logout guard).
+
+- launchApp:
+    stopApp: true
+
+# Login (copied from login.yaml logout-first guard)
+- extendedWaitUntil:
+    visible:
+      text: "Terrio|Home|Agente Commerciale"
+    timeout: 30000
+
+- runFlow:
+    when:
+      visible: "Home"
+    commands:
+      - tapOn: "Profilo"
+      - extendedWaitUntil: { visible: "Esci", timeout: 5000 }
+      - tapOn: "Esci"
+      - extendedWaitUntil: { visible: "Agente Commerciale", timeout: 10000 }
+
+- tapOn: { id: "username-input" }
+- inputText: "dev-sales-agent"
+- tapOn: { id: "password-input" }
+- inputText: "dev-pass"
+- tapOn: { id: "login-btn" }
+- extendedWaitUntil: { visible: "Home", timeout: 8000 }
+
+# Home shows Moderazioni tile with count
+- assertVisible: "Moderazioni"
+
+# Navigate to moderation queue
+- tapOn: "Moderazioni"
+- extendedWaitUntil:
+    visible: "in attesa"
+    timeout: 5000
+
+# Tap first moderation row
+- tapOn:
+    id: "moderation-row"
+
+- extendedWaitUntil:
+    visible: "ANALISI AI"
+    timeout: 5000
+
+# Approve
+- tapOn:
+    id: "btn-approve"
+
+- extendedWaitUntil:
+    visible: "Approva ADV"
+    timeout: 3000
+
+- tapOn:
+    id: "reason-input"
+- inputText: "Contenuto conforme policy"
+
+- tapOn:
+    id: "totp-input"
+- inputText: "123456"   # dev fixture — identity-access mock accepts 123456
+
+- tapOn:
+    id: "confirm-action"
+
+- extendedWaitUntil:
+    visible: "Approvata|approvata|Moderazioni"
+    timeout: 10000
+
+# Back in queue — count decremented
+- assertVisible: "Moderazioni"

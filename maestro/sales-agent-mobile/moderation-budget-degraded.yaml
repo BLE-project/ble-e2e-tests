@@ -1,0 +1,46 @@
+appId: com.terrio.salesagent
+tags:
+  - moderation
+  - p2
+---
+# §9bis M8 P2 — Verify that when budget tier=HUMAN_ONLY, all ADVs skip AI
+# and land directly in human review queue (they appear without claudeRiskLevel).
+# Precondition: seed fixture sets tenant budget to 100% to force HUMAN_ONLY tier.
+
+- launchApp:
+    stopApp: true
+
+- extendedWaitUntil:
+    visible: "Terrio|Home|Agente Commerciale"
+    timeout: 30000
+
+- runFlow:
+    when: { visible: "Home" }
+    commands:
+      - tapOn: "Profilo"
+      - extendedWaitUntil: { visible: "Esci", timeout: 5000 }
+      - tapOn: "Esci"
+      - extendedWaitUntil: { visible: "Agente Commerciale", timeout: 10000 }
+
+- tapOn: { id: "username-input" }
+- inputText: "dev-sales-agent"
+- tapOn: { id: "password-input" }
+- inputText: "dev-pass"
+- tapOn: { id: "login-btn" }
+- extendedWaitUntil: { visible: "Home", timeout: 8000 }
+
+- tapOn: "Moderazioni"
+
+- extendedWaitUntil:
+    visible: "in attesa"
+    timeout: 10000
+
+# Tap first row — expect detail WITHOUT Claude verdict (skipped due to HUMAN_ONLY)
+- tapOn: { id: "moderation-row" }
+
+- extendedWaitUntil:
+    visible: "DESCRIZIONE"
+    timeout: 5000
+
+# Claude verdict section should NOT be visible (tier=HUMAN_ONLY skipped AI)
+- assertNotVisible: "ANALISI AI"

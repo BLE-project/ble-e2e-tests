@@ -1,0 +1,81 @@
+name: Backend CI (Quarkus microservices)
+
+# §16 — Backend JUnit + Playwright + Docker compose smoke.
+# Runs on every push to main + PRs.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  notification-service:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: BLE-project/ble-notification-service
+          path: svc
+          token: ${{ secrets.GH_PAT_BACKEND_READ }}
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: 'maven'
+
+      - name: Build & Test
+        working-directory: svc
+        run: ./mvnw -B clean test
+
+      - name: Upload JaCoCo report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: notification-service-coverage
+          path: svc/target/site/jacoco/
+
+  core-registry:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: BLE-project/ble-core-registry
+          path: svc
+          token: ${{ secrets.GH_PAT_BACKEND_READ }}
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: 'maven'
+
+      - name: Build & Test
+        working-directory: svc
+        run: ./mvnw -B clean test
+
+  playwright-e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - run: npm ci
+
+      - run: npx playwright install --with-deps chromium
+
+      - name: Run Playwright
+        run: npx playwright test --reporter=html
+
+      - name: Upload report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 14

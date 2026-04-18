@@ -1,0 +1,60 @@
+appId: com.terrio.salesagent
+tags:
+  - moderation
+  - p0
+---
+# §9bis M8 P0 — Moderation REJECT flow.
+
+- launchApp:
+    stopApp: true
+
+- extendedWaitUntil:
+    visible: "Terrio|Home|Agente Commerciale"
+    timeout: 30000
+
+- runFlow:
+    when: { visible: "Home" }
+    commands:
+      - tapOn: "Profilo"
+      - extendedWaitUntil: { visible: "Esci", timeout: 5000 }
+      - tapOn: "Esci"
+      - extendedWaitUntil: { visible: "Agente Commerciale", timeout: 10000 }
+
+- tapOn: { id: "username-input" }
+- inputText: "dev-sales-agent"
+- tapOn: { id: "password-input" }
+- inputText: "dev-pass"
+- tapOn: { id: "login-btn" }
+- extendedWaitUntil: { visible: "Home", timeout: 8000 }
+
+- tapOn: "Moderazioni"
+- extendedWaitUntil: { visible: "in attesa", timeout: 5000 }
+
+- tapOn:
+    id: "moderation-row"
+
+- extendedWaitUntil:
+    visible: "ANALISI AI|DESCRIZIONE"
+    timeout: 5000
+
+- tapOn:
+    id: "btn-reject"
+
+- extendedWaitUntil:
+    visible: "Rifiuta ADV"
+    timeout: 3000
+
+- tapOn:
+    id: "reason-input"
+- inputText: "Violazione policy prodotti regolamentati"
+
+- tapOn:
+    id: "totp-input"
+- inputText: "123456"
+
+- tapOn:
+    id: "confirm-action"
+
+- extendedWaitUntil:
+    visible: "Rifiutata|rifiutata|Moderazioni"
+    timeout: 10000
