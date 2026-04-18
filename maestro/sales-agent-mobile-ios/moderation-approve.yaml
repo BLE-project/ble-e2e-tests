@@ -1,0 +1,64 @@
+appId: com.terrio.salesagent
+tags:
+  - moderation
+  - p0
+  - ios
+---
+# §18 iOS parity — Moderation APPROVE (ported from Android).
+# Differences vs Android: same content-desc → accessibilityLabel on iOS, no
+# runtime permissions dialog (iOS is cap-set at install). Device: iOS 17 sim.
+
+- launchApp:
+    stopApp: true
+
+- extendedWaitUntil:
+    visible: "Terrio|Home|Agente Commerciale"
+    timeout: 30000
+
+- runFlow:
+    when: { visible: "Home" }
+    commands:
+      - tapOn: "Profilo"
+      - extendedWaitUntil: { visible: "Esci", timeout: 5000 }
+      - tapOn: "Esci"
+      - extendedWaitUntil: { visible: "Agente Commerciale", timeout: 10000 }
+
+- tapOn: { id: "username-input" }
+- inputText: "dev-sales-agent"
+- tapOn: { id: "password-input" }
+- inputText: "dev-pass"
+- tapOn: { id: "login-btn" }
+- extendedWaitUntil: { visible: "Home", timeout: 8000 }
+
+- assertVisible: "Moderazioni"
+- tapOn: "Moderazioni"
+
+- extendedWaitUntil:
+    visible: "in attesa"
+    timeout: 5000
+
+- tapOn:
+    id: "moderation-row"
+
+- extendedWaitUntil:
+    visible: "ANALISI AI"
+    timeout: 5000
+
+- tapOn:
+    id: "btn-approve"
+
+- extendedWaitUntil:
+    visible: "Approva ADV"
+    timeout: 3000
+
+- tapOn: { id: "reason-input" }
+- inputText: "Contenuto conforme policy"
+
+- tapOn: { id: "totp-input" }
+- inputText: "123456"
+
+- tapOn: { id: "confirm-action" }
+
+- extendedWaitUntil:
+    visible: "Approvata|approvata|Moderazioni"
+    timeout: 10000

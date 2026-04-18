@@ -49,7 +49,18 @@ export async function ensureSeedData(): Promise<SeedData> {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ username: ADMIN_USER, password: ADMIN_PASS }),
   })
-  if (!loginRes.ok) throw new Error(`Login failed: ${loginRes.status}`)
+  if (!loginRes.ok) {
+    // KI-S56-02 diagnostic: include the response body + URL so the operator
+    // can see exactly which endpoint and credentials were rejected.
+    const body = await loginRes.text().catch(() => '(no body)')
+    const hint = loginRes.status === 401
+      ? '\n  → Check Keycloak user: kcadm.sh get users?username=' + ADMIN_USER
+      : ''
+    throw new Error(
+      `Login failed: POST ${BFF_URL}/api/v1/auth/login returned ${loginRes.status}\n  `
+      + `user=${ADMIN_USER}\n  body=${body.substring(0, 300)}${hint}`,
+    )
+  }
   const { token } = await loginRes.json() as { token: string }
 
   const headers = {

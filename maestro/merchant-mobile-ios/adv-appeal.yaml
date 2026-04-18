@@ -1,0 +1,44 @@
+appId: com.terrio.merchant
+tags:
+  - adv
+  - p1
+  - ios
+---
+- launchApp:
+    stopApp: true
+
+- extendedWaitUntil:
+    visible: "Terrio|Home|Merchant"
+    timeout: 30000
+
+- runFlow:
+    when: { visible: "Home" }
+    commands:
+      - tapOn: "Profilo|Profile"
+      - extendedWaitUntil: { visible: "Esci|Logout", timeout: 5000 }
+      - tapOn: "Esci|Logout"
+      - extendedWaitUntil: { visible: "Merchant", timeout: 10000 }
+
+- tapOn: { id: "username-input" }
+- inputText: "dev-merchant"
+- tapOn: { id: "password-input" }
+- inputText: "dev-pass"
+- tapOn: { id: "login-btn" }
+- extendedWaitUntil: { visible: "Home", timeout: 8000 }
+
+- tapOn: "ADV|Campagne"
+- extendedWaitUntil: { visible: "Rifiutata|Tutti", timeout: 5000 }
+- tapOn: "Rifiutata"
+
+- extendedWaitUntil: { visible: "Fai appello", timeout: 5000 }
+- tapOn: { id: "btn-appeal" }
+
+- extendedWaitUntil: { visible: "Apri appello", timeout: 3000 }
+- tapOn: { id: "appeal-reason" }
+- inputText: "Richiesta riconsiderazione: ho corretto il claim misleading."
+
+- tapOn: { id: "totp-code" }
+- inputText: "123456"
+
+- tapOn: { id: "action-confirm" }
+- extendedWaitUntil: { visible: "Appello in corso|In analisi AI", timeout: 10000 }

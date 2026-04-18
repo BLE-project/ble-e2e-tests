@@ -1,0 +1,45 @@
+appId: com.terrio.merchant
+tags:
+  - adv
+  - p0
+  - ios
+---
+- launchApp:
+    stopApp: true
+
+- extendedWaitUntil:
+    visible: "Terrio|Home|Merchant"
+    timeout: 30000
+
+- runFlow:
+    when: { visible: "Home" }
+    commands:
+      - tapOn: "Profilo|Profile"
+      - extendedWaitUntil: { visible: "Esci|Logout", timeout: 5000 }
+      - tapOn: "Esci|Logout"
+      - extendedWaitUntil: { visible: "Merchant", timeout: 10000 }
+
+- tapOn: { id: "username-input" }
+- inputText: "dev-merchant"
+- tapOn: { id: "password-input" }
+- inputText: "dev-pass"
+- tapOn: { id: "login-btn" }
+- extendedWaitUntil: { visible: "Home", timeout: 8000 }
+
+- tapOn: "ADV|Campagne|Nuova"
+- extendedWaitUntil: { visible: "Nuova ADV|Invia per moderazione", timeout: 5000 }
+
+- tapOn: { id: "adv-title" }
+- inputText: "Sconto 10% prodotti selezionati"
+
+- tapOn: { id: "adv-description" }
+- inputText: "Valido fino al 30 aprile 2026 su una selezione di articoli del nostro store."
+
+- tapOn: { id: "adv-discount-type" }
+- tapOn: "Percentuale|percentage"
+
+- tapOn: { id: "adv-discount-value" }
+- inputText: "10"
+
+- tapOn: { id: "adv-submit-btn" }
+- extendedWaitUntil: { visible: "In analisi AI|Approvata|Review umana", timeout: 15000 }
