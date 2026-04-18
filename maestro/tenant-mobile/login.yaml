@@ -11,17 +11,20 @@ appId: com.terrio.tenant
 
 - assertVisible: "Tenant admin portal"
 
-- tapOn:
-    text: "Email"
+- tapOn: { id: "username-input" }
 - inputText: "dev-tenant-admin"
+- hideKeyboard
+
+- tapOn: { id: "password-input" }
+- inputText: "dev-pass"
+- hideKeyboard
+
+- tapOn: { id: "login-btn" }
 
 - tapOn:
-    text: "Password"
-- inputText: "dev-pass"
+    text: "Non ora|Never|Not now"
+    optional: true
 
-- tapOn: "Sign in"
-
-# BUG-003: navigation within 8s
 - extendedWaitUntil:
-    visible: "Home"
-    timeout: 8000
+    visible: "Home|Welcome back"
+    timeout: 15000

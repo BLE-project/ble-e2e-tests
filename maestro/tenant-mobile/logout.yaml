@@ -18,18 +18,22 @@ appId: com.terrio.tenant
     when:
       visible: "Tenant admin portal"
     commands:
-      - tapOn:
-          text: "Email"
+      - tapOn: { id: "username-input" }
       - inputText: "dev-tenant-admin"
       - hideKeyboard
-      - tapOn:
-          text: "Password"
+      - tapOn: { id: "password-input" }
       - inputText: "dev-pass"
       - hideKeyboard
-      - tapOn: "Sign in"
+      - tapOn: { id: "login-btn" }
+      # Login screen inputs now have importantForAutofill="no" (rebuilt APK),
+      # so Google save-password prompt should no longer appear. Fallback tap
+      # kept for defensive coverage.
+      - tapOn:
+          text: "Non ora|Never|Not now"
+          optional: true
       - extendedWaitUntil:
           visible: "Welcome back"
-          timeout: 8000
+          timeout: 15000
 
 - tapOn: "Settings"
 - extendedWaitUntil:
