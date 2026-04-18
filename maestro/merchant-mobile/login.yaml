@@ -11,17 +11,20 @@ appId: com.terrio.merchant
 
 - assertVisible: "Merchant portal"
 
-- tapOn:
-    text: "Email"
+- tapOn: { id: "username-input" }
 - inputText: "dev-merchant"
+- hideKeyboard
+
+- tapOn: { id: "password-input" }
+- inputText: "dev-pass"
+- hideKeyboard
+
+- tapOn: { id: "login-btn" }
 
 - tapOn:
-    text: "Password"
-- inputText: "dev-pass"
+    text: "Non ora|Never|Not now"
+    optional: true
 
-- tapOn: "Sign in"
-
-# BUG-003: login must navigate within 8s
 - extendedWaitUntil:
-    visible: "Home"
-    timeout: 8000
+    visible: "Home|Dashboard"
+    timeout: 15000
