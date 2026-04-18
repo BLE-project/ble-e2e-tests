@@ -1,0 +1,30 @@
+appId: com.terrio.consumer
+tags:
+  - landing
+  - p1
+  - ios
+---
+- launchApp:
+    stopApp: true
+
+- extendedWaitUntil:
+    visible: "Home|Discover|Terrio"
+    timeout: 30000
+
+- tapOn: "Discover|Esplora|Cerca"
+- extendedWaitUntil: { visible: "Cerca|Search|merchant", timeout: 5000 }
+
+- tapOn:
+    id: "search-input"
+    optional: true
+- inputText:
+    text: "Bar Centrale"
+    optional: true
+
+- tapOn:
+    text: "Bar Centrale"
+    optional: true
+
+- extendedWaitUntil:
+    visible: "Indicazioni|Chiama|Descrizione"
+    timeout: 10000

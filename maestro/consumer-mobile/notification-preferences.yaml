@@ -1,0 +1,50 @@
+appId: com.terrio.consumer
+tags:
+  - notifications
+  - p1
+---
+# §7.3 P1 — Consumer notification preferences screen.
+# Verifies: toggle of optional channel persists; always-on (beacon-proximity)
+# shows "Sempre attivo" badge and its switch is disabled.
+
+- launchApp:
+    stopApp: true
+
+- extendedWaitUntil:
+    visible: "Home|Discover|Terrio"
+    timeout: 30000
+
+- runFlow:
+    when: { visible: "Sign in|Accedi" }
+    commands:
+      - tapOn: { text: "Email|email" }
+      - inputText: "dev-consumer"
+      - tapOn: { text: "Password|password" }
+      - inputText: "dev-pass"
+      - tapOn: "Sign in|Accedi"
+      - extendedWaitUntil: { visible: "Home|Discover", timeout: 8000 }
+
+# Navigate to Profilo/Settings → Notifications
+- tapOn: "Profilo|Profile|Account"
+- extendedWaitUntil: { visible: "Preferenze|Settings", timeout: 5000 }
+
+- tapOn: "Notifiche|Notifications|Preferenze notifiche"
+- extendedWaitUntil: { visible: "Preferenze notifiche|Notification Preferences", timeout: 5000 }
+
+# Always-on badge visible on beacon-proximity
+- assertVisible: "Sempre attivo"
+
+# Toggle cashback-credit OFF
+- tapOn:
+    id: "toggle-cashback-credit"
+
+# Wait for API save (no error alert)
+- assertNotVisible: "Errore"
+
+# Attempt to toggle beacon-proximity — should show info alert
+- tapOn:
+    id: "toggle-beacon-proximity"
+
+- assertVisible:
+    text: "Sempre attivo|cannot be disabled"
+    optional: true

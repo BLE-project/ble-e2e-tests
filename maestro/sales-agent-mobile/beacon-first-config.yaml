@@ -1,0 +1,51 @@
+appId: com.terrio.salesagent
+tags:
+  - ble
+  - p1
+---
+# §9 P1 — Sales agent runs BLE health check at first onboarding.
+# In dev/stub mode (no ble-plx plugin), the screen renders the 4-beacon
+# fixture with ✅ pass — verifies the UX flow.
+
+- launchApp:
+    stopApp: true
+
+- extendedWaitUntil:
+    visible: "Terrio|Home|Agente Commerciale"
+    timeout: 30000
+
+- runFlow:
+    when: { visible: "Agente Commerciale" }
+    commands:
+      - tapOn: { id: "username-input" }
+      - inputText: "dev-sales-agent"
+      - tapOn: { id: "password-input" }
+      - inputText: "dev-pass"
+      - tapOn: { id: "login-btn" }
+      - extendedWaitUntil: { visible: "Home", timeout: 8000 }
+
+# Navigate to merchants → first → BLE test
+- tapOn: "Merchants|Attività|merchants"
+- extendedWaitUntil: { visible: "Test BLE|Ingresso|Cassa", timeout: 10000, optional: true }
+
+- tapOn:
+    text: "Test BLE|BLE|Ingresso"
+    optional: true
+
+- extendedWaitUntil: { visible: "Scansiona", timeout: 5000 }
+
+- tapOn:
+    id: "scan-btn"
+
+# Expect 4-beacon rows after scan completes
+- extendedWaitUntil:
+    visible: "H-01|H-02|H-03|H-04"
+    timeout: 20000
+
+# Confirm on-boarding
+- tapOn:
+    id: "confirm-btn"
+
+- assertVisible:
+    text: "confermato|On-boarding"
+    optional: true

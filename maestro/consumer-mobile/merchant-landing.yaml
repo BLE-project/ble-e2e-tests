@@ -1,0 +1,36 @@
+appId: com.terrio.consumer
+tags:
+  - landing
+  - p1
+---
+# §5-6 P1 — Consumer opens merchant landing page.
+# Precondition: 1 merchant PUBLISHED in seed (name "E2E Bar Centrale").
+# Flow: search → tap merchant row → landing opens → CTA buttons visible.
+
+- launchApp:
+    stopApp: true
+
+- extendedWaitUntil:
+    visible: "Home|Discover|Terrio"
+    timeout: 30000
+
+# Navigate to Discover / Search (tab location may vary by branding)
+- tapOn: "Discover|Esplora|Cerca"
+- extendedWaitUntil: { visible: "Cerca|Search|merchant", timeout: 5000 }
+
+# Search for the seeded merchant
+- tapOn:
+    id: "search-input"
+    optional: true
+- inputText:
+    text: "Bar Centrale"
+    optional: true
+
+# Tap the first merchant card — landing should open
+- tapOn:
+    text: "Bar Centrale"
+    optional: true
+
+- extendedWaitUntil:
+    visible: "Indicazioni|Chiama|Descrizione"
+    timeout: 10000

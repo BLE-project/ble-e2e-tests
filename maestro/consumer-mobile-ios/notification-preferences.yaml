@@ -1,0 +1,34 @@
+appId: com.terrio.consumer
+tags:
+  - notifications
+  - p1
+  - ios
+---
+# §7.3 iOS parity — Consumer notification preferences.
+
+- launchApp:
+    stopApp: true
+
+- extendedWaitUntil:
+    visible: "Home|Discover|Terrio"
+    timeout: 30000
+
+- runFlow:
+    when: { visible: "Sign in|Accedi" }
+    commands:
+      - tapOn: { text: "Email|email" }
+      - inputText: "dev-consumer"
+      - tapOn: { text: "Password|password" }
+      - inputText: "dev-pass"
+      - tapOn: "Sign in|Accedi"
+      - extendedWaitUntil: { visible: "Home|Discover", timeout: 8000 }
+
+- tapOn: "Profilo|Profile|Account"
+- extendedWaitUntil: { visible: "Preferenze|Settings", timeout: 5000 }
+
+- tapOn: "Notifiche|Notifications|Preferenze notifiche"
+- extendedWaitUntil: { visible: "Preferenze notifiche|Notification Preferences", timeout: 5000 }
+
+- assertVisible: "Sempre attivo"
+- tapOn: { id: "toggle-cashback-credit" }
+- assertNotVisible: "Errore"

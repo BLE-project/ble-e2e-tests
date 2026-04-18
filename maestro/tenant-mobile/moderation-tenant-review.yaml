@@ -1,0 +1,62 @@
+appId: com.terrio.tenant
+tags:
+  - moderation
+  - p0
+---
+# §9bis M8 P0 — TENANT_ADMIN reviews an ESCALATED_TO_ADMIN ADV.
+# Precondition: 1 ADV in ESCALATED_TO_ADMIN status seeded, tenant admin logged in.
+# The tenant admin has the override power (Q7) to approve/reject any ADV in
+# their tenant, including those already escalated from sales.
+
+- launchApp:
+    stopApp: true
+
+- extendedWaitUntil:
+    visible: "TERRIO Tenant|Tenant admin portal|Welcome back"
+    timeout: 30000
+
+- runFlow:
+    when: { visible: "Tenant admin portal" }
+    commands:
+      - tapOn: { text: "Email" }
+      - inputText: "dev-tenant-admin"
+      - hideKeyboard
+      - tapOn: { text: "Password" }
+      - inputText: "dev-pass"
+      - hideKeyboard
+      - tapOn: "Sign in"
+      - extendedWaitUntil: { visible: "Welcome back", timeout: 8000 }
+
+# Navigate to Moderation queue (tenant admin view)
+- tapOn: "Moderation|Moderazioni|ADV Queue"
+
+- extendedWaitUntil:
+    visible: "ESCALATED|Escalata"
+    timeout: 10000
+
+- tapOn:
+    id: "moderation-row"
+
+- extendedWaitUntil:
+    visible: "ANALISI AI|Claude|DESCRIZIONE"
+    timeout: 5000
+
+# Approve (tenant override)
+- tapOn:
+    id: "btn-approve"
+
+- extendedWaitUntil:
+    visible: "Approva ADV"
+    timeout: 3000
+
+- tapOn: { id: "reason-input" }
+- inputText: "Override: caso valutato OK dopo escalation"
+
+- tapOn: { id: "totp-input" }
+- inputText: "123456"
+
+- tapOn: { id: "confirm-action" }
+
+- extendedWaitUntil:
+    visible: "Approvata|Moderation"
+    timeout: 10000
