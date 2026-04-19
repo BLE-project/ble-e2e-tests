@@ -1,0 +1,111 @@
+# v7.9.11 CI-E2E — runs Playwright against the Terrio E2E compose stack.
+#
+# Triggered on pull_request + on workflow_dispatch. Spins up PostgreSQL, Redis,
+# Keycloak, core-registry, notification-service, and BFF via terrio-e2e-compose,
+# waits for /q/health/ready on the BFF, runs the Playwright suite.
+#
+# A failing test uploads the html-report as a workflow artifact.
+
+name: E2E Playwright
+
+on:
+  pull_request:
+    paths:
+      - 'tests/**'
+      - 'fixtures/**'
+      - 'helpers/**'
+      - 'playwright.config.ts'
+      - '.github/workflows/e2e-playwright.yml'
+  workflow_dispatch:
+  schedule:
+    # Nightly at 03:15 UTC to catch flaky tests on main
+    - cron: '15 3 * * *'
+
+env:
+  NODE_VERSION: '20'
+  # Default URLs — compose binds these on localhost in CI
+  BFF_URL:    'http://localhost:8080'
+  NOTIF_URL:  'http://localhost:8084'
+  CORE_URL:   'http://localhost:8081'
+  KC_URL:     'http://localhost:8180'
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout e2e-tests
+        uses: actions/checkout@v4
+
+      - name: Checkout terrio-e2e-compose
+        uses: actions/checkout@v4
+        with:
+          repository: BLE-project/ble-e2e-compose
+          path: e2e-compose
+          token: ${{ secrets.GH_PAT }}
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install Playwright deps
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+
+      - name: Bring up E2E stack (docker compose)
+        working-directory: e2e-compose
+        run: |
+          docker compose up -d --wait --wait-timeout 300
+          docker compose ps
+
+      - name: Wait for BFF readiness
+        run: |
+          for i in $(seq 1 60); do
+            if curl -fsS http://localhost:8080/q/health/ready >/dev/null 2>&1; then
+              echo "BFF ready after ${i}s"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "BFF never became ready"
+          exit 1
+
+      - name: Run Playwright tests (api block)
+        run: |
+          npx playwright test tests/api \
+              --reporter=list,html \
+              --project=api
+        env:
+          BFF_URL:   ${{ env.BFF_URL }}
+          NOTIF_URL: ${{ env.NOTIF_URL }}
+          CI:        true
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+
+      - name: Dump service logs on failure
+        if: failure()
+        working-directory: e2e-compose
+        run: |
+          echo "--- BFF logs ---"
+          docker compose logs --tail=200 ble-api-gateway-bff || true
+          echo "--- notification-service logs ---"
+          docker compose logs --tail=200 ble-notification-service || true
+          echo "--- core-registry logs ---"
+          docker compose logs --tail=200 ble-core-registry || true
+          echo "--- keycloak logs ---"
+          docker compose logs --tail=200 keycloak || true
+
+      - name: Tear down stack
+        if: always()
+        working-directory: e2e-compose
+        run: docker compose down --volumes --remove-orphans
