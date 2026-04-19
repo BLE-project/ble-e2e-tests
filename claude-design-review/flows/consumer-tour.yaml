@@ -1,0 +1,68 @@
+appId: com.terrio.consumer
+---
+# Claude Design UX/UI review — consumer-mobile tour with screenshots.
+# Captures each major screen state. Output: claude-design-review/screenshots/consumer/*.png
+
+- launchApp:
+    stopApp: true
+- extendedWaitUntil:
+    visible: "TERRIO"
+    timeout: 30000
+
+# ── 01 Login screen ──────────────────────────────────────────────────────
+- takeScreenshot: "../screenshots/consumer/01-login"
+
+- tapOn: { text: "Email" }
+- inputText: "dev-consumer"
+- tapOn: { text: "Password" }
+- inputText: "dev-pass"
+- takeScreenshot: "../screenshots/consumer/02-login-filled"
+
+- tapOn: "Sign in"
+
+- runFlow:
+    when: { visible: "Return to previous programme" }
+    commands:
+      - tapOn: "STAY HERE"
+
+- extendedWaitUntil:
+    visible: "Nearby"
+    timeout: 10000
+
+# ── 03 Nearby (home) ─────────────────────────────────────────────────────
+- takeScreenshot: "../screenshots/consumer/03-home-nearby"
+
+# ── 04 Wallet tab ───────────────────────────────────────────────────────
+- runFlow:
+    when: { visible: "Wallet" }
+    commands:
+      - tapOn: "Wallet"
+      - extendedWaitUntil: { visible: "Wallet", timeout: 5000 }
+      - takeScreenshot: "../screenshots/consumer/04-wallet"
+
+# ── 05 Notifications / inbox ────────────────────────────────────────────
+- runFlow:
+    when: { visible: "Notifications" }
+    commands:
+      - tapOn: "Notifications"
+      - takeScreenshot: "../screenshots/consumer/05-notifications"
+
+# ── 06 Profile ──────────────────────────────────────────────────────────
+- runFlow:
+    when: { visible: "Profile" }
+    commands:
+      - tapOn: "Profile"
+      - takeScreenshot: "../screenshots/consumer/06-profile"
+
+# ── 07 Back to Nearby + open a merchant detail (if any beacon detected) ─
+- tapOn: "Nearby"
+- runFlow:
+    when: { visible: "Offers" }
+    commands:
+      - tapOn:
+          index: 0
+          below: "Nearby"
+      - takeScreenshot: "../screenshots/consumer/07-merchant-landing"
+
+# End — back to home
+- tapOn: "Nearby"

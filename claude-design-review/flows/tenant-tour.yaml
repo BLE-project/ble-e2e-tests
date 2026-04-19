@@ -1,0 +1,55 @@
+appId: com.terrio.tenant
+---
+# Claude Design UX/UI review — tenant-mobile tour.
+
+- launchApp:
+    stopApp: true
+- extendedWaitUntil:
+    visible: "Login"
+    timeout: 30000
+- takeScreenshot: "../screenshots/tenant/01-login"
+
+- tapOn: { text: "Email" }
+- inputText: "dev-tenant-admin"
+- tapOn: { text: "Password" }
+- inputText: "dev-pass"
+- tapOn: "Sign in"
+- extendedWaitUntil: { visible: "Home", timeout: 10000 }
+- takeScreenshot: "../screenshots/tenant/02-home"
+
+# ── Territories ───────────────────────────────────────────────────────
+- runFlow:
+    when: { visible: "Territories" }
+    commands:
+      - tapOn: "Territories"
+      - takeScreenshot: "../screenshots/tenant/03-territories"
+
+# ── Beacons ───────────────────────────────────────────────────────────
+- runFlow:
+    when: { visible: "Beacons" }
+    commands:
+      - tapOn: "Beacons"
+      - takeScreenshot: "../screenshots/tenant/04-beacons"
+
+# ── Merchant moderation (v7.9.10+) ────────────────────────────────────
+- runFlow:
+    when: { visible: "Merchant" }
+    commands:
+      - tapOn: "Merchant"
+      - extendedWaitUntil: { visible: "Merchant", timeout: 5000 }
+      - takeScreenshot: "../screenshots/tenant/05-merchants-list"
+      # Tap first row if present to see detail + diff-view
+      - runFlow:
+          when: { visible: "PENDING_HUMAN" }
+          commands:
+            - tapOn:
+                text: "PENDING_HUMAN"
+                index: 0
+            - takeScreenshot: "../screenshots/tenant/06-merchant-detail"
+
+# ── White-label / theme ───────────────────────────────────────────────
+- runFlow:
+    when: { visible: "Theme" }
+    commands:
+      - tapOn: "Theme"
+      - takeScreenshot: "../screenshots/tenant/07-whitelabel"

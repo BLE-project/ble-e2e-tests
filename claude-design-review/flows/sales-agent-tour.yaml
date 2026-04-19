@@ -1,0 +1,54 @@
+appId: com.terrio.salesagent
+---
+# Claude Design UX/UI review — sales-agent-mobile tour.
+
+- launchApp:
+    stopApp: true
+- extendedWaitUntil:
+    visible: "Login"
+    timeout: 30000
+- takeScreenshot: "../screenshots/sales-agent/01-login"
+
+- tapOn: { text: "Email" }
+- inputText: "dev-sales-agent"
+- tapOn: { text: "Password" }
+- inputText: "dev-pass"
+- tapOn: "Sign in"
+- extendedWaitUntil: { visible: "Home", timeout: 10000 }
+- takeScreenshot: "../screenshots/sales-agent/02-home"
+
+- runFlow:
+    when: { visible: "Merchants" }
+    commands:
+      - tapOn: "Merchants"
+      - takeScreenshot: "../screenshots/sales-agent/03-merchants-list"
+      # Tap first merchant to see detail (v7.9.8 L4)
+      - runFlow:
+          when: { visible: "ACTIVE" }
+          commands:
+            - tapOn: { index: 0, below: "I tuoi merchant" }
+            - takeScreenshot: "../screenshots/sales-agent/04-merchant-detail"
+
+- runFlow:
+    when: { visible: "Moderation" }
+    commands:
+      - tapOn: "Moderation"
+      - takeScreenshot: "../screenshots/sales-agent/05-moderation"
+
+- runFlow:
+    when: { visible: "Beacon" }
+    commands:
+      - tapOn: "Beacon"
+      - takeScreenshot: "../screenshots/sales-agent/06-beacon-config"
+
+- runFlow:
+    when: { visible: "Royalties" }
+    commands:
+      - tapOn: "Royalties"
+      - takeScreenshot: "../screenshots/sales-agent/07-royalties"
+
+- runFlow:
+    when: { visible: "Profile" }
+    commands:
+      - tapOn: "Profile"
+      - takeScreenshot: "../screenshots/sales-agent/08-profile"

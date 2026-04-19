@@ -1,0 +1,38 @@
+appId: com.terrio.territory
+---
+# Claude Design UX/UI review — territory-mobile tour.
+
+- launchApp:
+    stopApp: true
+- extendedWaitUntil:
+    visible: "Login"
+    timeout: 30000
+- takeScreenshot: "../screenshots/territory/01-login"
+
+- tapOn: { text: "Email" }
+- inputText: "dev-territory-admin"
+- tapOn: { text: "Password" }
+- inputText: "dev-pass"
+- tapOn: "Sign in"
+
+- extendedWaitUntil: { visible: "Territori", timeout: 10000 }
+- takeScreenshot: "../screenshots/territory/02-territories-list"
+
+# Tap first territory if present
+- runFlow:
+    when: { visible: "Territori" }
+    commands:
+      - tapOn: { index: 0, below: "Territori" }
+      - takeScreenshot: "../screenshots/territory/03-territory-detail"
+
+# Back + merchants list
+- runFlow:
+    when: { visible: "Merchant nel mio territorio" }
+    commands:
+      - tapOn: "Merchant nel mio territorio"
+      - takeScreenshot: "../screenshots/territory/04-merchants-list"
+      - runFlow:
+          when: { visible: "PUBLISHED" }
+          commands:
+            - tapOn: { index: 0, below: "Merchant nel mio territorio" }
+            - takeScreenshot: "../screenshots/territory/05-merchant-detail"

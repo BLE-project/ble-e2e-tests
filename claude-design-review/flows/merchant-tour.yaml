@@ -1,0 +1,68 @@
+appId: com.terrio.merchant
+---
+# Claude Design UX/UI review — merchant-mobile tour.
+
+- launchApp:
+    stopApp: true
+- extendedWaitUntil:
+    visible: "Login"
+    timeout: 30000
+- takeScreenshot: "../screenshots/merchant/01-login"
+
+- tapOn: { text: "Email" }
+- inputText: "dev-merchant"
+- tapOn: { text: "Password" }
+- inputText: "dev-pass"
+- takeScreenshot: "../screenshots/merchant/02-login-filled"
+
+- tapOn: "Sign in"
+- extendedWaitUntil:
+    visible: "Dashboard"
+    timeout: 10000
+- takeScreenshot: "../screenshots/merchant/03-dashboard"
+
+# ── Landing editor (v7.9.10 feature) ──────────────────────────────────
+- runFlow:
+    when: { visible: "Landing" }
+    commands:
+      - tapOn: "Landing"
+      - extendedWaitUntil: { visible: "La mia landing", timeout: 5000 }
+      - takeScreenshot: "../screenshots/merchant/04-landing-editor-empty"
+      # Scroll to see social links section
+      - scroll
+      - takeScreenshot: "../screenshots/merchant/05-landing-editor-social"
+
+# ── Health ────────────────────────────────────────────────────────────
+- runFlow:
+    when: { visible: "Health" }
+    commands:
+      - tapOn: "Health"
+      - takeScreenshot: "../screenshots/merchant/06-health"
+
+# ── Beacons ───────────────────────────────────────────────────────────
+- runFlow:
+    when: { visible: "Beacons" }
+    commands:
+      - tapOn: "Beacons"
+      - takeScreenshot: "../screenshots/merchant/07-beacons"
+
+# ── POS / Loyalty ─────────────────────────────────────────────────────
+- runFlow:
+    when: { visible: "POS" }
+    commands:
+      - tapOn: "POS"
+      - takeScreenshot: "../screenshots/merchant/08-pos"
+
+# ── Billing ───────────────────────────────────────────────────────────
+- runFlow:
+    when: { visible: "Billing" }
+    commands:
+      - tapOn: "Billing"
+      - takeScreenshot: "../screenshots/merchant/09-billing"
+
+# ── Cashback config ───────────────────────────────────────────────────
+- runFlow:
+    when: { visible: "Cashback" }
+    commands:
+      - tapOn: "Cashback"
+      - takeScreenshot: "../screenshots/merchant/10-cashback-config"
