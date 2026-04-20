@@ -1,7 +1,13 @@
 #!/bin/bash
-# Sequential Maestro test runner for all 4 mobile apps on a physical device
+# Sequential Maestro test runner for all 5 mobile apps on a physical device.
 # Usage: ./maestro/run-all.sh [--skip-install]
-# Prerequisites: device connected via USB, release APKs built, backend stack running
+# Prerequisites: device connected via USB, APKs built (debug or release),
+# backend stack running.
+#
+# APK discovery order: release/app-release.apk (signed, production-like), then
+# debug/app-debug.apk (what scripts/rebuild-all-apks.sh produces by default).
+# The fallback lets developers run Maestro without setting up a release
+# signing config — debug APKs are functionally equivalent for UI testing.
 
 set -e
 
@@ -64,7 +70,20 @@ APPS=(
   "merchant-mobile:com.terrio.merchant:terrio-merchant-mobile"
   "tenant-mobile:com.terrio.tenant:terrio-tenant-mobile"
   "sales-agent-mobile:com.terrio.salesagent:terrio-sales-agent-mobile"
+  "territory-mobile:com.terrio.territory:terrio-territory-mobile"
 )
+
+# Returns the preferred APK path for a repo: release if present, else debug.
+# Empty string + non-zero exit if neither exists.
+find_apk() {
+  local repo_dir="$1"
+  local rel="$repo_dir/android/app/build/outputs/apk/release/app-release.apk"
+  local dbg="$repo_dir/android/app/build/outputs/apk/debug/app-debug.apk"
+  if   [ -f "$rel" ]; then echo "$rel"
+  elif [ -f "$dbg" ]; then echo "$dbg"
+  else return 1
+  fi
+}
 
 # Flows run in this fixed order per app, regardless of filesystem order.
 # login MUST run first (it asserts the logged-out state); other flows are
@@ -78,7 +97,7 @@ APPS=(
 # in an authenticated tenant context when the branding fetch kicks in.
 # It relies on the E2E fixture seeded by seed-custom-branding-fixtures.ts
 # being applied on the active tenant before the suite starts.
-FLOW_ORDER=(login custom-branding navigation beacon-scan beacon-scan-background beacons beacon-reconfig-switch cashback-config pos-scan requests logout)
+FLOW_ORDER=(login custom-branding navigation beacon-scan beacon-scan-background beacons beacon-reconfig-switch cashback-config pos-scan requests territory-list territory-crud logout)
 
 PASS=0
 FAIL=0
@@ -133,20 +152,20 @@ trap cleanup EXIT
 echo "adb reverse 8080 → 8080 configured"
 echo ""
 
-# ── Install release APKs ──────────────────────────────────────────────────
+# ── Install APKs (prefer release, fall back to debug) ────────────────────
 if [[ "${1:-}" != "--skip-install" ]]; then
-  echo "=== Installing release APKs ==="
+  echo "=== Installing APKs ==="
   for entry in "${APPS[@]}"; do
     IFS=':' read -r _ pkg dir <<<"$entry"
-    apk="$REPO_ROOT/$dir/android/app/build/outputs/apk/release/app-release.apk"
-    if [ ! -f "$apk" ]; then
-      echo "  SKIP: $dir (no release APK — run gradlew assembleRelease first)"
+    if ! apk=$(find_apk "$REPO_ROOT/$dir"); then
+      echo "  SKIP: $dir (no APK — run scripts/rebuild-all-apks.sh first)"
       continue
     fi
+    flavour=$(basename "$(dirname "$apk")")   # "release" or "debug"
     # Uninstall old version to avoid signature conflicts
     "$ADB" uninstall "$pkg" >/dev/null 2>&1 || true
     "$ADB" install -r "$apk" 2>&1 | tail -1
-    echo "  $pkg installed"
+    echo "  $pkg installed ($flavour)"
   done
   echo ""
 fi
@@ -204,7 +223,8 @@ seed_custom_branding() {
 for entry in "${APPS[@]}"; do
   IFS=':' read -r app_name pkg dir <<<"$entry"
   echo "=== Running $app_name flows ==="
-  apk="$REPO_ROOT/$dir/android/app/build/outputs/apk/release/app-release.apk"
+  # find_apk returns release if present, else debug — tolerate either
+  apk=$(find_apk "$REPO_ROOT/$dir" || true)
   # Fase 4.3: ensure the custom-branding fixture is applied before the
   # consumer-mobile flows run. Scoped to consumer-mobile only because
   # the other apps never read /bff/v1/consumer/brand.
