@@ -98,11 +98,33 @@ async function syncKeycloakUsers(tenantId: string) {
   console.log(`[global-setup] KC users synced with ble_tenant_id=${tenantId}`)
 }
 
+/**
+ * GAP-QA-009 (v7.9.17): retry seed data with exponential backoff.
+ * Common transient failures: stack just started, BFF not yet healthy,
+ * Keycloak Liquibase still running, etc. 5 retries × ~2s,4s,8s,16s,32s
+ * = ~62s total window covers typical cold-boot scenario.
+ */
+async function ensureSeedDataWithRetry(maxAttempts = 5): Promise<Awaited<ReturnType<typeof ensureSeedData>>> {
+  let lastErr: unknown
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await ensureSeedData()
+    } catch (e) {
+      lastErr = e
+      if (attempt === maxAttempts) break
+      const delayMs = Math.min(2000 * Math.pow(2, attempt - 1), 30_000)
+      console.warn(`[global-setup] seed attempt ${attempt}/${maxAttempts} failed, retrying in ${delayMs}ms: ${(e as Error).message?.slice(0, 120)}`)
+      await new Promise(r => setTimeout(r, delayMs))
+    }
+  }
+  throw lastErr
+}
+
 export default async function globalSetup() {
   console.log('[global-setup] Ensuring seed data (tenant + territory)...')
 
   try {
-    const seed = await ensureSeedData()
+    const seed = await ensureSeedDataWithRetry()
     process.env.DEV_TENANT_ID = seed.tenantId
     process.env.DEV_TERRITORY_ID = seed.territoryId
     console.log(`[global-setup] Tenant: ${seed.tenantId} (${seed.tenantName})`)
@@ -121,7 +143,15 @@ export default async function globalSetup() {
       JSON.stringify(seed, null, 2),
     )
   } catch (e) {
-    console.error('[global-setup] Seed data creation failed:', e)
+    console.error('[global-setup] Seed data creation failed after retries:', e)
     console.error('[global-setup] CRUD tests that require seed data will be skipped.')
+    // GAP-QA-009 (v7.9.17): write sentinel file so per-test fixtures can
+    // distinguish "seed deliberately skipped" from "first run in progress"
+    try {
+      const fs = await import('fs')
+      if (!fs.existsSync('./test-results')) fs.mkdirSync('./test-results', { recursive: true })
+      fs.writeFileSync('./test-results/.seed-skipped.flag',
+        `${new Date().toISOString()}\n${(e as Error).message}\n`)
+    } catch { /* best-effort */ }
   }
 }
