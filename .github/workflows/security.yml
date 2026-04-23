@@ -58,7 +58,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Trivy filesystem scan
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: fs
           scan-ref: .
@@ -97,7 +97,7 @@ jobs:
         run: docker pull ghcr.io/ble-project/${{ matrix.service }}:latest || echo "Image not yet published; skip"
 
       - name: Trivy image scan
-        uses: aquasecurity/trivy-action@master
+        uses: aquasecurity/trivy-action@v0.36.0
         continue-on-error: true    # don't fail matrix if one image is missing
         with:
           image-ref: ghcr.io/ble-project/${{ matrix.service }}:latest
