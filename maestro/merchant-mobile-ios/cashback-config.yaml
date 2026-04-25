@@ -1,0 +1,53 @@
+appId: com.terrio.merchant
+tags:
+  - cashback
+  - p1
+  - ios
+---
+# Merchant Mobile — Cashback configuration (iOS, FEAT-MIN-SPEND-001)
+
+- launchApp:
+    stopApp: true
+
+- extendedWaitUntil:
+    visible:
+      text: "TERRIO Merchant|Merchant portal|Dashboard"
+    timeout: 30000
+
+- runFlow:
+    when:
+      visible: "Merchant portal"
+    commands:
+      - tapOn:
+          text: "Email"
+      - inputText: "dev-merchant"
+      - tapOn:
+          text: "Password"
+      - inputText: "dev-pass"
+      - tapOn: "Sign in"
+      - extendedWaitUntil:
+          visible: "Dashboard"
+          timeout: 8000
+
+- tapOn: "Cashback"
+- extendedWaitUntil:
+    visible: "Configurazione Cashback"
+    timeout: 5000
+
+- assertVisible: "Valori attuali"
+- assertVisible: "Nuovi valori"
+
+- tapOn:
+    text: "es. 5 (min 5%, max 100%)"
+- inputText: "10"
+
+- tapOn:
+    text: "es. 5.00 (0 = nessun minimo)"
+- inputText: "5.00"
+
+- tapOn: "Salva configurazione"
+
+- extendedWaitUntil:
+    visible: "Salvato|Errore"
+    timeout: 10000
+    optional: true

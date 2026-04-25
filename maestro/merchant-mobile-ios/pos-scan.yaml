@@ -1,0 +1,65 @@
+appId: com.terrio.merchant
+tags:
+  - pos
+  - p1
+  - ios
+---
+# Merchant Mobile — POS barcode scan flow (iOS)
+
+- launchApp:
+    stopApp: true
+
+- extendedWaitUntil:
+    visible:
+      text: "TERRIO Merchant|Merchant portal|Dashboard"
+    timeout: 30000
+
+- runFlow:
+    when:
+      visible: "Merchant portal"
+    commands:
+      - tapOn:
+          text: "Email"
+      - inputText: "dev-merchant"
+      - tapOn:
+          text: "Password"
+      - inputText: "dev-pass"
+      - tapOn: "Sign in"
+      - extendedWaitUntil:
+          visible: "Dashboard"
+          timeout: 8000
+
+- tapOn: "POS"
+- extendedWaitUntil:
+    visible: "Loyalty POS"
+    timeout: 5000
+
+- runFlow:
+    when:
+      visible: "Nuova Operazione"
+    commands:
+      - tapOn: "Nuova Operazione"
+      - extendedWaitUntil:
+          visible: "Identifica il Cliente"
+          timeout: 5000
+
+- assertVisible: "Identifica il Cliente"
+- assertVisible:
+    text: ".*Scansiona Tessera"
+
+- runFlow:
+    when:
+      visible: "TERRIO-XXXX-XXXX-XXXX"
+    commands:
+      - tapOn: "TERRIO-XXXX-XXXX-XXXX"
+      - inputText: "TERRIO-0000-0000-TEST"
+      - runFlow:
+          when:
+            visible: "Cerca Tessera"
+          commands:
+            - tapOn: "Cerca Tessera"
+            - extendedWaitUntil:
+                visible:
+                  text: "Tessera non trovata|Tessera trovata|Conferma"
+                timeout: 10000
+                optional: true

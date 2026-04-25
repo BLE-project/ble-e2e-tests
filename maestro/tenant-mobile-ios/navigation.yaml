@@ -1,0 +1,60 @@
+appId: com.terrio.tenant
+tags:
+  - navigation
+  - p1
+  - ios
+---
+# Tenant Mobile — Full tab navigation (iOS)
+
+- launchApp:
+    stopApp: true
+
+- extendedWaitUntil:
+    visible:
+      text: "TERRIO Tenant|Tenant admin portal|Welcome back"
+    timeout: 30000
+
+- runFlow:
+    when:
+      visible: "Tenant admin portal"
+    commands:
+      - tapOn:
+          text: "Email"
+      - inputText: "dev-tenant-admin"
+      - tapOn:
+          text: "Password"
+      - inputText: "dev-pass"
+      - tapOn: "Sign in"
+      - extendedWaitUntil:
+          visible: "Welcome back"
+          timeout: 8000
+
+- tapOn: "Territories"
+- extendedWaitUntil:
+    visible: "Territories"
+    timeout: 5000
+
+- tapOn: "Beacons"
+- extendedWaitUntil:
+    visible: "Beacons"
+    timeout: 5000
+
+- tapOn: "Theme"
+- extendedWaitUntil:
+    visible: "White-label"
+    timeout: 5000
+
+- tapOn: "Settings"
+- extendedWaitUntil:
+    visible: "Settings"
+    timeout: 5000
+
+- tapOn: "Report"
+- extendedWaitUntil:
+    visible: "Report Bug"
+    timeout: 5000
+
+- tapOn: "Home"
+- extendedWaitUntil:
+    visible: "Home"
+    timeout: 5000

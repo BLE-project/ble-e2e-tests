@@ -1,0 +1,43 @@
+appId: com.terrio.salesagent
+tags:
+  - requests
+  - p1
+  - ios
+---
+# Sales Agent Mobile — Registration Requests flow + status filters (iOS)
+
+- launchApp:
+    stopApp: true
+
+- extendedWaitUntil:
+    visible:
+      text: "Terrio|Agente Commerciale|Dashboard"
+    timeout: 30000
+
+- runFlow:
+    when:
+      visible: "Agente Commerciale"
+    commands:
+      - tapOn:
+          id: "username-input"
+      - inputText: "dev-sales-agent"
+      - tapOn:
+          id: "password-input"
+      - inputText: "dev-pass"
+      - tapOn:
+          id: "login-btn"
+      - extendedWaitUntil:
+          visible: "Dashboard"
+          timeout: 10000
+
+- tapOn: "Richieste"
+- extendedWaitUntil:
+    visible: "Richieste"
+    timeout: 5000
+
+- assertVisible: "PENDING"
+- tapOn: "ALL"
+- tapOn: "IN_REVIEW"
+- tapOn: "APPROVED"
+- tapOn: "REJECTED"
+- tapOn: "PENDING"
