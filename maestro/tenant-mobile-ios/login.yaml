@@ -1,0 +1,32 @@
+appId: com.terrio.tenant
+tags:
+  - login
+  - p1
+  - ios
+---
+# Tenant Mobile — Login flow (iOS)
+
+- launchApp:
+    stopApp: true
+
+- extendedWaitUntil:
+    visible: "TERRIO Tenant"
+    timeout: 30000
+
+- assertVisible: "Tenant admin portal"
+
+- tapOn: { id: "username-input" }
+- inputText: "dev-tenant-admin"
+
+- tapOn: { id: "password-input" }
+- inputText: "dev-pass"
+
+- tapOn: { id: "login-btn" }
+
+- tapOn:
+    text: "Non ora|Never|Not now"
+    optional: true
+
+- extendedWaitUntil:
+    visible: "Home|Welcome back"
+    timeout: 15000

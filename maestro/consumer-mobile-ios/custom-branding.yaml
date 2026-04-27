@@ -1,0 +1,50 @@
+appId: com.terrio.consumer
+tags:
+  - branding
+  - p1
+  - ios
+---
+# Consumer Mobile — Custom branding verification (iOS, Fase 4.3)
+# Prerequisite: seed-custom-branding-fixtures.ts run before this flow.
+
+- launchApp:
+    stopApp: true
+
+- extendedWaitUntil:
+    visible: "TERRIO"
+    timeout: 30000
+
+- assertVisible: "Discover nearby offers"
+
+- tapOn:
+    text: "Email"
+- inputText: "dev-consumer"
+
+- tapOn:
+    text: "Password"
+- inputText: "dev-pass"
+
+- tapOn: "Sign in"
+
+- runFlow:
+    when:
+      visible: "Return to previous programme"
+    commands:
+      - tapOn: "STAY HERE"
+
+- extendedWaitUntil:
+    visible: "Nearby"
+    timeout: 10000
+
+- tapOn: "Nearby"
+- extendedWaitUntil:
+    visible: "Nearby"
+    timeout: 5000
+
+- extendedWaitUntil:
+    visible:
+      id: "brand-tag"
+    timeout: 15000
+
+- assertVisible: "E2E Brand"
+- assertVisible: "Nearby"

@@ -1,0 +1,54 @@
+appId: com.terrio.salesagent
+tags:
+  - ble
+  - p1
+  - ios
+---
+# §9 P1 — Sales agent BLE health check at first onboarding (iOS)
+
+- launchApp:
+    stopApp: true
+
+- extendedWaitUntil:
+    visible: "Terrio|Home|Agente Commerciale"
+    timeout: 30000
+
+- runFlow:
+    when: { visible: "Agente Commerciale" }
+    commands:
+      - tapOn: { id: "username-input" }
+      - inputText: "dev-sales-agent"
+      - tapOn: { id: "password-input" }
+      - inputText: "dev-pass"
+      - tapOn: { id: "login-btn" }
+      - extendedWaitUntil: { visible: "Home", timeout: 8000 }
+
+- tapOn: "Merchants|Attività|merchants"
+- extendedWaitUntil: { visible: "Test BLE|Ingresso|Cassa", timeout: 10000, optional: true }
+
+- tapOn:
+    text: "Test BLE|BLE|Ingresso"
+    optional: true
+
+- extendedWaitUntil: { visible: "Scansiona", timeout: 5000 }
+
+# iOS BLE permission dialog
+- runFlow:
+    when:
+      visible: "Allow"
+    commands:
+      - tapOn: "Allow"
+
+- tapOn:
+    id: "scan-btn"
+
+- extendedWaitUntil:
+    visible: "H-01|H-02|H-03|H-04"
+    timeout: 20000
+
+- tapOn:
+    id: "confirm-btn"
+
+- assertVisible:
+    text: "confermato|On-boarding"
+    optional: true

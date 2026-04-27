@@ -1,0 +1,41 @@
+appId: com.terrio.merchant
+tags:
+  - logout
+  - p1
+  - ios
+---
+# Merchant Mobile — Logout flow (iOS)
+
+- launchApp:
+    stopApp: true
+
+- extendedWaitUntil:
+    visible:
+      text: "TERRIO Merchant|Merchant portal|Dashboard"
+    timeout: 30000
+
+- runFlow:
+    when:
+      visible: "Merchant portal"
+    commands:
+      - tapOn:
+          text: "Email"
+      - inputText: "dev-merchant"
+      - tapOn:
+          text: "Password"
+      - inputText: "dev-pass"
+      - tapOn: "Sign in"
+      - extendedWaitUntil:
+          visible: "Dashboard"
+          timeout: 8000
+
+- tapOn: "Home"
+- extendedWaitUntil:
+    visible: "Dashboard"
+    timeout: 5000
+
+- tapOn: "Sign out"
+
+- extendedWaitUntil:
+    visible: "Merchant portal"
+    timeout: 8000

@@ -1,0 +1,76 @@
+appId: com.terrio.territory
+tags:
+  - navigation
+  - p1
+  - ios
+---
+# Territory Mobile — Navigation smoke test (iOS)
+# Stack: list → new form → back → list → pull-to-refresh → detail.
+
+- launchApp:
+    stopApp: true
+
+- extendedWaitUntil:
+    visible:
+      text: "Terrio|Territory Manager|Territori"
+    timeout: 30000
+
+- runFlow:
+    when:
+      visible: "Esci"
+    commands:
+      - tapOn: "Esci"
+      - extendedWaitUntil:
+          visible: "Territory Manager"
+          timeout: 10000
+
+- runFlow:
+    when:
+      visible: "Territory Manager"
+    commands:
+      - tapOn:
+          id: "username-input"
+      - inputText: "dev-tenant-admin"
+      - tapOn:
+          id: "password-input"
+      - inputText: "dev-pass"
+      - tapOn:
+          id: "login-btn"
+      - extendedWaitUntil:
+          visible: "Territori"
+          timeout: 15000
+
+- tapOn:
+    id: "territory-list-new"
+
+- extendedWaitUntil:
+    visible: "Nuovo territorio"
+    timeout: 5000
+
+- tapOn:
+    id: "territory-form-cancel"
+
+- extendedWaitUntil:
+    visible: "Territori"
+    timeout: 5000
+
+- scroll
+
+- extendedWaitUntil:
+    visible:
+      text: "Territori|Nessun territorio"
+    timeout: 5000
+
+- runFlow:
+    when:
+      notVisible: "Nessun territorio"
+    commands:
+      - tapOn:
+          id: "territory-row-.*"
+      - extendedWaitUntil:
+          visible: "Dettaglio"
+          timeout: 8000
+      - back
+      - extendedWaitUntil:
+          visible: "Territori"
+          timeout: 5000

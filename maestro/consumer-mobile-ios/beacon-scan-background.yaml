@@ -1,0 +1,85 @@
+appId: com.terrio.consumer
+tags:
+  - ble
+  - background
+  - ios
+---
+# Consumer Mobile — Background BLE handoff (iOS, Fase 3.4)
+# Verifies AppState transition: foreground → background → foreground.
+# pressKey: Home works on iOS Simulator (simulates Home button gesture).
+
+- launchApp:
+    stopApp: true
+
+- extendedWaitUntil:
+    visible:
+      text: "TERRIO|Discover nearby offers|Nearby"
+    timeout: 30000
+
+- runFlow:
+    when:
+      visible: "Discover nearby offers"
+    commands:
+      - tapOn:
+          text: "Email"
+      - inputText: "dev-consumer"
+      - tapOn:
+          text: "Password"
+      - inputText: "dev-pass"
+      - tapOn: "Sign in"
+      - runFlow:
+          when:
+            visible: "Return to previous programme"
+          commands:
+            - tapOn: "STAY HERE"
+      - extendedWaitUntil:
+          visible: "Nearby"
+          timeout: 10000
+
+- runFlow:
+    when:
+      visible: "Return to previous programme"
+    commands:
+      - tapOn: "STAY HERE"
+
+- tapOn: "Nearby"
+- extendedWaitUntil:
+    visible: "Nearby"
+    timeout: 5000
+
+# iOS BLE/location permission dialogs
+- runFlow:
+    when:
+      visible: "Allow"
+    commands:
+      - tapOn: "Allow"
+- runFlow:
+    when:
+      visible: "Allow While Using App"
+    commands:
+      - tapOn: "Allow While Using App"
+
+- extendedWaitUntil:
+    visible:
+      text: "Scanning for nearby beacons|Waiting for beacons|Grant permission"
+    timeout: 15000
+
+# Background the app via Home button (works on iOS Simulator)
+- pressKey: Home
+- waitForAnimationToEnd
+
+- extendedWaitUntil:
+    visible:
+      text: "TERRIO"
+    timeout: 5000
+    optional: true
+
+# Re-foreground without cold start
+- launchApp
+
+- extendedWaitUntil:
+    visible:
+      text: "Scanning for nearby beacons|Waiting for beacons|Grant permission|Nearby"
+    timeout: 15000
+
+- assertVisible: "Nearby"

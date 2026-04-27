@@ -1,0 +1,116 @@
+appId: com.terrio.territory
+tags:
+  - crud
+  - p1
+  - ios
+---
+# Territory Mobile — CRUD happy-path (iOS)
+
+- launchApp:
+    stopApp: true
+
+- extendedWaitUntil:
+    visible:
+      text: "Terrio|Territory Manager|Territori|Nessun territorio|Errore"
+    timeout: 30000
+
+- runFlow:
+    when:
+      visible: "Esci"
+    commands:
+      - tapOn: "Esci"
+      - extendedWaitUntil:
+          visible: "Territory Manager"
+          timeout: 10000
+
+- runFlow:
+    when:
+      visible: "Territory Manager"
+    commands:
+      - tapOn:
+          id: "username-input"
+      - inputText: "dev-tenant-admin"
+      - tapOn:
+          id: "password-input"
+      - inputText: "dev-pass"
+      - tapOn:
+          id: "login-btn"
+      - extendedWaitUntil:
+          visible: "Territori"
+          timeout: 15000
+
+- extendedWaitUntil:
+    visible:
+      text: "Territori|Nessun territorio"
+    timeout: 15000
+
+# ── Create ─────────────────────────────────────────────────────────────────
+- tapOn:
+    id: "territory-list-new"
+
+- extendedWaitUntil:
+    visible: "Nuovo territorio"
+    timeout: 5000
+
+- tapOn:
+    id: "territory-form-name"
+- inputText: "Maestro Smoke Zone"
+
+- tapOn:
+    id: "territory-form-visibility-closed"
+
+- tapOn:
+    id: "territory-form-submit"
+
+- extendedWaitUntil:
+    visible: "Territorio creato"
+    timeout: 10000
+- tapOn: "OK"
+
+- extendedWaitUntil:
+    visible: "Maestro Smoke Zone"
+    timeout: 10000
+
+# ── Edit ───────────────────────────────────────────────────────────────────
+- tapOn:
+    id: "territory-detail-edit"
+
+- extendedWaitUntil:
+    visible: "Modifica territorio"
+    timeout: 5000
+
+- tapOn:
+    id: "territory-form-name"
+- eraseText
+- inputText: "Maestro Smoke Zone Edited"
+
+- tapOn:
+    id: "territory-form-submit"
+
+- extendedWaitUntil:
+    visible: "Territorio aggiornato"
+    timeout: 10000
+- tapOn: "OK"
+
+- extendedWaitUntil:
+    visible: "Maestro Smoke Zone Edited"
+    timeout: 10000
+
+# ── Delete ─────────────────────────────────────────────────────────────────
+- tapOn:
+    id: "territory-detail-delete"
+
+- extendedWaitUntil:
+    visible: "Eliminare territorio?"
+    timeout: 5000
+
+- tapOn: "Elimina"
+
+- extendedWaitUntil:
+    visible: "Territorio eliminato"
+    timeout: 10000
+- tapOn: "OK"
+
+- extendedWaitUntil:
+    visible: "Territori"
+    timeout: 10000

@@ -21,52 +21,81 @@ on:
 jobs:
   notification-service:
     runs-on: ubuntu-latest
-    # Advisory — requires GH_PAT_BACKEND_READ to succeed
-    continue-on-error: true
     steps:
-      - uses: actions/checkout@v4
+      # Sentinel: GitHub doesn't allow `secrets` in job-level `if:`, so we
+      # check at the first step. When GH_PAT_BACKEND_READ is missing, all
+      # subsequent steps are skipped and the job reports SUCCESS rather
+      # than FAILURE (which is what previously happened with the
+      # `continue-on-error: true` workaround). Configure
+      # GH_PAT_BACKEND_READ as a repo secret for full coverage.
+      - name: Check PAT
+        id: pat
+        env:
+          PAT: ${{ secrets.GH_PAT_BACKEND_READ }}
+        run: |
+          if [ -z "$PAT" ]; then
+            echo "::warning::GH_PAT_BACKEND_READ not configured — skipping cross-repo backend test"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - if: steps.pat.outputs.skip != 'true'
+        uses: actions/checkout@v4
         with:
           repository: BLE-project/ble-notification-service
           path: svc
-          # Falls back to github.token when PAT is not configured.
-          # Note: github.token cannot access a private cross-repo — set
-          # GH_PAT_BACKEND_READ (repo-scoped PAT) to enable this job.
-          token: ${{ secrets.GH_PAT_BACKEND_READ || github.token }}
+          token: ${{ secrets.GH_PAT_BACKEND_READ }}
 
-      - uses: actions/setup-java@v4
+      - if: steps.pat.outputs.skip != 'true'
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '21'
           cache: 'maven'
 
-      - name: Build & Test
+      - if: steps.pat.outputs.skip != 'true'
+        name: Build & Test
         working-directory: svc
         run: ./mvnw -B clean test
 
-      - name: Upload JaCoCo report
+      - if: ${{ always() && steps.pat.outputs.skip != 'true' }}
+        name: Upload JaCoCo report
         uses: actions/upload-artifact@v4
-        if: always()
         with:
           name: notification-service-coverage
           path: svc/target/site/jacoco/
 
   core-registry:
     runs-on: ubuntu-latest
-    # Advisory — requires GH_PAT_BACKEND_READ to succeed
-    continue-on-error: true
     steps:
-      - uses: actions/checkout@v4
+      - name: Check PAT
+        id: pat
+        env:
+          PAT: ${{ secrets.GH_PAT_BACKEND_READ }}
+        run: |
+          if [ -z "$PAT" ]; then
+            echo "::warning::GH_PAT_BACKEND_READ not configured — skipping cross-repo backend test"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - if: steps.pat.outputs.skip != 'true'
+        uses: actions/checkout@v4
         with:
           repository: BLE-project/ble-core-registry
           path: svc
-          token: ${{ secrets.GH_PAT_BACKEND_READ || github.token }}
+          token: ${{ secrets.GH_PAT_BACKEND_READ }}
 
-      - uses: actions/setup-java@v4
+      - if: steps.pat.outputs.skip != 'true'
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '21'
           cache: 'maven'
 
-      - name: Build & Test
+      - if: steps.pat.outputs.skip != 'true'
+        name: Build & Test
         working-directory: svc
         run: ./mvnw -B clean test
