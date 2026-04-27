@@ -1,0 +1,6 @@
+interface:
+  display_name: "Ble E2e Tests"
+  short_description: "Repo-specific patterns and workflows for ble-e2e-tests"
+  default_prompt: "Use the ble-e2e-tests repo skill to follow existing architecture, testing, and workflow conventions."
+policy:
+  allow_implicit_invocation: true

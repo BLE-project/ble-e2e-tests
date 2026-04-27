@@ -1,0 +1,321 @@
+# Instincts generated from https://github.com/BLE-project/ble-e2e-tests
+# Generated: 2026-04-27T03:33:16.010Z
+# Version: 2.0
+# NOTE: This file supplements (does not replace) any existing curated instincts.
+# High-confidence manually curated instincts should be preserved alongside these.
+
+---
+id: ble-e2e-tests-commit-conventional
+trigger: "when writing a commit message"
+confidence: 0.85
+domain: git
+source: repo-analysis
+source_repo: https://github.com/BLE-project/ble-e2e-tests
+---
+
+# Ble E2e Tests Commit Conventional
+
+## Action
+
+Use conventional commit format with prefixes: ci
+
+## Evidence
+
+- 1 commits analyzed
+- Detected conventional commit pattern
+- Examples: ci(semgrep): add Terrio invariants workflow + I5-I8 rules
+
+---
+id: ble-e2e-tests-commit-length
+trigger: "when writing a commit message"
+confidence: 0.6
+domain: git
+source: repo-analysis
+source_repo: https://github.com/BLE-project/ble-e2e-tests
+---
+
+# Ble E2e Tests Commit Length
+
+## Action
+
+Write moderate-length commit messages (~57 characters)
+
+## Evidence
+
+- Average commit message length: 57 chars
+- Based on 1 commits
+
+---
+id: ble-e2e-tests-naming-files
+trigger: "when creating a new file"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/BLE-project/ble-e2e-tests
+---
+
+# Ble E2e Tests Naming Files
+
+## Action
+
+Use kebab-case naming convention
+
+## Evidence
+
+- Analyzed file naming patterns in repository
+- Dominant pattern: kebab-case
+
+---
+id: ble-e2e-tests-import-relative
+trigger: "when importing modules"
+confidence: 0.75
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/BLE-project/ble-e2e-tests
+---
+
+# Ble E2e Tests Import Relative
+
+## Action
+
+Use relative imports for project files
+
+## Evidence
+
+- Import analysis shows relative import pattern
+- Example: import { x } from '../lib/x'
+
+---
+id: ble-e2e-tests-export-style
+trigger: "when exporting from a module"
+confidence: 0.7
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/BLE-project/ble-e2e-tests
+---
+
+# Ble E2e Tests Export Style
+
+## Action
+
+Prefer named exports
+
+## Evidence
+
+- Export pattern analysis
+- Dominant style: named
+
+---
+id: ble-e2e-tests-test-separate
+trigger: "when writing tests"
+confidence: 0.8
+domain: testing
+source: repo-analysis
+source_repo: https://github.com/BLE-project/ble-e2e-tests
+---
+
+# Ble E2e Tests Test Separate
+
+## Action
+
+Place tests in the tests/ or __tests__/ directory, mirroring src structure
+
+## Evidence
+
+- Separate test directory pattern detected
+- Tests live in dedicated test folders
+
+---
+id: ble-e2e-tests-instinct-file-naming
+trigger: "When creating a new TypeScript file"
+confidence: 0.9
+domain: code-style
+source: repo-analysis
+source_repo: BLE-project/ble-e2e-tests
+---
+
+# Ble E2e Tests Instinct File Naming
+
+## Action
+
+Name the file using kebab-case
+
+## Evidence
+
+- Pattern in namingConventions.files
+
+---
+id: ble-e2e-tests-instinct-function-naming
+trigger: "When defining a new function"
+confidence: 0.9
+domain: code-style
+source: repo-analysis
+source_repo: BLE-project/ble-e2e-tests
+---
+
+# Ble E2e Tests Instinct Function Naming
+
+## Action
+
+Use camelCase for the function name
+
+## Evidence
+
+- Pattern in namingConventions.functions
+
+---
+id: ble-e2e-tests-instinct-class-naming
+trigger: "When defining a new class"
+confidence: 0.9
+domain: code-style
+source: repo-analysis
+source_repo: BLE-project/ble-e2e-tests
+---
+
+# Ble E2e Tests Instinct Class Naming
+
+## Action
+
+Use PascalCase for the class name
+
+## Evidence
+
+- Pattern in namingConventions.classes
+
+---
+id: ble-e2e-tests-instinct-constant-naming
+trigger: "When declaring a constant"
+confidence: 0.9
+domain: code-style
+source: repo-analysis
+source_repo: BLE-project/ble-e2e-tests
+---
+
+# Ble E2e Tests Instinct Constant Naming
+
+## Action
+
+Use SCREAMING_SNAKE_CASE for the constant name
+
+## Evidence
+
+- Pattern in namingConventions.constants
+
+---
+id: ble-e2e-tests-instinct-import-style
+trigger: "When importing modules"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: BLE-project/ble-e2e-tests
+---
+
+# Ble E2e Tests Instinct Import Style
+
+## Action
+
+Use relative import paths
+
+## Evidence
+
+- Pattern in importStyle
+
+---
+id: ble-e2e-tests-instinct-export-style
+trigger: "When exporting from a module"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: BLE-project/ble-e2e-tests
+---
+
+# Ble E2e Tests Instinct Export Style
+
+## Action
+
+Use named exports
+
+## Evidence
+
+- Pattern in exportStyle
+
+---
+id: ble-e2e-tests-instinct-commit-prefix
+trigger: "When writing a commit message for CI changes"
+confidence: 0.9
+domain: git
+source: repo-analysis
+source_repo: BLE-project/ble-e2e-tests
+---
+
+# Ble E2e Tests Instinct Commit Prefix
+
+## Action
+
+Prefix the commit message with 'ci'
+
+## Evidence
+
+- Pattern in commits.prefixes
+- Seen in commit: 'ci(semgrep): add Terrio invariants workflow + I5-I8 rules'
+
+---
+id: ble-e2e-tests-instinct-commit-format
+trigger: "When writing any commit message"
+confidence: 0.8
+domain: git
+source: repo-analysis
+source_repo: BLE-project/ble-e2e-tests
+---
+
+# Ble E2e Tests Instinct Commit Format
+
+## Action
+
+Follow the Conventional Commits format
+
+## Evidence
+
+- Pattern in commits.type
+- Seen in commit: 'ci(semgrep): add Terrio invariants workflow + I5-I8 rules'
+
+---
+id: ble-e2e-tests-instinct-test-location
+trigger: "When adding new tests"
+confidence: 0.8
+domain: architecture
+source: repo-analysis
+source_repo: BLE-project/ble-e2e-tests
+---
+
+# Ble E2e Tests Instinct Test Location
+
+## Action
+
+Place test files in a separate directory from source files
+
+## Evidence
+
+- Pattern in folderStructure.testLocation
+
+---
+id: ble-e2e-tests-instinct-workflow-location
+trigger: "When adding a new CI workflow"
+confidence: 0.9
+domain: workflow
+source: repo-analysis
+source_repo: BLE-project/ble-e2e-tests
+---
+
+# Ble E2e Tests Instinct Workflow Location
+
+## Action
+
+Place the workflow YAML file in the .github/workflows directory
+
+## Evidence
+
+- Pattern in configFiles
+- Pattern in commonFolders
+- Seen in .github/workflows/terrio-invariants.yml
+
