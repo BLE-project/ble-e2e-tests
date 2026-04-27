@@ -1,0 +1,61 @@
+# Terrio invariants CI — drop into each Terrio repo as
+# `.github/workflows/terrio-invariants.yml`.
+#
+# Uses rules inlined in .semgrep/rules/ (self-contained, no cross-repo auth needed).
+# Rules are kept in sync across repos via multi-repo PRs when rules evolve
+# (see Terrio/terrio-ecc-reports/ for canonical source).
+
+name: Terrio invariants (Semgrep)
+
+on:
+  pull_request:
+    paths:
+      - 'src/**'
+      - '**/*.java'
+      - '**/*.kt'
+      - '**/*.swift'
+      - '**/*.ts'
+      - '**/*.tsx'
+      - '**/*.js'
+      - '**/*.jsx'
+      - '**/*.sql'
+      - '.semgrep/rules/**'
+  push:
+    branches:
+      - main
+
+jobs:
+  semgrep-terrio:
+    name: Terrio invariants
+    runs-on: ubuntu-latest
+    container:
+      image: semgrep/semgrep:latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run Semgrep with Terrio invariant rules
+        run: |
+          set -e
+          semgrep \
+            --config .semgrep/rules/ \
+            --severity ERROR \
+            --error \
+            --json \
+            -o semgrep-terrio-results.json \
+            .
+
+      - name: Upload results artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: semgrep-terrio-results
+          path: semgrep-terrio-results.json
+          retention-days: 30
+
+      - name: Annotate PR with findings
+        if: failure()
+        run: |
+          echo "::error::Semgrep found invariant violations. See artifact."
+          cat semgrep-terrio-results.json | jq '.results[] | "::error file=\(.path),line=\(.start.line)::\(.extra.message)"' -r || true
