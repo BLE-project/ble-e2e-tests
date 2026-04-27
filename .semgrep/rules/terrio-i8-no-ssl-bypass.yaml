@@ -1,0 +1,77 @@
+rules:
+  # I8-1 -- Python requests verify=False = MITM vulnerability.
+  - id: terrio-i8-python-requests-no-verify
+    message: |
+      Disabling SSL verification (verify=False) makes the request
+      vulnerable to MITM attacks. If you need a custom CA bundle, pass
+      verify="/path/to/ca.pem" instead. NEVER ship verify=False to prod.
+    languages: [python]
+    severity: ERROR
+    pattern-either:
+      - pattern: requests.get(..., verify=False, ...)
+      - pattern: requests.post(..., verify=False, ...)
+      - pattern: requests.put(..., verify=False, ...)
+      - pattern: requests.patch(..., verify=False, ...)
+      - pattern: requests.delete(..., verify=False, ...)
+      - pattern: requests.head(..., verify=False, ...)
+      - pattern: requests.options(..., verify=False, ...)
+      - pattern: requests.request(..., verify=False, ...)
+      - pattern: |
+          $S.verify = False
+      - pattern: |
+          httpx.Client(..., verify=False, ...)
+      - pattern: |
+          httpx.AsyncClient(..., verify=False, ...)
+    paths:
+      exclude:
+        - '**/test_*.py'
+        - '**/tests/**'
+        - '**/conftest.py'
+
+  # I8-2 -- Node TLS rejectUnauthorized=false = MITM vulnerability.
+  - id: terrio-i8-node-tls-reject-unauthorized-false
+    message: |
+      Setting `rejectUnauthorized: false` on a TLS/HTTPS request disables
+      certificate validation -- MITM-vulnerable. Pin a CA via the `ca:`
+      option instead, or fix the server certificate.
+    languages: [generic]
+    severity: ERROR
+    pattern-regex: 'rejectUnauthorized\s*:\s*false'
+    paths:
+      include:
+        - '**/*.ts'
+        - '**/*.tsx'
+        - '**/*.js'
+        - '**/*.jsx'
+        - '**/*.mjs'
+        - '**/*.cjs'
+      exclude:
+        - '**/*.test.*'
+        - '**/*.spec.*'
+        - '**/__tests__/**'
+        - '**/node_modules/**'
+
+  # I8-3 -- Process-wide TLS bypass via env var.
+  - id: terrio-i8-node-tls-env-bypass
+    message: |
+      `NODE_TLS_REJECT_UNAUTHORIZED=0` disables TLS validation
+      process-wide. Never set in production code or production env files.
+    languages: [generic]
+    severity: ERROR
+    pattern-regex: 'NODE_TLS_REJECT_UNAUTHORIZED\s*=\s*[''"]?0[''"]?'
+    paths:
+      include:
+        - '**/*.ts'
+        - '**/*.tsx'
+        - '**/*.js'
+        - '**/*.jsx'
+        - '**/*.mjs'
+        - '**/*.cjs'
+        - '**/*.sh'
+        - '**/Dockerfile*'
+      exclude:
+        - '**/*.test.*'
+        - '**/*.spec.*'
+        - '**/__tests__/**'
+        - '**/.env.example'
+        - '**/node_modules/**'
