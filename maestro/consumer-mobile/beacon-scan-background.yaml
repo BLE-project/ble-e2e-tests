@@ -36,7 +36,7 @@ appId: com.terrio.consumer
           text: "Password"
       - inputText: "dev-pass"
       - hideKeyboard
-      - tapOn: "Sign in"
+      - tapOn: "Sign in|Accedi"
       # FIX-S55-001: federation auto-switch prompt
       - runFlow:
           when:
