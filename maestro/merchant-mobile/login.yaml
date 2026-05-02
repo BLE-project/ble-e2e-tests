@@ -5,25 +5,37 @@ appId: com.terrio.merchant
 - launchApp:
     stopApp: true
 
+# FIX-ITER5-001 (2026-05-02): dialog may be lingering from a previous incomplete
+# run; dismiss before any assertion.
+- runFlow:
+    when:
+      visible: "Accesso più rapido"
+    commands:
+      - pressKey: Back
+
+# Idempotent — accept splash OR post-login as valid starting state.
 - extendedWaitUntil:
-    visible: "TERRIO Merchant"
+    visible: ".*(TERRIO Merchant|Today revenue|Transactions|Dashboard|Storico).*"
     timeout: 30000
 
-- assertVisible: ".*(Merchant portal|Gestisci il tuo negozio).*"
-
-- tapOn: { id: "username-input" }
-- inputText: "dev-merchant"
-- hideKeyboard
-
-- tapOn: { id: "password-input" }
-- inputText: "dev-pass"
-- hideKeyboard
-
-- tapOn: { id: "login-btn" }
-
-- tapOn:
-    text: "Non ora|Never|Not now"
-    optional: true
+# Only enter credentials if actually on the login screen.
+- runFlow:
+    when:
+      notVisible: "Today revenue|Transactions|Dashboard|Storico"
+    commands:
+      - assertVisible: ".*(Merchant portal|Gestisci il tuo negozio).*"
+      - tapOn: { id: "username-input" }
+      - inputText: "dev-merchant"
+      - hideKeyboard
+      - tapOn: { id: "password-input" }
+      - inputText: "dev-pass"
+      - hideKeyboard
+      - tapOn: { id: "login-btn" }
+      - runFlow:
+          when:
+            visible: "Accesso più rapido"
+          commands:
+            - pressKey: Back
 
 - extendedWaitUntil:
     visible: "Home|Dashboard|Today revenue|Transactions|Storico"

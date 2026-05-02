@@ -12,14 +12,15 @@ appId: com.terrio.consumer
       text: ".*(TERRIO|Discover nearby offers|Nearby).*"
     timeout: 30000
 
-# Previous flows may have persisted auth tokens in SecureStore. Only run
-# the login steps if the login screen is actually showing.
+# FIX-ITER5-002 (2026-05-02): gate on "Accedi|Sign in" button (reliable post-render
+# marker) and use "Username|Email" placeholder (Email label removed in 2026-05-02
+# build).
 - runFlow:
     when:
-      visible: "Discover nearby offers"
+      visible: "Accedi|Sign in"
     commands:
       - tapOn:
-          text: "Email"
+          text: "Username|Email"
       - inputText: "dev-consumer"
       - hideKeyboard
       - tapOn:

@@ -14,10 +14,12 @@ appId: com.terrio.merchant
       text: ".*(TERRIO Merchant|Merchant portal|Dashboard|Gestisci il tuo negozio|Today revenue|Transactions).*"
     timeout: 30000
 
-# Login if login screen is showing.
+# FIX-ITER5-002 (2026-05-02): login screen no longer shows visible "Email" label
+# (placeholders only). Gate on the login button text "Accedi" / "Sign in" which is
+# the deterministic marker for being on the unauthenticated screen.
 - runFlow:
     when:
-      visible: "Email"
+      visible: "Accedi|Sign in"
     commands:
       - tapOn:
           id: "username-input"
@@ -29,9 +31,11 @@ appId: com.terrio.merchant
       - hideKeyboard
       - tapOn:
           id: "login-btn"
-      - tapOn:
-          text: "Non ora|Never|Not now"
-          optional: true
+      - runFlow:
+          when:
+            visible: "Accesso più rapido"
+          commands:
+            - pressKey: Back
       - extendedWaitUntil:
           visible:
             text: ".*(Today revenue|Transactions|Merchant).*"

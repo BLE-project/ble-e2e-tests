@@ -21,9 +21,14 @@ appId: com.terrio.tenant
 
 - tapOn: { id: "login-btn" }
 
-- tapOn:
-    text: "Non ora|Never|Not now"
-    optional: true
+# FIX-ITER5-001 (2026-05-02): "Non ora" button was removed in iter5 from the
+# biometric enrollment dialog ("Accesso più rapido"). Use pressKey:Back to
+# dismiss instead — Modal.onRequestClose handles this cleanly.
+- runFlow:
+    when:
+      visible: "Accesso più rapido"
+    commands:
+      - pressKey: Back
 
 - extendedWaitUntil:
     visible: "Home|Welcome back|Tenant|Branding|Beacons|Moderation"

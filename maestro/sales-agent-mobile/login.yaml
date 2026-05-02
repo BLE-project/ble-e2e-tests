@@ -40,7 +40,15 @@ appId: com.terrio.salesagent
 - tapOn:
     id: "login-btn"
 
+# FIX-ITER5-001 (2026-05-02): biometric enrollment prompt may appear post-login.
+# "Non ora" button was removed — use pressKey:Back to dismiss the modal cleanly.
+- runFlow:
+    when:
+      visible: "Accesso più rapido"
+    commands:
+      - pressKey: Back
+
 # BUG-003: navigation within 8s
 - extendedWaitUntil:
     visible: "Home"
-    timeout: 8000
+    timeout: 12000

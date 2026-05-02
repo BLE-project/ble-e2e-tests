@@ -14,9 +14,11 @@ appId: com.terrio.tenant
 # Previous flows may have persisted auth tokens in SecureStore, so the app
 # can auto-log-in and skip the login screen entirely. Only perform the
 # login steps if the login screen is actually visible.
+# FIX-ITER5-002 (2026-05-02): "Email" label removed; gate on "Accedi|Sign in"
+# button — deterministic marker for the unauthenticated screen.
 - runFlow:
     when:
-      visible: "Email"
+      visible: "Accedi|Sign in"
     commands:
       - tapOn: { id: "username-input" }
       - inputText: "dev-tenant-admin"
@@ -25,12 +27,11 @@ appId: com.terrio.tenant
       - inputText: "dev-pass"
       - hideKeyboard
       - tapOn: { id: "login-btn" }
-      # Login screen inputs now have importantForAutofill="no" (rebuilt APK),
-      # so Google save-password prompt should no longer appear. Fallback tap
-      # kept for defensive coverage.
-      - tapOn:
-          text: "Non ora|Never|Not now"
-          optional: true
+      - runFlow:
+          when:
+            visible: "Accesso più rapido"
+          commands:
+            - pressKey: Back
       - extendedWaitUntil:
           visible: "Welcome back"
           timeout: 15000

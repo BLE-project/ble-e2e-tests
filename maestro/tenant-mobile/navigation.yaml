@@ -13,9 +13,12 @@ appId: com.terrio.tenant
       text: ".*(TERRIO Tenant|Tenant admin portal|Welcome back|Amministra il tuo programma).*"
     timeout: 30000
 
+# FIX-ITER5-002 (2026-05-02): login screen no longer shows visible "Email" label
+# (placeholders only). Gate on the "Accedi" / "Sign in" button which deterministically
+# marks the unauthenticated screen.
 - runFlow:
     when:
-      visible: "Email"
+      visible: "Accedi|Sign in"
     commands:
       - tapOn:
           id: "username-input"
@@ -27,9 +30,11 @@ appId: com.terrio.tenant
       - hideKeyboard
       - tapOn:
           id: "login-btn"
-      - tapOn:
-          text: "Non ora|Never|Not now"
-          optional: true
+      - runFlow:
+          when:
+            visible: "Accesso più rapido"
+          commands:
+            - pressKey: Back
       - extendedWaitUntil:
           visible:
             text: ".*(Welcome back|Home).*"
