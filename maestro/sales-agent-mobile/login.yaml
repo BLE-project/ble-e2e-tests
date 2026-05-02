@@ -6,6 +6,23 @@ appId: com.terrio.salesagent
 - launchApp:
     stopApp: true
 
+# FIX-ITER6-001 (2026-05-02): unrooted device + release-signed APK refuses
+# both `install -g` and `pm grant` — drain runtime permission dialogs that
+# appear on cold-install (location precision picker → BLE → notification).
+- repeat:
+    times: 3
+    commands:
+      - runFlow:
+          when:
+            visible: "Mentre usi l'app|While using the app"
+          commands:
+            - tapOn: "Mentre usi l'app|While using the app"
+      - runFlow:
+          when:
+            visible: "Consenti|Allow"
+          commands:
+            - tapOn: "Consenti|Allow"
+
 # FIX-S56-007: if a previous flow left the app logged in, logout first so
 # we land on the login screen for this smoke test.
 - extendedWaitUntil:
