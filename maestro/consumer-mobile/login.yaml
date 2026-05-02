@@ -36,14 +36,16 @@ appId: com.terrio.consumer
     commands:
       - tapOn: "STAY HERE"
 
-# FIX-ITER2-001 (2026-05-02): post-login biometric enrollment dialog
+# FIX-ITER6-001 (2026-05-02): post-login biometric enrollment dialog
 # "Accesso più rapido — Vuoi accedere a TERRIO con Face ID / impronta digitale?"
-# appears for first-time users on a fresh install. Dismiss so home navigation can be asserted.
+# appears for first-time users on a fresh install. Use pressKey:Back to dismiss
+# (Anomaly H: "Non ora" button was removed in Iter5 because tapping it triggered
+# perceived logout regression. Modal.onRequestClose handles Back cleanly).
 - runFlow:
     when:
       visible: "Accesso più rapido"
     commands:
-      - tapOn: "Non ora"
+      - pressKey: Back
 
 # BUG-003: login must navigate within 8 seconds (no manual refresh needed)
 # FIX-ITER2-002: home tab label is "Vicini" in IT, "Nearby" in EN — accept either.
