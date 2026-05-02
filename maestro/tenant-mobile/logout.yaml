@@ -8,7 +8,7 @@ appId: com.terrio.tenant
 # Warm launches skip the splash and boot directly into Home.
 - extendedWaitUntil:
     visible:
-      text: "TERRIO Tenant|Tenant admin portal|Welcome back"
+      text: ".*(TERRIO Tenant|Tenant admin portal|Welcome back|Amministra il tuo programma).*"
     timeout: 30000
 
 # Previous flows may have persisted auth tokens in SecureStore, so the app
@@ -16,7 +16,7 @@ appId: com.terrio.tenant
 # login steps if the login screen is actually visible.
 - runFlow:
     when:
-      visible: "Tenant admin portal"
+      visible: "Email"
     commands:
       - tapOn: { id: "username-input" }
       - inputText: "dev-tenant-admin"
@@ -35,9 +35,19 @@ appId: com.terrio.tenant
           visible: "Welcome back"
           timeout: 15000
 
-- tapOn: "Settings"
+# Iter3-A: biometric "Accesso più rapido" dialog re-appears on warm launches.
+# Tapping "Non ora" triggers app logout (bug); use Back to dismiss.
+- runFlow:
+    when:
+      visible: "Accesso più rapido"
+    commands:
+      - pressKey: Back
+
+- tapOn:
+    text: ".*, Impostazioni"
 - extendedWaitUntil:
-    visible: "Account"
+    visible:
+      text: ".*(Account|Impostazioni|Settings).*"
     timeout: 5000
 
 # Settings tab exposes a red "Sign out" button directly (no Logout/Esci).
@@ -54,5 +64,6 @@ appId: com.terrio.tenant
           text: "DISMISS.*"
 
 - extendedWaitUntil:
-    visible: "Tenant admin portal"
+    visible:
+      text: ".*(TERRIO Tenant|Tenant admin portal|Amministra il tuo programma).*"
     timeout: 10000

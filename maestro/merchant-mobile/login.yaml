@@ -9,7 +9,7 @@ appId: com.terrio.merchant
     visible: "TERRIO Merchant"
     timeout: 30000
 
-- assertVisible: "Merchant portal"
+- assertVisible: ".*(Merchant portal|Gestisci il tuo negozio).*"
 
 - tapOn: { id: "username-input" }
 - inputText: "dev-merchant"
@@ -26,5 +26,5 @@ appId: com.terrio.merchant
     optional: true
 
 - extendedWaitUntil:
-    visible: "Home|Dashboard"
+    visible: "Home|Dashboard|Today revenue|Transactions|Storico"
     timeout: 15000

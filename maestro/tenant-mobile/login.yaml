@@ -9,7 +9,7 @@ appId: com.terrio.tenant
     visible: "TERRIO Tenant"
     timeout: 30000
 
-- assertVisible: "Tenant admin portal"
+- assertVisible: ".*(Tenant admin portal|Amministra il tuo programma).*"
 
 - tapOn: { id: "username-input" }
 - inputText: "dev-tenant-admin"
@@ -26,5 +26,5 @@ appId: com.terrio.tenant
     optional: true
 
 - extendedWaitUntil:
-    visible: "Home|Welcome back"
+    visible: "Home|Welcome back|Tenant|Branding|Beacons|Moderation"
     timeout: 15000

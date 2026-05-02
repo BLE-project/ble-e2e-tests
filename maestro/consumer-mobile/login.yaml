@@ -13,9 +13,9 @@ appId: com.terrio.consumer
 
 - assertVisible: "Discover nearby offers"
 
-# Enter credentials
+# Enter credentials (label: "Username" since 2026-05-02 — old builds had "Email")
 - tapOn:
-    text: "Email"
+    text: "Username|Email"
 - inputText: "dev-consumer"
 
 - tapOn:
@@ -36,7 +36,17 @@ appId: com.terrio.consumer
     commands:
       - tapOn: "STAY HERE"
 
+# FIX-ITER2-001 (2026-05-02): post-login biometric enrollment dialog
+# "Accesso più rapido — Vuoi accedere a TERRIO con Face ID / impronta digitale?"
+# appears for first-time users on a fresh install. Dismiss so home navigation can be asserted.
+- runFlow:
+    when:
+      visible: "Accesso più rapido"
+    commands:
+      - tapOn: "Non ora"
+
 # BUG-003: login must navigate within 8 seconds (no manual refresh needed)
+# FIX-ITER2-002: home tab label is "Vicini" in IT, "Nearby" in EN — accept either.
 - extendedWaitUntil:
-    visible: "Nearby"
+    visible: "Vicini|Nearby"
     timeout: 10000

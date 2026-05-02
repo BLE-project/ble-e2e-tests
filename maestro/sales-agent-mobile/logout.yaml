@@ -7,7 +7,7 @@ appId: com.terrio.salesagent
 
 - extendedWaitUntil:
     visible:
-      text: "Terrio|Agente Commerciale|Dashboard"
+      text: ".*(Terrio|Agente Commerciale|Dashboard|TERRIO Sales|Assistenza merchant).*"
     timeout: 30000
 
 # Previous flows may have persisted auth tokens in SecureStore. Only run

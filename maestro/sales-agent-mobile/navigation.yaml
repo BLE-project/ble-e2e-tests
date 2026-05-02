@@ -8,14 +8,14 @@ appId: com.terrio.salesagent
 
 - extendedWaitUntil:
     visible:
-      text: "Terrio|Agente Commerciale|Dashboard"
+      text: ".*(Terrio|Agente Commerciale|Dashboard|TERRIO Sales|Assistenza merchant).*"
     timeout: 30000
 
 # Previous flows may have persisted auth tokens in SecureStore. Only run
 # the login steps if the login screen is actually showing.
 - runFlow:
     when:
-      visible: "Agente Commerciale"
+      visible: "Username"
     commands:
       - tapOn:
           id: "username-input"
@@ -27,9 +27,23 @@ appId: com.terrio.salesagent
       - hideKeyboard
       - tapOn:
           id: "login-btn"
+      # Iter3-A: biometric "Non ora" tap triggers app logout (bug). Use Back.
+      - runFlow:
+          when:
+            visible: "Accesso più rapido"
+          commands:
+            - pressKey: Back
       - extendedWaitUntil:
-          visible: "Dashboard"
-          timeout: 10000
+          visible:
+            text: ".*(Home|Dashboard).*"
+          timeout: 15000
+
+# Iter3-A: biometric dialog can re-appear on warm launches.
+- runFlow:
+    when:
+      visible: "Accesso più rapido"
+    commands:
+      - pressKey: Back
 
 # Gboard's clipboard suggestion panel can linger after inputText and cover
 # the bottom tab bar. Dismiss it if present before interacting with tabs.

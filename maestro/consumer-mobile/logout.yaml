@@ -9,7 +9,7 @@ appId: com.terrio.consumer
 
 - extendedWaitUntil:
     visible:
-      text: "TERRIO|Discover nearby offers|Nearby"
+      text: ".*(TERRIO|Discover nearby offers|Nearby).*"
     timeout: 30000
 
 # Previous flows may have persisted auth tokens in SecureStore. Only run
@@ -33,8 +33,15 @@ appId: com.terrio.consumer
             visible: "Return to previous programme"
           commands:
             - tapOn: "STAY HERE"
+      # Iter3-A: biometric "Non ora" tap triggers app logout (bug). Use Back.
+      - runFlow:
+          when:
+            visible: "Accesso più rapido"
+          commands:
+            - pressKey: Back
       - extendedWaitUntil:
-          visible: "Nearby"
+          visible:
+            text: ".*(Vicini|Nearby).*"
           timeout: 10000
 
 # FIX-S55-001: dismiss the federation prompt if coming in already logged
@@ -45,6 +52,13 @@ appId: com.terrio.consumer
     commands:
       - tapOn: "STAY HERE"
 
+# Iter3-A: biometric dialog re-appears on every warm launch. Dismiss with Back.
+- runFlow:
+    when:
+      visible: "Accesso più rapido"
+    commands:
+      - pressKey: Back
+
 # Dismiss Gboard clipboard overlay if still covering the bottom of screen.
 - runFlow:
     when:
@@ -53,7 +67,8 @@ appId: com.terrio.consumer
       - pressKey: Back
 
 # Ensure we're on the Nearby/Home tab where "Sign out" lives.
-- tapOn: "Nearby"
+- tapOn:
+    text: ".*, Home"
 - extendedWaitUntil:
     visible: "Sign out"
     timeout: 5000

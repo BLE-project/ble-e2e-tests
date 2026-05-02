@@ -10,7 +10,7 @@ appId: com.terrio.salesagent
 # we land on the login screen for this smoke test.
 - extendedWaitUntil:
     visible:
-      text: "Terrio|Home|Agente Commerciale"
+      text: "Terrio|Home|Agente Commerciale|TERRIO Sales|Assistenza merchant"
     timeout: 30000
 
 - runFlow:
@@ -24,10 +24,10 @@ appId: com.terrio.salesagent
           timeout: 5000
       - tapOn: "Esci dall'account|Esci"
       - extendedWaitUntil:
-          visible: "Agente Commerciale"
+          visible: "Agente Commerciale|TERRIO Sales|Assistenza merchant"
           timeout: 10000
 
-- assertVisible: "Agente Commerciale"
+- assertVisible: ".*(Agente Commerciale|TERRIO Sales|Assistenza merchant).*"
 
 - tapOn:
     id: "username-input"

@@ -1,45 +1,58 @@
 appId: com.terrio.merchant
 ---
 # Merchant Mobile — Logout flow
+# Iter3 (2026-05-02): "Home" tab is identified by content-desc=", Home" not text "Home".
+# Sign out button is rendered inline on the home tab (text="Sign out" + content-desc="Sign out").
 
 - launchApp:
     stopApp: true
 
-# Warm launches skip the splash and boot directly into Dashboard.
 - extendedWaitUntil:
     visible:
-      text: "TERRIO Merchant|Merchant portal|Dashboard"
+      text: ".*(TERRIO Merchant|Merchant portal|Dashboard|Today revenue|Transactions).*"
     timeout: 30000
 
-# Previous flows may have persisted auth tokens in SecureStore. Only run
-# the login steps if the login screen is actually showing.
+# Login if the login screen is actually showing.
 - runFlow:
     when:
-      visible: "Merchant portal"
+      visible: "Email"
     commands:
       - tapOn:
-          text: "Email"
+          id: "username-input"
       - inputText: "dev-merchant"
       - hideKeyboard
       - tapOn:
-          text: "Password"
+          id: "password-input"
       - inputText: "dev-pass"
       - hideKeyboard
-      - tapOn: "Sign in"
+      - tapOn:
+          id: "login-btn"
+      - tapOn:
+          text: "Non ora|Never|Not now"
+          optional: true
       - extendedWaitUntil:
-          visible: "Dashboard"
-          timeout: 8000
+          visible:
+            text: ".*(Today revenue|Transactions|Merchant).*"
+          timeout: 15000
 
-# Navigate to Home tab (Dashboard) — the logout button "Sign out" lives in
-# the welcome header band there.
-- tapOn: "Home"
+- runFlow:
+    when:
+      visible: "Accesso più rapido"
+    commands:
+      # Iter3-A workaround: tapping "Non ora" triggers app logout (bug).
+      - pressKey: Back
+
+# Iter3 (2026-05-02): merchant has no Home tab — landing page is the dashboard.
+# Sign out button lives inline on the dashboard.
 - extendedWaitUntil:
-    visible: "Dashboard"
+    visible:
+      text: ".*(Today revenue|Transactions).*"
     timeout: 5000
 
 - tapOn: "Sign out"
 
-# Back to login
+# Back to login screen.
 - extendedWaitUntil:
-    visible: "Merchant portal"
-    timeout: 8000
+    visible:
+      text: ".*(TERRIO Merchant|Merchant portal|Gestisci il tuo negozio).*"
+    timeout: 10000

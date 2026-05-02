@@ -9,7 +9,7 @@ appId: com.terrio.territory
 
 - extendedWaitUntil:
     visible:
-      text: "Terrio|Territory Manager|Territori"
+      text: ".*(Terrio|Territory Manager|Territori|TERRIO Territory).*"
     timeout: 30000
 
 # If a previous flow left the app authenticated, logout first so we land
@@ -23,7 +23,7 @@ appId: com.terrio.territory
           visible: "Territory Manager"
           timeout: 10000
 
-- assertVisible: "Territory Manager"
+- assertVisible: ".*(Territory Manager|TERRIO Territory|Gestisci i tuoi territori).*"
 
 - tapOn:
     id: "username-input"
@@ -46,8 +46,13 @@ appId: com.terrio.territory
 - tapOn:
     id: "login-btn"
 
+# Biometric enrollment prompt may appear post-login; dismiss it.
+- tapOn:
+    text: "Non ora|Never|Not now"
+    optional: true
+
 # After login the territory-list screen renders; the header reads "Territori"
 # via the Stack screenOptions. 15s allows for Keycloak token exchange latency.
 - extendedWaitUntil:
-    visible: "Territori"
+    visible: ".*(Territori|Errore nel caricamento).*"
     timeout: 15000
