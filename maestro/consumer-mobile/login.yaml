@@ -6,6 +6,24 @@ appId: com.terrio.consumer
 - launchApp:
     stopApp: true
 
+# FIX-ITER6-001 (2026-05-02): unrooted device + release-signed APK refuses
+# both `install -g` and `pm grant` — runtime permission dialogs always show
+# on cold-install. Loop to drain stacked Android permission prompts (location
+# precision picker → BLE scan → notification) BEFORE waiting on app UI.
+- repeat:
+    times: 3
+    commands:
+      - runFlow:
+          when:
+            visible: "Mentre usi l'app|While using the app"
+          commands:
+            - tapOn: "Mentre usi l'app|While using the app"
+      - runFlow:
+          when:
+            visible: "Consenti|Allow"
+          commands:
+            - tapOn: "Consenti|Allow"
+
 # FIX-ITER5-001 (2026-05-02): dev-flavor APK lacks CLEAR_APP_USER_DATA so
 # Maestro `clearState` errors out — sessions persist across test runs.
 # Make the flow idempotent: handle both cold-start and already-logged-in
