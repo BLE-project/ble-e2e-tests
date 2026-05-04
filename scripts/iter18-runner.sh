@@ -23,12 +23,27 @@ set -u
 # iter15 postmortem item A: exclusive flock — refuse to run concurrently.
 # ============================================================================
 LOCK_FILE="${LOCK_FILE:-/tmp/terrio-e2e-runner.lock}"
-exec 9>"$LOCK_FILE"
-if ! flock -n 9; then
-  echo "[iter18-runner] another runner already holds $LOCK_FILE — refusing to run concurrently." >&2
-  exit 2
+if command -v flock >/dev/null 2>&1; then
+  # POSIX path (Linux/macOS): kernel-level advisory lock via fd 9.
+  exec 9>"$LOCK_FILE"
+  if ! flock -n 9; then
+    echo "[iter18-runner] another runner already holds $LOCK_FILE — refusing to run concurrently." >&2
+    exit 2
+  fi
+  # Lock is held for the lifetime of fd 9, which closes on script exit.
+else
+  # Windows Git Bash fallback: PID-based lockfile (no kernel lock available).
+  if [ -f "$LOCK_FILE" ]; then
+    OTHER_PID="$(cat "$LOCK_FILE" 2>/dev/null || echo "")"
+    if [ -n "$OTHER_PID" ] && kill -0 "$OTHER_PID" 2>/dev/null; then
+      echo "[iter18-runner] another runner (pid $OTHER_PID) holds $LOCK_FILE — refusing to run concurrently." >&2
+      exit 2
+    fi
+    # Stale lockfile (process is dead) — overwrite it.
+  fi
+  echo $$ > "$LOCK_FILE"
+  trap 'rm -f "$LOCK_FILE"' EXIT
 fi
-# Lock is held for the lifetime of fd 9, which closes on script exit.
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
