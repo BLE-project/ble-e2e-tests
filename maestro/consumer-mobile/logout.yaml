@@ -68,8 +68,10 @@ appId: com.terrio.consumer
       - pressKey: Back
 
 # Ensure we're on the Nearby/Home tab where "Sign out" lives.
-- tapOn:
-    text: ".*, Home"
+# Iter17-B fix (2026-05-04): selector ".*, Home" matched iOS-style accessibility
+# content description format (e.g. "house.fill, Home") that RN Expo Android does
+# NOT expose. Plain "Home" matches the Tab accessibilityLabel directly.
+- tapOn: "Home"
 - extendedWaitUntil:
     visible: "Sign out"
     timeout: 5000
