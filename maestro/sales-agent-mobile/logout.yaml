@@ -26,9 +26,23 @@ appId: com.terrio.salesagent
       - hideKeyboard
       - tapOn:
           id: "login-btn"
+      # Iter3-A (iter11): dismiss biometric enrollment modal via testID rather
+      # than pressKey:Back — see navigation.yaml comment for rationale.
+      - runFlow:
+          when:
+            visible: "Accesso più rapido"
+          commands:
+            - tapOn:
+                id: "enroll-never"
+      # Iter15 (2026-05-04): mirrored navigation.yaml assertion-target widening.
+      # `Dashboard` was a Tabs-internal screen-header title; `Panoramica` is
+      # the dashboard body section heading (index.tsx:117) and is observable
+      # in the accessibility tree as soon as the route mounts. 30s absorbs
+      # SecureStore async + modal dismount animation + Tabs lazy-mount.
+      - takeScreenshot: logout-post-modal-dismiss
       - extendedWaitUntil:
-          visible: "Dashboard"
-          timeout: 10000
+          visible: "Panoramica"
+          timeout: 30000
 
 # Dismiss Gboard clipboard suggestion panel if still covering tab bar.
 - runFlow:

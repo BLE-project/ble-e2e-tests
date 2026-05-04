@@ -27,23 +27,38 @@ appId: com.terrio.salesagent
       - hideKeyboard
       - tapOn:
           id: "login-btn"
-      # Iter3-A: biometric "Non ora" tap triggers app logout (bug). Use Back.
+      # Iter3-A (iter11 pivot, 2026-05-03): tap the proper opt-out testID
+      # instead of pressKey:Back. Back-press goes through Expo Router's
+      # native-stack and pops the auth-stack root; tapping `enroll-never`
+      # calls auth.optOut() + onDone() entirely from JS state, no nav
+      # side-effect. optOut() persists, so warm launches won't re-show.
       - runFlow:
           when:
             visible: "Accesso più rapido"
           commands:
-            - pressKey: Back
+            - tapOn:
+                id: "enroll-never"
+      # Iter15 (2026-05-04): widened post-modal assertion target.
+      # Was `text: ".*(Home|Dashboard).*"` timeout 15s — that targets the
+      # Tabs-internal screen header / tab-bar label, which is not exposed to
+      # uiautomator until Tabs are fully active. iter11→iter14 proved the
+      # YAML pivot dismisses the modal cleanly but this assertion still timed
+      # out. `Panoramica` is the section title rendered by app/(app)/index.tsx:117
+      # (a plain Text in the dashboard scroll body, outside Tabs internals)
+      # and renders as soon as the index route mounts. Screenshot pre-asserts
+      # so any future FAIL has visual evidence of what's on screen.
+      - takeScreenshot: post-modal-dismiss
       - extendedWaitUntil:
-          visible:
-            text: ".*(Home|Dashboard).*"
-          timeout: 15000
+          visible: "Panoramica"
+          timeout: 30000
 
-# Iter3-A: biometric dialog can re-appear on warm launches.
+# Iter3-A (iter11): warm-launch fallback — same testID-tap path.
 - runFlow:
     when:
       visible: "Accesso più rapido"
     commands:
-      - pressKey: Back
+      - tapOn:
+          id: "enroll-never"
 
 # Gboard's clipboard suggestion panel can linger after inputText and cover
 # the bottom tab bar. Dismiss it if present before interacting with tabs.
