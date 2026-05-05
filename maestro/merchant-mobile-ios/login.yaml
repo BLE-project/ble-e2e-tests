@@ -1,0 +1,32 @@
+appId: com.terrio.merchant
+tags:
+  - login
+  - p1
+  - ios
+---
+# Merchant Mobile — Login flow (iOS)
+
+- launchApp:
+    stopApp: true
+
+- extendedWaitUntil:
+    visible: "TERRIO Merchant"
+    timeout: 30000
+
+- assertVisible: "Merchant portal"
+
+- tapOn: { id: "username-input" }
+- inputText: "dev-merchant"
+
+- tapOn: { id: "password-input" }
+- inputText: "dev-pass"
+
+- tapOn: { id: "login-btn" }
+
+- tapOn:
+    text: "Non ora|Never|Not now"
+    optional: true
+
+- extendedWaitUntil:
+    visible: "Home|Dashboard"
+    timeout: 15000

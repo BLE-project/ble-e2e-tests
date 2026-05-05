@@ -1,0 +1,73 @@
+appId: com.terrio.consumer
+tags:
+  - ble
+  - p1
+  - ios
+---
+# Consumer Mobile — BLE beacon scanning flow (iOS)
+# iOS: BLE permission dialog uses "OK" or "Allow"; no Android location variants.
+
+- launchApp:
+    stopApp: true
+
+- extendedWaitUntil:
+    visible:
+      text: "TERRIO|Discover nearby offers|Nearby"
+    timeout: 30000
+
+- runFlow:
+    when:
+      visible: "Discover nearby offers"
+    commands:
+      - tapOn:
+          text: "Email"
+      - inputText: "dev-consumer"
+      - tapOn:
+          text: "Password"
+      - inputText: "dev-pass"
+      - tapOn: "Sign in"
+      - runFlow:
+          when:
+            visible: "Return to previous programme"
+          commands:
+            - tapOn: "STAY HERE"
+      - extendedWaitUntil:
+          visible: "Nearby"
+          timeout: 10000
+
+- runFlow:
+    when:
+      visible: "Return to previous programme"
+    commands:
+      - tapOn: "STAY HERE"
+
+- tapOn: "Nearby"
+- extendedWaitUntil:
+    visible: "Nearby"
+    timeout: 5000
+
+# iOS BLE permission dialog
+- runFlow:
+    when:
+      visible: "Allow"
+    commands:
+      - tapOn: "Allow"
+
+# iOS location permission dialog
+- runFlow:
+    when:
+      visible: "Allow While Using App"
+    commands:
+      - tapOn: "Allow While Using App"
+- runFlow:
+    when:
+      visible: "Allow Once"
+    commands:
+      - tapOn: "Allow Once"
+
+- extendedWaitUntil:
+    visible:
+      text: "Scanning for nearby beacons|Waiting for beacons|Grant permission|Holy-IOT|Beacon|Tenant"
+    timeout: 15000
+
+- assertVisible: "Nearby"

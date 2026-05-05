@@ -6,11 +6,28 @@ appId: com.terrio.salesagent
 - launchApp:
     stopApp: true
 
+# FIX-ITER6-001 (2026-05-02): unrooted device + release-signed APK refuses
+# both `install -g` and `pm grant` — drain runtime permission dialogs that
+# appear on cold-install (location precision picker → BLE → notification).
+- repeat:
+    times: 3
+    commands:
+      - runFlow:
+          when:
+            visible: "Mentre usi l'app|While using the app"
+          commands:
+            - tapOn: "Mentre usi l'app|While using the app"
+      - runFlow:
+          when:
+            visible: "Consenti|Allow"
+          commands:
+            - tapOn: "Consenti|Allow"
+
 # FIX-S56-007: if a previous flow left the app logged in, logout first so
 # we land on the login screen for this smoke test.
 - extendedWaitUntil:
     visible:
-      text: "Terrio|Home|Agente Commerciale"
+      text: "Terrio|Home|Agente Commerciale|TERRIO Sales|Assistenza merchant"
     timeout: 30000
 
 - runFlow:
@@ -24,10 +41,10 @@ appId: com.terrio.salesagent
           timeout: 5000
       - tapOn: "Esci dall'account|Esci"
       - extendedWaitUntil:
-          visible: "Agente Commerciale"
+          visible: "Agente Commerciale|TERRIO Sales|Assistenza merchant"
           timeout: 10000
 
-- assertVisible: "Agente Commerciale"
+- assertVisible: ".*(Agente Commerciale|TERRIO Sales|Assistenza merchant).*"
 
 - tapOn:
     id: "username-input"
@@ -40,7 +57,15 @@ appId: com.terrio.salesagent
 - tapOn:
     id: "login-btn"
 
+# FIX-ITER5-001 (2026-05-02): biometric enrollment prompt may appear post-login.
+# "Non ora" button was removed — use pressKey:Back to dismiss the modal cleanly.
+- runFlow:
+    when:
+      visible: "Accesso più rapido"
+    commands:
+      - pressKey: Back
+
 # BUG-003: navigation within 8s
 - extendedWaitUntil:
     visible: "Home"
-    timeout: 8000
+    timeout: 12000

@@ -1,0 +1,52 @@
+appId: com.terrio.consumer
+tags:
+  - logout
+  - p1
+  - ios
+---
+# Consumer Mobile — Logout flow (iOS)
+
+- launchApp:
+    stopApp: true
+
+- extendedWaitUntil:
+    visible:
+      text: "TERRIO|Discover nearby offers|Nearby"
+    timeout: 30000
+
+- runFlow:
+    when:
+      visible: "Discover nearby offers"
+    commands:
+      - tapOn:
+          text: "Email"
+      - inputText: "dev-consumer"
+      - tapOn:
+          text: "Password"
+      - inputText: "dev-pass"
+      - tapOn: "Sign in"
+      - runFlow:
+          when:
+            visible: "Return to previous programme"
+          commands:
+            - tapOn: "STAY HERE"
+      - extendedWaitUntil:
+          visible: "Nearby"
+          timeout: 10000
+
+- runFlow:
+    when:
+      visible: "Return to previous programme"
+    commands:
+      - tapOn: "STAY HERE"
+
+- tapOn: "Nearby"
+- extendedWaitUntil:
+    visible: "Sign out"
+    timeout: 5000
+
+- tapOn: "Sign out"
+
+- extendedWaitUntil:
+    visible: "Discover nearby offers"
+    timeout: 8000

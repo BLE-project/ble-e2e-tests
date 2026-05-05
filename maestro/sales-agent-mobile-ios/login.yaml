@@ -1,0 +1,45 @@
+appId: com.terrio.salesagent
+tags:
+  - login
+  - p1
+  - ios
+---
+# Sales Agent Mobile — Login flow (iOS)
+
+- launchApp:
+    stopApp: true
+
+- extendedWaitUntil:
+    visible:
+      text: "Terrio|Home|Agente Commerciale"
+    timeout: 30000
+
+- runFlow:
+    when:
+      visible: "Home"
+    commands:
+      - tapOn: "Profilo"
+      - extendedWaitUntil:
+          visible: "Esci dall'account|Esci"
+          timeout: 5000
+      - tapOn: "Esci dall'account|Esci"
+      - extendedWaitUntil:
+          visible: "Agente Commerciale"
+          timeout: 10000
+
+- assertVisible: "Agente Commerciale"
+
+- tapOn:
+    id: "username-input"
+- inputText: "dev-sales-agent"
+
+- tapOn:
+    id: "password-input"
+- inputText: "dev-pass"
+
+- tapOn:
+    id: "login-btn"
+
+- extendedWaitUntil:
+    visible: "Home"
+    timeout: 8000

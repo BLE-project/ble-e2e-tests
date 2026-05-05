@@ -1,0 +1,59 @@
+rules:
+  # I6-1 -- JS/TS console.log of likely PII fields.
+  - id: terrio-i6-js-pii-in-console-log
+    message: |
+      Possible PII leak via console.log. Avoid logging fields like
+      email, phone, fiscalCode, taxCode, consumerId, password, token,
+      refreshToken. Use a redaction wrapper or omit the field. GDPR
+      requires PII never reach logs in production.
+    languages: [typescript, javascript]
+    severity: WARNING
+    pattern-either:
+      - pattern: console.log(..., $X.email, ...)
+      - pattern: console.log(..., $X.phone, ...)
+      - pattern: console.log(..., $X.fiscalCode, ...)
+      - pattern: console.log(..., $X.taxCode, ...)
+      - pattern: console.log(..., $X.password, ...)
+      - pattern: console.log(..., $X.token, ...)
+      - pattern: console.log(..., $X.refreshToken, ...)
+      - pattern: console.warn(..., $X.email, ...)
+      - pattern: console.warn(..., $X.token, ...)
+      - pattern: console.error(..., $X.token, ...)
+      - pattern: console.error(..., $X.password, ...)
+      - pattern: console.error(..., $X.refreshToken, ...)
+    paths:
+      exclude:
+        - '**/*.test.*'
+        - '**/*.spec.*'
+        - '**/__tests__/**'
+        - '**/node_modules/**'
+        - '**/dist/**'
+        - '**/build/**'
+
+  # I6-2 -- Python print/logger of likely PII fields.
+  - id: terrio-i6-python-pii-in-log
+    message: |
+      Possible PII leak via print()/logger. Avoid logging email, phone,
+      password, token, refresh_token. Use a redaction filter (logging
+      Filter) or structlog processor that strips known PII keys.
+    languages: [python]
+    severity: WARNING
+    pattern-either:
+      - pattern: print(..., $X.email, ...)
+      - pattern: print(..., $X.password, ...)
+      - pattern: print(..., $X.token, ...)
+      - pattern: print(..., $X.refresh_token, ...)
+      - pattern: logger.info(..., $X.email, ...)
+      - pattern: logger.info(..., $X.password, ...)
+      - pattern: logger.info(..., $X.token, ...)
+      - pattern: logger.info(..., $X.refresh_token, ...)
+      - pattern: logger.debug(..., $X.email, ...)
+      - pattern: logger.debug(..., $X.token, ...)
+      - pattern: logger.warning(..., $X.password, ...)
+      - pattern: logger.error(..., $X.token, ...)
+    paths:
+      exclude:
+        - '**/test_*.py'
+        - '**/*_test.py'
+        - '**/tests/**'
+        - '**/conftest.py'

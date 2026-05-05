@@ -9,32 +9,40 @@ appId: com.terrio.consumer
 
 - extendedWaitUntil:
     visible:
-      text: "TERRIO|Discover nearby offers|Nearby"
+      text: ".*(TERRIO|Discover nearby offers|Nearby).*"
     timeout: 30000
 
-# Previous flows may have persisted auth tokens in SecureStore. Only run
-# the login steps if the login screen is actually showing.
+# FIX-ITER5-002 (2026-05-02): gate on "Accedi|Sign in" button (reliable post-render
+# marker) and use "Username|Email" placeholder (Email label removed in 2026-05-02
+# build).
 - runFlow:
     when:
-      visible: "Discover nearby offers"
+      visible: "Accedi|Sign in"
     commands:
       - tapOn:
-          text: "Email"
+          text: "Username|Email"
       - inputText: "dev-consumer"
       - hideKeyboard
       - tapOn:
           text: "Password"
       - inputText: "dev-pass"
       - hideKeyboard
-      - tapOn: "Sign in"
+      - tapOn: "Sign in|Accedi"
       # FIX-S55-001: federation auto-switch prompt after login
       - runFlow:
           when:
             visible: "Return to previous programme"
           commands:
             - tapOn: "STAY HERE"
+      # Iter3-A: biometric "Non ora" tap triggers app logout (bug). Use Back.
+      - runFlow:
+          when:
+            visible: "Accesso più rapido"
+          commands:
+            - pressKey: Back
       - extendedWaitUntil:
-          visible: "Nearby"
+          visible:
+            text: ".*(Vicini|Nearby).*"
           timeout: 10000
 
 # FIX-S55-001: dismiss the federation prompt if coming in already logged
@@ -45,6 +53,13 @@ appId: com.terrio.consumer
     commands:
       - tapOn: "STAY HERE"
 
+# Iter3-A: biometric dialog re-appears on every warm launch. Dismiss with Back.
+- runFlow:
+    when:
+      visible: "Accesso più rapido"
+    commands:
+      - pressKey: Back
+
 # Dismiss Gboard clipboard overlay if still covering the bottom of screen.
 - runFlow:
     when:
@@ -53,7 +68,10 @@ appId: com.terrio.consumer
       - pressKey: Back
 
 # Ensure we're on the Nearby/Home tab where "Sign out" lives.
-- tapOn: "Nearby"
+# Iter17-B fix (2026-05-04): selector ".*, Home" matched iOS-style accessibility
+# content description format (e.g. "house.fill, Home") that RN Expo Android does
+# NOT expose. Plain "Home" matches the Tab accessibilityLabel directly.
+- tapOn: "Home"
 - extendedWaitUntil:
     visible: "Sign out"
     timeout: 5000

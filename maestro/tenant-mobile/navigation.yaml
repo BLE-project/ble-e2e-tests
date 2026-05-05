@@ -1,66 +1,97 @@
 appId: com.terrio.tenant
 ---
-# Tenant Mobile — Full tab navigation
-# Tab bar: Home | Territories | Beacons | Theme | Settings | Report
+# Tenant Mobile — Tab navigation smoke test
+# Iter3 (2026-05-02): tabs realigned to actual app UI captured via uiautomator dump.
+# Actual tabs (content-desc): Home | Territori | Beacon | Theme | Moderazione | Merchant | Impostazioni | Report
+# (Territories/Beacons/Settings English labels used in older builds.)
 
 - launchApp:
     stopApp: true
 
-# Warm launches skip the splash and boot directly into Home. Accept any
-# post-launch stable state.
 - extendedWaitUntil:
     visible:
-      text: "TERRIO Tenant|Tenant admin portal|Welcome back"
+      text: ".*(TERRIO Tenant|Tenant admin portal|Welcome back|Amministra il tuo programma).*"
     timeout: 30000
 
-# Previous flows may have persisted auth tokens in SecureStore. Only run
-# the login steps if the login screen is actually showing.
+# FIX-ITER5-002 (2026-05-02): login screen no longer shows visible "Email" label
+# (placeholders only). Gate on the "Accedi" / "Sign in" button which deterministically
+# marks the unauthenticated screen.
 - runFlow:
     when:
-      visible: "Tenant admin portal"
+      visible: "Accedi|Sign in"
     commands:
       - tapOn:
-          text: "Email"
+          id: "username-input"
       - inputText: "dev-tenant-admin"
       - hideKeyboard
       - tapOn:
-          text: "Password"
+          id: "password-input"
       - inputText: "dev-pass"
       - hideKeyboard
-      - tapOn: "Sign in"
+      - tapOn:
+          id: "login-btn"
+      - runFlow:
+          when:
+            visible: "Accesso più rapido"
+          commands:
+            - pressKey: Back
       - extendedWaitUntil:
-          visible: "Welcome back"
-          timeout: 8000
+          visible:
+            text: ".*(Welcome back|Home).*"
+          timeout: 15000
+
+- runFlow:
+    when:
+      visible: "Accesso più rapido"
+    commands:
+      # Iter3-A workaround: tapping "Non ora" triggers app logout (bug).
+      - pressKey: Back
+- runFlow:
+    when:
+      visible: "Clipboard"
+    commands:
+      - pressKey: Back
 
 # ── Tab navigation ─────────────────────────────────────────────────────────
 
-- tapOn: "Territories"
+- tapOn:
+    text: ".*, Territori"
 - extendedWaitUntil:
-    visible: "Territories"
+    visible:
+      text: ".*Territori.*"
     timeout: 5000
 
-- tapOn: "Beacons"
+- tapOn:
+    text: ".*, Beacon"
 - extendedWaitUntil:
-    visible: "Beacons"
+    visible:
+      text: ".*Beacon.*"
     timeout: 5000
 
-- tapOn: "Theme"
+- tapOn:
+    text: ".*, Theme"
 - extendedWaitUntil:
-    visible: "White-label"
+    visible:
+      text: ".*(Theme|White-label).*"
     timeout: 5000
 
-- tapOn: "Settings"
+- tapOn:
+    text: ".*, Impostazioni"
 - extendedWaitUntil:
-    visible: "Settings"
+    visible:
+      text: ".*(Impostazioni|Settings|Account).*"
     timeout: 5000
 
-- tapOn: "Report"
+- tapOn:
+    text: ".*, Report"
 - extendedWaitUntil:
-    visible: "Report Bug"
+    visible:
+      text: ".*(Report Bug|Report).*"
     timeout: 5000
 
-# Return to home
-- tapOn: "Home"
+- tapOn:
+    text: ".*, Home"
 - extendedWaitUntil:
-    visible: "Home"
+    visible:
+      text: ".*(Welcome back|Home).*"
     timeout: 5000

@@ -8,15 +8,17 @@ appId: com.terrio.tenant
 # Warm launches skip the splash and boot directly into Home.
 - extendedWaitUntil:
     visible:
-      text: "TERRIO Tenant|Tenant admin portal|Welcome back"
+      text: ".*(TERRIO Tenant|Tenant admin portal|Welcome back|Amministra il tuo programma).*"
     timeout: 30000
 
 # Previous flows may have persisted auth tokens in SecureStore, so the app
 # can auto-log-in and skip the login screen entirely. Only perform the
 # login steps if the login screen is actually visible.
+# FIX-ITER5-002 (2026-05-02): "Email" label removed; gate on "Accedi|Sign in"
+# button — deterministic marker for the unauthenticated screen.
 - runFlow:
     when:
-      visible: "Tenant admin portal"
+      visible: "Accedi|Sign in"
     commands:
       - tapOn: { id: "username-input" }
       - inputText: "dev-tenant-admin"
@@ -25,19 +27,28 @@ appId: com.terrio.tenant
       - inputText: "dev-pass"
       - hideKeyboard
       - tapOn: { id: "login-btn" }
-      # Login screen inputs now have importantForAutofill="no" (rebuilt APK),
-      # so Google save-password prompt should no longer appear. Fallback tap
-      # kept for defensive coverage.
-      - tapOn:
-          text: "Non ora|Never|Not now"
-          optional: true
+      - runFlow:
+          when:
+            visible: "Accesso più rapido"
+          commands:
+            - pressKey: Back
       - extendedWaitUntil:
           visible: "Welcome back"
           timeout: 15000
 
-- tapOn: "Settings"
+# Iter3-A: biometric "Accesso più rapido" dialog re-appears on warm launches.
+# Tapping "Non ora" triggers app logout (bug); use Back to dismiss.
+- runFlow:
+    when:
+      visible: "Accesso più rapido"
+    commands:
+      - pressKey: Back
+
+- tapOn:
+    text: ".*, Impostazioni"
 - extendedWaitUntil:
-    visible: "Account"
+    visible:
+      text: ".*(Account|Impostazioni|Settings).*"
     timeout: 5000
 
 # Settings tab exposes a red "Sign out" button directly (no Logout/Esci).
@@ -54,5 +65,6 @@ appId: com.terrio.tenant
           text: "DISMISS.*"
 
 - extendedWaitUntil:
-    visible: "Tenant admin portal"
+    visible:
+      text: ".*(TERRIO Tenant|Tenant admin portal|Amministra il tuo programma).*"
     timeout: 10000

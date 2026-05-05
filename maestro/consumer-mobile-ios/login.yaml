@@ -1,0 +1,37 @@
+appId: com.terrio.consumer
+tags:
+  - login
+  - p1
+  - ios
+---
+# Consumer Mobile — Login flow (iOS)
+# iOS adaptation: no hideKeyboard, no Clipboard dismiss, no Android permission dialogs.
+
+- launchApp:
+    stopApp: true
+
+- extendedWaitUntil:
+    visible: "TERRIO"
+    timeout: 30000
+
+- assertVisible: "Discover nearby offers"
+
+- tapOn:
+    text: "Email"
+- inputText: "dev-consumer"
+
+- tapOn:
+    text: "Password"
+- inputText: "dev-pass"
+
+- tapOn: "Sign in"
+
+- runFlow:
+    when:
+      visible: "Return to previous programme"
+    commands:
+      - tapOn: "STAY HERE"
+
+- extendedWaitUntil:
+    visible: "Nearby"
+    timeout: 10000

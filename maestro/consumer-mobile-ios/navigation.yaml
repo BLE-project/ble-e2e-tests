@@ -1,0 +1,102 @@
+appId: com.terrio.consumer
+tags:
+  - navigation
+  - p1
+  - ios
+---
+# Consumer Mobile — Full navigation flow (iOS)
+# iOS: no hideKeyboard, no Clipboard dismiss, no Android location permission dialog.
+
+- launchApp:
+    stopApp: true
+
+- extendedWaitUntil:
+    visible:
+      text: "TERRIO|Discover nearby offers|Nearby"
+    timeout: 30000
+
+- runFlow:
+    when:
+      visible: "Discover nearby offers"
+    commands:
+      - tapOn:
+          text: "Email"
+      - inputText: "dev-consumer"
+      - tapOn:
+          text: "Password"
+      - inputText: "dev-pass"
+      - tapOn: "Sign in"
+      - runFlow:
+          when:
+            visible: "Return to previous programme"
+          commands:
+            - tapOn: "STAY HERE"
+      - extendedWaitUntil:
+          visible: "Nearby"
+          timeout: 10000
+
+- runFlow:
+    when:
+      visible: "Return to previous programme"
+    commands:
+      - tapOn: "STAY HERE"
+
+- tapOn:
+    text: ".*, Wallet"
+- extendedWaitUntil:
+    visible: "Wallet"
+    timeout: 5000
+
+- tapOn:
+    text: ".*, Discover"
+
+# iOS location permission dialog — "Allow While Using App" or "Allow Once"
+- extendedWaitUntil:
+    visible: "Allow While Using App|Allow Once|Allow"
+    timeout: 5000
+    optional: true
+- runFlow:
+    when:
+      visible: "Allow While Using App"
+    commands:
+      - tapOn: "Allow While Using App"
+- runFlow:
+    when:
+      visible: "Allow Once"
+    commands:
+      - tapOn: "Allow Once"
+
+- extendedWaitUntil:
+    visible:
+      text: "^Error$"
+    timeout: 15000
+
+- tapOn: "OK"
+
+- extendedWaitUntil:
+    visible: "Nearby Programmes"
+    timeout: 8000
+
+- tapOn:
+    text: ".*, History"
+- runFlow:
+    when:
+      visible:
+        text: "^Error(e)?$"
+    commands:
+      - tapOn: "OK"
+- extendedWaitUntil:
+    visible: "History"
+    timeout: 5000
+
+- tapOn:
+    text: ".*, Nearby"
+- runFlow:
+    when:
+      visible:
+        text: "^Error(e)?$"
+    commands:
+      - tapOn: "OK"
+- extendedWaitUntil:
+    visible: "Nearby"
+    timeout: 5000

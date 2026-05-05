@@ -10,8 +10,15 @@ appId: com.terrio.territory
 
 - extendedWaitUntil:
     visible:
-      text: "Terrio|Territory Manager|Territori"
+      text: ".*(Terrio|Territory Manager|Territori|TERRIO Territory|Accesso più rapido).*"
     timeout: 30000
+
+# Iter3-A: biometric dialog re-appears on warm launches.
+- runFlow:
+    when:
+      visible: "Accesso più rapido"
+    commands:
+      - pressKey: Back
 
 # Login as TENANT_ADMIN so we can see the "+" FAB (create path).
 # If we came in authenticated as a different user, logout first.
@@ -21,12 +28,14 @@ appId: com.terrio.territory
     commands:
       - tapOn: "Esci"
       - extendedWaitUntil:
-          visible: "Territory Manager"
+          visible:
+            text: ".*(Territory Manager|TERRIO Territory|Gestisci i tuoi territori).*"
           timeout: 10000
 
 - runFlow:
     when:
-      visible: "Territory Manager"
+      visible:
+        text: ".*(Territory Manager|TERRIO Territory|Gestisci i tuoi territori).*"
     commands:
       - tapOn:
           id: "username-input"
@@ -43,6 +52,12 @@ appId: com.terrio.territory
             - pressKey: Back
       - tapOn:
           id: "login-btn"
+      # Iter4: post-login biometric prompt — Back dismisses without logout.
+      - runFlow:
+          when:
+            visible: "Accesso più rapido"
+          commands:
+            - pressKey: Back
       - extendedWaitUntil:
           visible: "Territori"
           timeout: 15000

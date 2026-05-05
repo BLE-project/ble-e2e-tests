@@ -1,0 +1,42 @@
+appId: com.terrio.tenant
+tags:
+  - logout
+  - p1
+  - ios
+---
+# Tenant Mobile — Logout flow (iOS)
+
+- launchApp:
+    stopApp: true
+
+- extendedWaitUntil:
+    visible:
+      text: "TERRIO Tenant|Tenant admin portal|Welcome back"
+    timeout: 30000
+
+- runFlow:
+    when:
+      visible: "Tenant admin portal"
+    commands:
+      - tapOn: { id: "username-input" }
+      - inputText: "dev-tenant-admin"
+      - tapOn: { id: "password-input" }
+      - inputText: "dev-pass"
+      - tapOn: { id: "login-btn" }
+      - tapOn:
+          text: "Non ora|Never|Not now"
+          optional: true
+      - extendedWaitUntil:
+          visible: "Welcome back"
+          timeout: 15000
+
+- tapOn: "Settings"
+- extendedWaitUntil:
+    visible: "Account"
+    timeout: 5000
+
+- tapOn: "Sign out"
+
+- extendedWaitUntil:
+    visible: "Tenant admin portal"
+    timeout: 10000

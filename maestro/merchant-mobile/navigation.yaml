@@ -1,71 +1,92 @@
 appId: com.terrio.merchant
 ---
-# Merchant Mobile — Full tab navigation
-# Tab bar: Home | Health | Beacons | POS | Billing | Cashback | Report
+# Merchant Mobile — Tab navigation smoke test
+# Iter3 (2026-05-02): tabs realigned to actual app UI captured via uiautomator dump.
+# Actual tabs: Account | Campagne | Fleet Beacon | Messaggi | POS | Report | Storico
+# (Health/Beacons/Billing/Cashback/Home from older builds removed.)
+# Post-login landing screen header is "Merchant" with "Today revenue" / "Transactions" / "Cashback issued" tiles.
 
 - launchApp:
     stopApp: true
 
-# Warm launches skip the splash and boot directly into Dashboard, so accept
-# any of: splash brand, login screen, or post-login Dashboard as "ready".
 - extendedWaitUntil:
     visible:
-      text: "TERRIO Merchant|Merchant portal|Dashboard"
+      text: ".*(TERRIO Merchant|Merchant portal|Dashboard|Gestisci il tuo negozio|Today revenue|Transactions).*"
     timeout: 30000
 
-# Previous flows may have persisted auth tokens in SecureStore. Only run
-# the login steps if the login screen is actually showing.
+# FIX-ITER5-002 (2026-05-02): login screen no longer shows visible "Email" label
+# (placeholders only). Gate on the login button text "Accedi" / "Sign in" which is
+# the deterministic marker for being on the unauthenticated screen.
 - runFlow:
     when:
-      visible: "Merchant portal"
+      visible: "Accedi|Sign in"
     commands:
       - tapOn:
-          text: "Email"
+          id: "username-input"
       - inputText: "dev-merchant"
       - hideKeyboard
       - tapOn:
-          text: "Password"
+          id: "password-input"
       - inputText: "dev-pass"
       - hideKeyboard
-      - tapOn: "Sign in"
+      - tapOn:
+          id: "login-btn"
+      - runFlow:
+          when:
+            visible: "Accesso più rapido"
+          commands:
+            - pressKey: Back
       - extendedWaitUntil:
-          visible: "Dashboard"
-          timeout: 8000
+          visible:
+            text: ".*(Today revenue|Transactions|Merchant).*"
+          timeout: 15000
+
+# Defensive: dismiss biometric / clipboard if surfaced.
+- runFlow:
+    when:
+      visible: "Accesso più rapido"
+    commands:
+      # Iter3-A workaround: tapping "Non ora" triggers app logout (bug).
+      - pressKey: Back
+- runFlow:
+    when:
+      visible: "Clipboard"
+    commands:
+      - pressKey: Back
 
 # ── Tab navigation ─────────────────────────────────────────────────────────
 
-- tapOn: "Health"
+- tapOn:
+    text: ".*, POS"
 - extendedWaitUntil:
-    visible: "Health"
+    visible:
+      text: ".*POS.*"
     timeout: 5000
 
-- tapOn: "Beacons"
+- tapOn:
+    text: ".*, Storico"
 - extendedWaitUntil:
-    visible: "Beacons"
+    visible:
+      text: ".*Storico.*"
     timeout: 5000
 
-- tapOn: "POS"
+- tapOn:
+    text: ".*, Campagne"
 - extendedWaitUntil:
-    visible: "Loyalty POS"
+    visible:
+      text: ".*Campagne.*"
     timeout: 5000
 
-- tapOn: "Billing"
+- tapOn:
+    text: ".*, Account"
 - extendedWaitUntil:
-    visible: "Billing"
+    visible:
+      text: ".*Account.*"
     timeout: 5000
 
-- tapOn: "Cashback"
+- tapOn:
+    text: ".*, Report"
 - extendedWaitUntil:
-    visible: "Cashback"
-    timeout: 5000
-
-- tapOn: "Report"
-- extendedWaitUntil:
-    visible: "Report Bug"
-    timeout: 5000
-
-# Return to home
-- tapOn: "Home"
-- extendedWaitUntil:
-    visible: "Dashboard"
+    visible:
+      text: ".*Report.*"
     timeout: 5000

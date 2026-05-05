@@ -1,52 +1,61 @@
 appId: com.terrio.consumer
 ---
-# Consumer Mobile — Full navigation flow
-# Tab bar (9 tabs, may truncate): Nearby | Wallet | Discover | History |
-# Territory | Prefs | Offers | Profilo | Report
-# NOTE: on narrow devices some labels truncate ("Discover" → "Disco…",
-# "Territory" → "Terri…") so we use substring selectors for those.
+# Consumer Mobile — Tab navigation smoke test
+# Iter3 (2026-05-02): tabs realigned to actual app UI captured via uiautomator dump.
+# Actual tabs (content-desc): Home | Mappa | Wallet | Offerte | Profilo
+# (Discover/History from older builds removed.)
+# Home tab header text is "Nearby" (EN) on the device locale at test time.
 
 - launchApp:
     stopApp: true
 
 - extendedWaitUntil:
     visible:
-      text: "TERRIO|Discover nearby offers|Nearby"
+      text: ".*(TERRIO|Discover nearby offers|Nearby).*"
     timeout: 30000
 
-# Previous flows may have persisted auth tokens in SecureStore. Only run
-# the login steps if the login screen is actually showing.
+# Login if login screen is showing (auth tokens may have persisted).
 - runFlow:
     when:
       visible: "Discover nearby offers"
     commands:
       - tapOn:
-          text: "Email"
+          text: "Username|Email"
       - inputText: "dev-consumer"
       - hideKeyboard
       - tapOn:
           text: "Password"
       - inputText: "dev-pass"
       - hideKeyboard
-      - tapOn: "Sign in"
-      # FIX-S55-001: federation auto-switch prompt after login
+      - tapOn: "Sign in|Accedi"
       - runFlow:
           when:
             visible: "Return to previous programme"
           commands:
             - tapOn: "STAY HERE"
+      - runFlow:
+          when:
+            visible: "Accesso più rapido"
+          commands:
+            # Iter3-A workaround: tapping "Non ora" triggers app logout (bug).
+            # Hardware Back dismisses the dialog without clearing auth state.
+            - pressKey: Back
       - extendedWaitUntil:
-          visible: "Nearby"
+          visible:
+            text: ".*(Vicini|Nearby).*"
           timeout: 10000
 
-# FIX-S55-001: dismiss the federation prompt if it surfaces on already-auth launch
+# Defensive: dismiss any leftover dialogs (federation, biometric, clipboard).
 - runFlow:
     when:
       visible: "Return to previous programme"
     commands:
       - tapOn: "STAY HERE"
-
-# Dismiss Gboard clipboard overlay if it's still covering the tab bar.
+- runFlow:
+    when:
+      visible: "Accesso più rapido"
+    commands:
+      - pressKey: Back
 - runFlow:
     when:
       visible: "Clipboard"
@@ -58,67 +67,33 @@ appId: com.terrio.consumer
 - tapOn:
     text: ".*, Wallet"
 - extendedWaitUntil:
-    visible: "Wallet"
+    visible:
+      text: ".*Wallet.*"
     timeout: 5000
 
-# "Discover" truncates to "Disco…" on narrow tab bars — use substring.
 - tapOn:
-    text: ".*, Discover"
-
-# FIX-S56-003: Android runtime location permission prompt appears on first
-# tap of Discover (com.google.android.permissioncontroller). `adb pm grant`
-# cannot pre-authorize because shell user lacks GRANT_RUNTIME_PERMISSIONS.
-# Wait up to 5 s for the prompt to render, then accept it.
-- extendedWaitUntil:
-    visible: "Mentre usi l'app"
-    timeout: 5000
-    optional: true
+    text: ".*, Offerte"
 - runFlow:
     when:
-      visible: "Mentre usi l'app"
+      visible:
+        text: "^Error(e)?$"
     commands:
-      - tapOn: "Mentre usi l'app"
-
-# "Could not load nearby programmes" error modal appears after the
-# network call (2–8 s on the dev seed). The dialog overlays the whole
-# tree so the header won't be in the accessibility snapshot until we
-# dismiss it. Wait for the Error heading (unique, short) then tap OK.
+      - tapOn: "OK"
 - extendedWaitUntil:
     visible:
-      text: "^Error$"
-    timeout: 15000
-
-- tapOn: "OK"
-
-- extendedWaitUntil:
-    visible: "Nearby Programmes"
-    timeout: 8000
-
-# History tab — assert the screen title shows (no data loading dialog).
-- tapOn:
-    text: ".*, History"
-- runFlow:
-    when:
-      visible:
-        text: "^Error(e)?$"
-    commands:
-      - tapOn: "OK"
-- extendedWaitUntil:
-    visible: "History"
+      text: ".*Offerte.*"
     timeout: 5000
 
-# Return to home. Tab labels in the bottom bar have bounds [0,0] in the
-# render (9 tabs squeezed on a narrow device); tapOn matches the clickable
-# container via its content-desc "<icon-glyph>, <label>", so regex match.
-#
-# NOTE (S56): the remaining 5 tabs (Territory / Prefs / Offers / Profilo /
-# Report) exercise downstream API calls which may 401 the dev-consumer
-# session if the backend seed lacks fixtures, causing the app to force
-# logout mid-flow. Those tabs are covered by `navigation-ext.yaml` which
-# is gated on stable seed data; the core flow here stops at History to
-# stay green on the reference dev environment.
 - tapOn:
-    text: ".*, Nearby"
+    text: ".*, Profilo"
+- extendedWaitUntil:
+    visible:
+      text: ".*Profilo.*"
+    timeout: 5000
+
+# Return to Home tab. Some builds show "Nearby" as the header.
+- tapOn:
+    text: ".*, Home"
 - runFlow:
     when:
       visible:
@@ -126,5 +101,6 @@ appId: com.terrio.consumer
     commands:
       - tapOn: "OK"
 - extendedWaitUntil:
-    visible: "Nearby"
+    visible:
+      text: ".*(Home|Nearby|Vicini).*"
     timeout: 5000

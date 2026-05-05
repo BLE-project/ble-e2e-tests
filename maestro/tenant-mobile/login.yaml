@@ -5,11 +5,28 @@ appId: com.terrio.tenant
 - launchApp:
     stopApp: true
 
+# FIX-ITER6-001 (2026-05-02): unrooted device + release-signed APK refuses
+# both `install -g` and `pm grant` — drain runtime permission dialogs that
+# appear on cold-install (location precision picker → BLE → notification).
+- repeat:
+    times: 3
+    commands:
+      - runFlow:
+          when:
+            visible: "Mentre usi l'app|While using the app"
+          commands:
+            - tapOn: "Mentre usi l'app|While using the app"
+      - runFlow:
+          when:
+            visible: "Consenti|Allow"
+          commands:
+            - tapOn: "Consenti|Allow"
+
 - extendedWaitUntil:
     visible: "TERRIO Tenant"
     timeout: 30000
 
-- assertVisible: "Tenant admin portal"
+- assertVisible: ".*(Tenant admin portal|Amministra il tuo programma).*"
 
 - tapOn: { id: "username-input" }
 - inputText: "dev-tenant-admin"
@@ -21,10 +38,15 @@ appId: com.terrio.tenant
 
 - tapOn: { id: "login-btn" }
 
-- tapOn:
-    text: "Non ora|Never|Not now"
-    optional: true
+# FIX-ITER5-001 (2026-05-02): "Non ora" button was removed in iter5 from the
+# biometric enrollment dialog ("Accesso più rapido"). Use pressKey:Back to
+# dismiss instead — Modal.onRequestClose handles this cleanly.
+- runFlow:
+    when:
+      visible: "Accesso più rapido"
+    commands:
+      - pressKey: Back
 
 - extendedWaitUntil:
-    visible: "Home|Welcome back"
+    visible: "Home|Welcome back|Tenant|Branding|Beacons|Moderation"
     timeout: 15000

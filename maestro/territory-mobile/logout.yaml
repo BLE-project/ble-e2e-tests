@@ -11,13 +11,24 @@ appId: com.terrio.territory
 
 - extendedWaitUntil:
     visible:
-      text: "Terrio|Territory Manager|Territori"
+      text: ".*(Terrio|Territory Manager|Territori|TERRIO Territory|Accesso più rapido).*"
     timeout: 30000
 
-# Login if we're on the login screen (fresh install or previous logout)
+# Iter4: biometric prompt re-appears on warm launches; Back dismisses
+# without logging out (Iter3-A pattern).
 - runFlow:
     when:
-      visible: "Territory Manager"
+      visible: "Accesso più rapido"
+    commands:
+      - pressKey: Back
+
+# Login if we're on the login screen (fresh install or previous logout).
+# Iter4: gate on testID for unambiguous match — broader regex caused
+# spurious activation on home screens whose text-overlap coincided.
+- runFlow:
+    when:
+      visible:
+        id: "username-input"
     commands:
       - tapOn:
           id: "username-input"
@@ -34,6 +45,12 @@ appId: com.terrio.territory
             - pressKey: Back
       - tapOn:
           id: "login-btn"
+      # Iter4: post-login biometric prompt — Back dismisses without logout.
+      - runFlow:
+          when:
+            visible: "Accesso più rapido"
+          commands:
+            - pressKey: Back
       - extendedWaitUntil:
           visible: "Territori"
           timeout: 15000
@@ -43,7 +60,8 @@ appId: com.terrio.territory
 - tapOn: "Esci"
 
 - extendedWaitUntil:
-    visible: "Territory Manager"
+    visible:
+      text: ".*(Territory Manager|TERRIO Territory|Gestisci i tuoi territori).*"
     timeout: 10000
 
 # Confirm the username field is empty (SecureStore token cleared, user

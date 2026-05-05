@@ -1,0 +1,40 @@
+appId: com.terrio.territory
+tags:
+  - logout
+  - p1
+  - ios
+---
+# Territory Mobile — Logout smoke test (iOS)
+
+- launchApp:
+    stopApp: true
+
+- extendedWaitUntil:
+    visible:
+      text: "Terrio|Territory Manager|Territori"
+    timeout: 30000
+
+- runFlow:
+    when:
+      visible: "Territory Manager"
+    commands:
+      - tapOn:
+          id: "username-input"
+      - inputText: "dev-territory-admin"
+      - tapOn:
+          id: "password-input"
+      - inputText: "dev-pass"
+      - tapOn:
+          id: "login-btn"
+      - extendedWaitUntil:
+          visible: "Territori"
+          timeout: 15000
+
+- tapOn: "Esci"
+
+- extendedWaitUntil:
+    visible: "Territory Manager"
+    timeout: 10000
+
+- assertVisible: "Username"
+- assertVisible: "Password"
