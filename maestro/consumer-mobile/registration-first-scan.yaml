@@ -1,0 +1,133 @@
+appId: com.terrio.consumer
+---
+# TC-CR-001 — Consumer registration → auto-login → first-scan empty state
+# Spec: terrio-platform-docs/design_handoff/specs/consumer-registration-flow-2026-05-05.md
+#
+# This flow exercises the "new consumer" arc end-to-end at the UI level:
+#   1. Cold install (or post-logout) → login screen
+#   2. Tap "Crea account" link → register screen
+#   3. Fill fields with a unique email (Maestro runId suffix) → submit
+#   4. Success screen → "Accedi ora" → back to login (form pre-filled or empty)
+#   5. Login with the just-registered credentials
+#   6. Land on home — empty state ("Avvicinati ad un beacon") OR populated
+#      ("Vicini") if a beacon is already in range and CC-001 BE has created
+#      the card.
+#
+# BLE detection itself is hardware-dependent — verifying card creation by
+# proximity requires 4 physical iBeacons in 2m range and the CC-001 BE chain
+# (BeaconEarnConsumer → LoyaltyCardClient.autoCreate). This Maestro flow
+# stops at "home reachable post-registration" and tolerates BOTH home
+# variants. The full proximity arc is asserted by the JUnit suite
+# `BeaconEarnConsumerTest.first_detection_creates_card_via_loyalty_card_client`
+# (see ble-cashback-ledger PR #38) plus the manual hardware harness.
+
+- launchApp:
+    stopApp: true
+
+# Drain stacked Android runtime permission prompts (location precision,
+# BLE scan, notification) — same pattern as login.yaml.
+- repeat:
+    times: 3
+    commands:
+      - runFlow:
+          when:
+            visible: "Mentre usi l'app|While using the app"
+          commands:
+            - tapOn: "Mentre usi l'app|While using the app"
+      - runFlow:
+          when:
+            visible: "Consenti|Allow"
+          commands:
+            - tapOn: "Consenti|Allow"
+
+# Dismiss biometric enrol modal if app foregrounds it
+- runFlow:
+    when:
+      visible: "Accesso più rapido"
+    commands:
+      - pressKey: Back
+
+# 1. Login screen — wait for the "Crea account" link to be visible
+- extendedWaitUntil:
+    visible: "Accedi|Sign in"
+    timeout: 30000
+
+- assertVisible:
+    text: "Discover nearby offers|Crea account"
+
+# 2. Tap "Crea account" link (added by MOB-001 in PR #58)
+- tapOn:
+    id: "signup-link"
+
+# 3. Register form — fill with unique email per run
+- extendedWaitUntil:
+    visible: "Crea account|Registrati"
+    timeout: 10000
+
+- tapOn:
+    text: "Nome \\*"
+- inputText: "Test"
+
+- tapOn:
+    text: "Cognome"
+- inputText: "Auto"
+
+- tapOn:
+    text: "Username \\*"
+- inputText: "tcr001-${maestroRunId}"
+
+- tapOn:
+    text: "Email \\*"
+- inputText: "tcr001-${maestroRunId}@terrio.test"
+
+- tapOn:
+    text: "Password \\*"
+- inputText: "Test-Pass-2026!"
+
+- tapOn:
+    text: "Conferma password \\*"
+- inputText: "Test-Pass-2026!"
+
+# 4. Submit registration
+- tapOn:
+    text: "Crea account"
+
+# 5. Success screen — "Benvenuto in Terrio!" then "Accedi ora"
+- extendedWaitUntil:
+    visible: "Benvenuto in Terrio|Welcome to Terrio"
+    timeout: 20000
+
+- tapOn:
+    text: "Accedi ora"
+
+# 6. Login screen again — fill credentials we just used
+- extendedWaitUntil:
+    visible: "Accedi|Sign in"
+    timeout: 15000
+
+- tapOn:
+    text: "Username|Email"
+- inputText: "tcr001-${maestroRunId}"
+
+- tapOn:
+    text: "Password"
+- inputText: "Test-Pass-2026!"
+
+- tapOn: "Accedi"
+
+# Dismiss any "previous programme" or biometric enrol that may foreground
+- runFlow:
+    when:
+      visible: "Return to previous programme"
+    commands:
+      - tapOn: "STAY HERE"
+- runFlow:
+    when:
+      visible: "Accesso più rapido"
+    commands:
+      - pressKey: Back
+
+# 7. Land on home — accept BOTH empty (pre-card) and populated (post-card)
+- extendedWaitUntil:
+    visible: "Vicini|Nearby|Avvicinati|Approach a beacon|Nessun beacon|Discover nearby"
+    timeout: 30000
