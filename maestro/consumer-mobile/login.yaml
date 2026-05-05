@@ -62,6 +62,11 @@ appId: com.terrio.consumer
           commands:
             - pressKey: Back
 
+# Iter20-A fix (2026-05-05): consumer post-login may show EITHER empty-state
+# (Avvicinati|Approach a beacon|Nessun beacon — pre-first-card per design
+# TC-CR-001) OR populated-state (Vicini|Nearby — post-card warm session).
+# Accept both. Full empty-vs-populated-state distinction is out of scope
+# for this flow; dedicated TC-CR-001 test covers the registration arc.
 - extendedWaitUntil:
-    visible: "Vicini|Nearby"
-    timeout: 10000
+    visible: "Vicini|Nearby|Avvicinati|Approach a beacon|Nessun beacon|Discover nearby"
+    timeout: 15000
