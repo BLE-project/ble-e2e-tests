@@ -97,6 +97,12 @@ appId: com.terrio.salesagent
 
 # Return to home
 - tapOn: "Home"
+# Iter27 (2026-05-05): "Dashboard" was the Tabs-internal screen header, not
+# observable via uiautomator until Tabs are fully active — same gap that
+# Iter15 fixed in login/logout flows. "Panoramica" is the section title
+# rendered by app/(app)/index.tsx:117 and exposed in the accessibility
+# tree as soon as the index route mounts. 30s timeout absorbs route
+# remount + react-query refetch on tab switch.
 - extendedWaitUntil:
-    visible: "Dashboard"
-    timeout: 5000
+    visible: "Panoramica"
+    timeout: 30000

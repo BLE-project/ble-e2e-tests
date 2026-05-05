@@ -26,9 +26,12 @@ appId: com.terrio.salesagent
       - hideKeyboard
       - tapOn:
           id: "login-btn"
+      # Iter27 (2026-05-05): widened from "Dashboard" (Tabs-internal header)
+      # to "Panoramica" (section title in app/(app)/index.tsx:117), per
+      # Iter15 fleet-wide alignment.
       - extendedWaitUntil:
-          visible: "Dashboard"
-          timeout: 10000
+          visible: "Panoramica"
+          timeout: 30000
 
 # Dismiss Gboard clipboard suggestion panel if still covering tab bar.
 - runFlow:
