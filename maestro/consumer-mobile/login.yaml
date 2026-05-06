@@ -28,11 +28,17 @@ appId: com.terrio.consumer
 # Maestro `clearState` errors out — sessions persist across test runs.
 # Make the flow idempotent: handle both cold-start and already-logged-in
 # entry states, dismiss the biometric prompt that may be foregrounded.
+# Iter30 (2026-05-06): biometric dismiss via enroll-never testID instead
+# of pressKey:Back. Back-press pops Expo Router auth-stack root → app
+# navigates AWAY from home, breaking the post-login Vicini/Avvicinati
+# assertion. enroll-never invokes auth.optOut() purely from JS state,
+# no nav side-effect. Mirrors the Iter15 sales-agent + Iter29 territory fix.
 - runFlow:
     when:
       visible: "Accesso più rapido"
     commands:
-      - pressKey: Back
+      - tapOn:
+          id: "enroll-never"
 
 - extendedWaitUntil:
     visible: "TERRIO|Vicini|Nearby"

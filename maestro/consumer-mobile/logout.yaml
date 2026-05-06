@@ -34,12 +34,17 @@ appId: com.terrio.consumer
             visible: "Return to previous programme"
           commands:
             - tapOn: "STAY HERE"
-      # Iter3-A: biometric "Non ora" tap triggers app logout (bug). Use Back.
+      # Iter30 (2026-05-06): enroll-never testID instead of Back. Back pops
+      # auth-stack root and breaks downstream Vicini assertion. enroll-never
+      # invokes auth.optOut() purely from JS state, no nav side-effect.
+      # The legacy "Non ora" bug that triggered logout was fixed at the FE level
+      # (BiometricEnrollModal); enroll-never is the proper opt-out path.
       - runFlow:
           when:
             visible: "Accesso più rapido"
           commands:
-            - pressKey: Back
+            - tapOn:
+                id: "enroll-never"
       - extendedWaitUntil:
           visible:
             text: ".*(Vicini|Nearby).*"
@@ -53,12 +58,15 @@ appId: com.terrio.consumer
     commands:
       - tapOn: "STAY HERE"
 
-# Iter3-A: biometric dialog re-appears on every warm launch. Dismiss with Back.
+# Iter30 (2026-05-06): enroll-never instead of Back (top-level warm-launch
+# dismiss path). Mirrors the fix above and the fleet-wide Iter15→Iter30
+# alignment to use enroll-never for biometric opt-out (no nav side-effect).
 - runFlow:
     when:
       visible: "Accesso più rapido"
     commands:
-      - pressKey: Back
+      - tapOn:
+          id: "enroll-never"
 
 # Dismiss Gboard clipboard overlay if still covering the bottom of screen.
 - runFlow:
