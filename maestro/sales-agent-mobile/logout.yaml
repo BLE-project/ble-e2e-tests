@@ -7,7 +7,7 @@ appId: com.terrio.salesagent
 
 - extendedWaitUntil:
     visible:
-      text: "Terrio|Agente Commerciale|Dashboard"
+      text: ".*(Terrio|Agente Commerciale|Dashboard|TERRIO Sales|Assistenza merchant).*"
     timeout: 30000
 
 # Previous flows may have persisted auth tokens in SecureStore. Only run
@@ -26,9 +26,26 @@ appId: com.terrio.salesagent
       - hideKeyboard
       - tapOn:
           id: "login-btn"
+      # Iter3-A (iter11): dismiss biometric enrollment modal via testID rather
+      # than pressKey:Back — see navigation.yaml comment for rationale.
+      - runFlow:
+          when:
+            visible: "Accesso più rapido"
+          commands:
+            - tapOn:
+                id: "enroll-never"
+      # Iter15 (2026-05-04): mirrored navigation.yaml assertion-target widening.
+      # `Dashboard` was a Tabs-internal screen-header title; `Panoramica` is
+      # the dashboard body section heading (index.tsx:117) and is observable
+      # in the accessibility tree as soon as the route mounts. 30s absorbs
+      # SecureStore async + modal dismount animation + Tabs lazy-mount.
+      - takeScreenshot: logout-post-modal-dismiss
+      # Iter29 (2026-05-06): assert tab label "Home" instead of dashboard
+      # body "Panoramica" — accessibility-tree stable as soon as Tabs mount,
+      # mirrors the working login.yaml assertion. Avoids below-fold timing.
       - extendedWaitUntil:
-          visible: "Dashboard"
-          timeout: 10000
+          visible: "Home"
+          timeout: 30000
 
 # Dismiss Gboard clipboard suggestion panel if still covering tab bar.
 - runFlow:
@@ -45,6 +62,9 @@ appId: com.terrio.salesagent
 # Sales-agent profile screen exposes an "Esci dall'account" button.
 - tapOn: "Esci dall'account"
 
+# Sprint14 P3 fix (2026-05-06): post-logout login-screen header is
+# "TERRIO Sales / Assistenza merchant sul territorio" — not "Agente Commerciale"
+# (which is only in the cold-launch broad assertion at top). Match the actual text.
 - extendedWaitUntil:
-    visible: "Agente Commerciale"
+    visible: ".*(TERRIO Sales|Assistenza merchant|Agente Commerciale).*"
     timeout: 8000
