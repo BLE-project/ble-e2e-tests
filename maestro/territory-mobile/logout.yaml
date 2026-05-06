@@ -14,13 +14,16 @@ appId: com.terrio.territory
       text: ".*(Terrio|Territory Manager|Territori|TERRIO Territory|Accesso più rapido).*"
     timeout: 30000
 
-# Iter4: biometric prompt re-appears on warm launches; Back dismisses
-# without logging out (Iter3-A pattern).
+# Iter29 (2026-05-06): biometric dismiss via enroll-never testID instead of
+# pressKey:Back. Back-press pops Expo Router auth-stack root → app exits
+# dashboard mid-flow. enroll-never calls auth.optOut() with no nav side-effect.
+# Mirrors the Iter15 sales-agent fix.
 - runFlow:
     when:
       visible: "Accesso più rapido"
     commands:
-      - pressKey: Back
+      - tapOn:
+          id: "enroll-never"
 
 # Login if we're on the login screen (fresh install or previous logout).
 # Iter4: gate on testID for unambiguous match — broader regex caused
