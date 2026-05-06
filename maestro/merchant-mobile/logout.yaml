@@ -28,11 +28,17 @@ appId: com.terrio.merchant
       - hideKeyboard
       - tapOn:
           id: "login-btn"
+      # Sprint14 P3 fix (2026-05-06): pressKey:Back popped Expo Router auth-stack
+      # root → app navigated AWAY from dashboard, breaking post-modal assertion.
+      # Use enroll-never testID instead (auth.optOut() from JS state, no nav
+      # side-effect). Same Iter15 sales-agent + Iter29 territory + Iter30 consumer
+      # fix pattern.
       - runFlow:
           when:
             visible: "Accesso più rapido"
           commands:
-            - pressKey: Back
+            - tapOn:
+                id: "enroll-never"
       - extendedWaitUntil:
           visible:
             text: ".*(Today revenue|Transactions|Merchant).*"
@@ -42,8 +48,10 @@ appId: com.terrio.merchant
     when:
       visible: "Accesso più rapido"
     commands:
-      # Iter3-A workaround: tapping "Non ora" triggers app logout (bug).
-      - pressKey: Back
+      # Sprint14 P3 fix (2026-05-06): same enroll-never fix as above for the
+      # warm-launch dismiss path.
+      - tapOn:
+          id: "enroll-never"
 
 # Iter3 (2026-05-02): merchant has no Home tab — landing page is the dashboard.
 # Sign out button lives inline on the dashboard.
