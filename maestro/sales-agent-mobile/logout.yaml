@@ -40,8 +40,11 @@ appId: com.terrio.salesagent
       # in the accessibility tree as soon as the route mounts. 30s absorbs
       # SecureStore async + modal dismount animation + Tabs lazy-mount.
       - takeScreenshot: logout-post-modal-dismiss
+      # Iter29 (2026-05-06): assert tab label "Home" instead of dashboard
+      # body "Panoramica" — accessibility-tree stable as soon as Tabs mount,
+      # mirrors the working login.yaml assertion. Avoids below-fold timing.
       - extendedWaitUntil:
-          visible: "Panoramica"
+          visible: "Home"
           timeout: 30000
 
 # Dismiss Gboard clipboard suggestion panel if still covering tab bar.

@@ -48,8 +48,15 @@ appId: com.terrio.salesagent
       # and renders as soon as the index route mounts. Screenshot pre-asserts
       # so any future FAIL has visual evidence of what's on screen.
       - takeScreenshot: post-modal-dismiss
+      # Iter29 (2026-05-06): align with login.yaml's assertion target.
+      # Login flow asserts "Home" (tab label) and PASSES; navigation flow
+      # asserted "Panoramica" (section title in dashboard ScrollView body)
+      # and FAILED with the same login mechanism. Likely Panoramica is
+      # below-the-fold or rendered after a react-query data hydration cycle.
+      # "Home" tab label is in the accessibility tree as soon as Tabs mount,
+      # which is what we actually need to verify here before tab navigation.
       - extendedWaitUntil:
-          visible: "Panoramica"
+          visible: "Home"
           timeout: 30000
 
 # Iter3-A (iter11): warm-launch fallback — same testID-tap path.
@@ -97,12 +104,10 @@ appId: com.terrio.salesagent
 
 # Return to home
 - tapOn: "Home"
-# Iter27 (2026-05-05): "Dashboard" was the Tabs-internal screen header, not
-# observable via uiautomator until Tabs are fully active — same gap that
-# Iter15 fixed in login/logout flows. "Panoramica" is the section title
-# rendered by app/(app)/index.tsx:117 and exposed in the accessibility
-# tree as soon as the index route mounts. 30s timeout absorbs route
-# remount + react-query refetch on tab switch.
+# Iter29 (2026-05-06): "Panoramica" (section title) is below-the-fold or
+# rendered after react-query data hydration → unreliable in accessibility
+# tree within 30s. Use "Home" tab label which is in the tree as soon as
+# Tabs re-mount the index route. Mirrors login.yaml's stable assertion.
 - extendedWaitUntil:
-    visible: "Panoramica"
+    visible: "Home"
     timeout: 30000

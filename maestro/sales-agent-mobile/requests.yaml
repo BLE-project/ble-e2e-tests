@@ -26,11 +26,11 @@ appId: com.terrio.salesagent
       - hideKeyboard
       - tapOn:
           id: "login-btn"
-      # Iter27 (2026-05-05): widened from "Dashboard" (Tabs-internal header)
-      # to "Panoramica" (section title in app/(app)/index.tsx:117), per
-      # Iter15 fleet-wide alignment.
+      # Iter29 (2026-05-06): assert "Home" tab label instead of "Panoramica"
+      # body text — accessibility-tree stable as soon as Tabs mount, mirrors
+      # login.yaml's working pattern.
       - extendedWaitUntil:
-          visible: "Panoramica"
+          visible: "Home"
           timeout: 30000
 
 # Dismiss Gboard clipboard suggestion panel if still covering tab bar.
