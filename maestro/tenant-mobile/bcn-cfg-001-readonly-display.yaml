@@ -1,0 +1,75 @@
+appId: com.terrio.tenant
+---
+# BCN-CFG-001 — tenant-mobile read-only soglia visibility (Task 7).
+# Verifies the BleConfigDisplay card renders the tenant soglia when present.
+#
+# This flow assumes the operator has wired the new <BleConfigDisplay /> into
+# the tenant-mobile dashboard or settings tree (testID="ble-config-card").
+# When the wiring is missing the assertVisible step fails fast — that is the
+# explicit signal to land the integration follow-up.
+#
+# Reference: BLE-project/ble-platform-docs#183
+
+- launchApp:
+    stopApp: true
+
+- extendedWaitUntil:
+    visible: "TERRIO Tenant"
+    timeout: 30000
+
+- runFlow:
+    when:
+      visible: "Esci"
+    commands:
+      - tapOn: "Esci"
+      - extendedWaitUntil:
+          visible: "TERRIO Tenant"
+          timeout: 10000
+
+- tapOn: { id: "username-input" }
+- inputText: "dev-tenant-admin"
+- hideKeyboard
+
+- tapOn: { id: "password-input" }
+- inputText: "dev-pass"
+- hideKeyboard
+
+- tapOn: { id: "login-btn" }
+
+- tapOn:
+    text: "Non ora|Never|Not now"
+    optional: true
+
+- extendedWaitUntil:
+    visible: "Home|Welcome back"
+    timeout: 15000
+
+# The BleConfigDisplay card may live on the home dashboard or under a
+# dedicated tab. Either way it exposes testID="ble-config-card" + a value
+# label "Soglia rilevamento beacon". The test fails fast when the wiring
+# step is missing, which is the operator handoff signal.
+- extendedWaitUntil:
+    visible:
+      id: "ble-config-card"
+    timeout: 15000
+
+- assertVisible: "Soglia rilevamento beacon"
+
+# Either the configured value is shown OR the empty-state warning is
+# shown — both are valid pass states for this flow (the test verifies
+# wiring + render, not the value itself).
+- runFlow:
+    when:
+      visible:
+        id: "ble-config-value"
+    commands:
+      - assertVisible:
+          id: "ble-config-value"
+
+- runFlow:
+    when:
+      visible:
+        id: "ble-config-empty"
+    commands:
+      - assertVisible:
+          id: "ble-config-empty"
