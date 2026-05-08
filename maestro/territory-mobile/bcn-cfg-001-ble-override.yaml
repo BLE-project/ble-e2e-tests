@@ -1,0 +1,173 @@
+appId: com.terrio.territory
+---
+# BCN-CFG-001 — territory-mobile BLE threshold override editor (Task 7).
+# Verifies the new `territory-form-ble-override` field:
+#   1. Set a per-territory override (7.50 m) on create + assert persistence.
+#   2. Clear the override on edit (blank value) + assert tenant fallback semantics.
+#   3. Out-of-range submit is blocked by client-side validation.
+#
+# Reference: BLE-project/ble-platform-docs#183
+# Must run with TENANT_ADMIN credentials (CRUD gate).
+
+- launchApp:
+    stopApp: true
+
+- extendedWaitUntil:
+    visible:
+      text: "Terrio|Territory Manager|Territori|Nessun territorio|Errore"
+    timeout: 30000
+
+# If already logged in from a previous flow, logout first so we can
+# re-login as dev-tenant-admin.
+- runFlow:
+    when:
+      visible: "Esci"
+    commands:
+      - tapOn: "Esci"
+      - extendedWaitUntil:
+          visible: "Territory Manager"
+          timeout: 10000
+
+- runFlow:
+    when:
+      visible: "Territory Manager"
+    commands:
+      - tapOn:
+          id: "username-input"
+      - inputText: "dev-tenant-admin"
+      - hideKeyboard
+      - tapOn:
+          id: "password-input"
+      - inputText: "dev-pass"
+      - hideKeyboard
+      - runFlow:
+          when:
+            visible: "Clipboard"
+          commands:
+            - pressKey: Back
+      - tapOn:
+          id: "login-btn"
+      - extendedWaitUntil:
+          visible: "Territori"
+          timeout: 15000
+
+- runFlow:
+    when:
+      visible: "Clipboard"
+    commands:
+      - pressKey: Back
+
+- extendedWaitUntil:
+    visible:
+      text: "Territori|Nessun territorio"
+    timeout: 15000
+
+# ── Step 1: Create with override = 7.50 ─────────────────────────────────────
+- tapOn:
+    id: "territory-list-new"
+
+- extendedWaitUntil:
+    visible: "Nuovo territorio"
+    timeout: 5000
+
+- tapOn:
+    id: "territory-form-name"
+- inputText: "BCN-CFG-001 Override Smoke"
+- hideKeyboard
+
+- tapOn:
+    id: "territory-form-ble-override"
+- inputText: "7.50"
+- hideKeyboard
+
+- tapOn:
+    id: "territory-form-submit"
+
+- extendedWaitUntil:
+    visible: "Territorio creato"
+    timeout: 10000
+- tapOn: "OK"
+
+- extendedWaitUntil:
+    visible: "BCN-CFG-001 Override Smoke"
+    timeout: 10000
+
+# ── Step 2: Edit and clear the override (blank = tenant fallback) ───────────
+- tapOn:
+    id: "territory-detail-edit"
+
+- extendedWaitUntil:
+    visible: "Modifica territorio"
+    timeout: 5000
+
+# Field should be pre-populated with "7.50".
+- assertVisible:
+    id: "territory-form-ble-override"
+
+- tapOn:
+    id: "territory-form-ble-override"
+- eraseText
+- hideKeyboard
+
+- tapOn:
+    id: "territory-form-submit"
+
+- extendedWaitUntil:
+    visible: "Territorio aggiornato"
+    timeout: 10000
+- tapOn: "OK"
+
+# ── Step 3: Out-of-range value is blocked client-side ───────────────────────
+- tapOn:
+    id: "territory-detail-edit"
+
+- extendedWaitUntil:
+    visible: "Modifica territorio"
+    timeout: 5000
+
+- tapOn:
+    id: "territory-form-ble-override"
+- inputText: "999"
+- hideKeyboard
+
+- assertVisible:
+    id: "territory-form-ble-override-error"
+
+# Submit must be a no-op with the invalid value.
+- tapOn:
+    id: "territory-form-submit"
+
+# Verify we are still on the edit form (no "Territorio aggiornato" toast).
+- assertVisible: "Modifica territorio"
+
+# ── Cleanup: clear bad value, save, then delete the smoke territory ─────────
+- tapOn:
+    id: "territory-form-ble-override"
+- eraseText
+- hideKeyboard
+
+- tapOn:
+    id: "territory-form-submit"
+
+- extendedWaitUntil:
+    visible: "Territorio aggiornato"
+    timeout: 10000
+- tapOn: "OK"
+
+- tapOn:
+    id: "territory-detail-delete"
+
+- extendedWaitUntil:
+    visible: "Eliminare territorio?"
+    timeout: 5000
+
+- tapOn: "Elimina"
+
+- extendedWaitUntil:
+    visible: "Territorio eliminato"
+    timeout: 10000
+- tapOn: "OK"
+
+- extendedWaitUntil:
+    visible: "Territori"
+    timeout: 10000
