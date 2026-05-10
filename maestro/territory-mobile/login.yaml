@@ -9,7 +9,7 @@ appId: com.terrio.territory
 
 - extendedWaitUntil:
     visible:
-      text: "Terrio|Territory Manager|Territori"
+      text: "Terrio|Territory Manager|Territori|TERRIO Territory|Gestisci i tuoi territori"
     timeout: 30000
 
 # If a previous flow left the app authenticated, logout first so we land
@@ -20,10 +20,11 @@ appId: com.terrio.territory
     commands:
       - tapOn: "Esci"
       - extendedWaitUntil:
-          visible: "Territory Manager"
+          visible: "TERRIO Territory|Territory Manager|Gestisci i tuoi territori"
           timeout: 10000
 
-- assertVisible: "Territory Manager"
+- assertVisible:
+    text: "TERRIO Territory|Territory Manager|Gestisci i tuoi territori"
 
 - tapOn:
     id: "username-input"
