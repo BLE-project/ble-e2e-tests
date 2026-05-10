@@ -1,0 +1,99 @@
+appId: com.terrio.salesagent
+tags:
+  - ble
+  - p1
+  - bcn-cfg-002
+---
+# BCN-CFG-002 — first-config wizard end-to-end on a connected Android device.
+# Exercises the 4-screen flow shipped via PR sales-agent-mobile#34 + #35:
+#   step-1-merchant -> step-2-scan -> step-3-confirm -> step-4-submit
+# Requires: device with the ble-plx APK + a tenant with at least one
+# merchant + at least one beacon assigned to the merchant.
+#
+# Reference: BLE-project/ble-platform-docs#186
+
+- launchApp:
+    stopApp: true
+
+- extendedWaitUntil:
+    visible: "Terrio|Home|Agente Commerciale"
+    timeout: 30000
+
+# Login as sales-agent (dev fixture). Adjust to TENANT_ADMIN if needed.
+- runFlow:
+    when: { visible: "Agente Commerciale" }
+    commands:
+      - tapOn: { id: "username-input" }
+      - inputText: "dev-sales-agent"
+      - tapOn: { id: "password-input" }
+      - inputText: "dev-pass"
+      - tapOn: { id: "login-btn" }
+      - extendedWaitUntil: { visible: "Home|Beacon", timeout: 12000 }
+
+# ── Reach the beacon-config screen ─────────────────────────────────────
+- tapOn:
+    text: "Beacon|Beacons|beacon-config"
+    optional: true
+
+- extendedWaitUntil:
+    visible: "Beacon Configuration"
+    timeout: 10000
+
+# ── Launch wizard ──────────────────────────────────────────────────────
+- tapOn:
+    id: "start-first-config-wizard"
+
+# ── Step 1 — Merchant pick ─────────────────────────────────────────────
+- extendedWaitUntil:
+    visible: "Step 1 — Seleziona merchant"
+    timeout: 8000
+
+- tapOn:
+    id: "wizard-merchant-search"
+- inputText: "Test"
+- hideKeyboard
+
+# Tap first merchant row (testID dynamic — match by partial)
+- tapOn:
+    id: ".*wizard-merchant-.*"
+    optional: false
+
+# ── Step 2 — Scan ──────────────────────────────────────────────────────
+- extendedWaitUntil:
+    visible: "Step 2 — Scan beacon"
+    timeout: 8000
+
+- tapOn:
+    id: "wizard-scan-start"
+
+# 60s scan window — wait full duration + 5s padding
+- extendedWaitUntil:
+    visible:
+      id: ".*wizard-scan-row-.*"
+    timeout: 70000
+
+- tapOn:
+    id: "wizard-scan-next"
+
+# ── Step 3 — Confirm ───────────────────────────────────────────────────
+- extendedWaitUntil:
+    visible: "Step 3 — Conferma"
+    timeout: 5000
+
+- tapOn:
+    id: "wizard-confirm-next"
+
+# ── Step 4 — Submit ────────────────────────────────────────────────────
+- extendedWaitUntil:
+    visible: "First-config registrata"
+    timeout: 15000
+
+- assertVisible: "Health Snapshot ID:"
+
+- tapOn:
+    id: "wizard-submit-finish"
+
+# Verify return to beacon-config root
+- extendedWaitUntil:
+    visible: "Beacon Configuration"
+    timeout: 8000
