@@ -28,15 +28,13 @@ appId: com.terrio.consumer
     when:
       visible: "Discover nearby offers"
     commands:
-      - tapOn:
-          text: "Email"
+      - tapOn: { id: "username-input" }
       - inputText: "dev-consumer"
       - hideKeyboard
-      - tapOn:
-          text: "Password"
+      - tapOn: { id: "password-input" }
       - inputText: "dev-pass"
       - hideKeyboard
-      - tapOn: "Sign in|Accedi"
+      - tapOn: { id: "login-btn" }
       # FIX-S55-001: federation auto-switch prompt
       - runFlow:
           when:

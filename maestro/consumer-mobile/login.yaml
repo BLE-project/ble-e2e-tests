@@ -13,17 +13,18 @@ appId: com.terrio.consumer
 
 - assertVisible: "Discover nearby offers"
 
-# Enter credentials
-- tapOn:
-    text: "Email"
+# Enter credentials — use testID (i18n-stable; placeholders may render
+# as "Email" EN or "Username" IT depending on locale).
+- tapOn: { id: "username-input" }
 - inputText: "dev-consumer"
+- hideKeyboard
 
-- tapOn:
-    text: "Password"
+- tapOn: { id: "password-input" }
 - inputText: "dev-pass"
+- hideKeyboard
 
-# Submit login
-- tapOn: "Sign in|Accedi"
+# Submit login (testID stable cross-locale)
+- tapOn: { id: "login-btn" }
 
 # FIX-S55-001: after login the federation system may auto-prompt
 # "Return to previous programme?" when the consumer had a card in

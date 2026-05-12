@@ -21,7 +21,7 @@ tags:
       - inputText: "dev-consumer"
       - tapOn: { text: "Password|password" }
       - inputText: "dev-pass"
-      - tapOn: "Sign in|Accedi"
+      - tapOn: { id: "login-btn" }
       - extendedWaitUntil: { visible: "Home|Discover", timeout: 8000 }
 
 # Navigate to Profilo/Settings → Notifications

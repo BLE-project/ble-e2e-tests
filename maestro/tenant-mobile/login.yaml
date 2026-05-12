@@ -1,30 +1,42 @@
 appId: com.terrio.tenant
 ---
 # Tenant Mobile — Login flow + BUG-003 verification
+# Idempotent: handles fresh launch (login required) AND cached session.
+# Handles BiometricEnrollModal post-login race condition.
 
 - launchApp:
     stopApp: true
 
 - extendedWaitUntil:
-    visible: "TERRIO Tenant"
+    visible: "TERRIO Tenant|Welcome back|Bentornato|Accesso più rapido"
     timeout: 30000
 
-- assertVisible: "Tenant admin portal"
+# Login if login screen showing (skip if cached session)
+- runFlow:
+    when:
+      visible: "Tenant admin portal"
+    commands:
+      - tapOn: { id: "username-input" }
+      - inputText: "dev-tenant-admin"
+      - hideKeyboard
+      - tapOn: { id: "password-input" }
+      - inputText: "dev-pass"
+      - hideKeyboard
+      - tapOn: { id: "login-btn" }
 
-- tapOn: { id: "username-input" }
-- inputText: "dev-tenant-admin"
-- hideKeyboard
-
-- tapOn: { id: "password-input" }
-- inputText: "dev-pass"
-- hideKeyboard
-
-- tapOn: { id: "login-btn" }
-
-- tapOn:
-    text: "Non ora|Never|Not now"
-    optional: true
-
+# Wait for either BiometricEnrollModal OR dashboard directly (no enroll flow if previously skipped Never)
 - extendedWaitUntil:
-    visible: "Home|Welcome back"
+    visible: "Accesso più rapido|Welcome back|Bentornato"
+    timeout: 20000
+
+# Dismiss enrollment modal if visible
+- runFlow:
+    when:
+      visible: "Accesso più rapido"
+    commands:
+      - tapOn: "Non ora"
+
+# Final assert: dashboard visible
+- extendedWaitUntil:
+    visible: "Welcome back|Bentornato"
     timeout: 15000

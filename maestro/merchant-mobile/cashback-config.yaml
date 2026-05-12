@@ -18,15 +18,13 @@ appId: com.terrio.merchant
     when:
       visible: "Merchant portal"
     commands:
-      - tapOn:
-          text: "Email"
+      - tapOn: { id: "username-input" }
       - inputText: "dev-merchant"
       - hideKeyboard
-      - tapOn:
-          text: "Password"
+      - tapOn: { id: "password-input" }
       - inputText: "dev-pass"
       - hideKeyboard
-      - tapOn: "Sign in"
+      - tapOn: { id: "login-btn" }
       - extendedWaitUntil:
           visible: "Dashboard"
           timeout: 8000

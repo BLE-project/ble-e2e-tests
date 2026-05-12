@@ -19,15 +19,13 @@ appId: com.terrio.tenant
     when:
       visible: "Tenant admin portal"
     commands:
-      - tapOn:
-          text: "Email"
+      - tapOn: { id: "username-input" }
       - inputText: "dev-tenant-admin"
       - hideKeyboard
-      - tapOn:
-          text: "Password"
+      - tapOn: { id: "password-input" }
       - inputText: "dev-pass"
       - hideKeyboard
-      - tapOn: "Sign in"
+      - tapOn: { id: "login-btn" }
       - extendedWaitUntil:
           visible: "Welcome back"
           timeout: 8000
