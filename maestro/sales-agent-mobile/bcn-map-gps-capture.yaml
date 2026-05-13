@@ -1,0 +1,75 @@
+appId: com.terrio.salesagent
+---
+# Sales-Agent Mobile — BCN-MAP-001 Phase 3a GPS capture flow.
+#
+# Mirrors merchant-mobile/bcn-map-gps-capture.yaml but in the sales-agent
+# provisioning context. Sales-agent attaches a beacon to a merchant via
+# the first-config wizard and is expected to capture GPS at install time.
+#
+# This flow tests the *standalone* GPS recapture (post-initial-config).
+# First-config wizard GPS capture is covered by beacon-first-config.yaml.
+
+- launchApp:
+    stopApp: true
+
+# Drain runtime permission prompts (location precision picker).
+- repeat:
+    times: 3
+    commands:
+      - runFlow:
+          when:
+            visible: "Mentre usi l'app|While using the app"
+          commands:
+            - tapOn: "Mentre usi l'app|While using the app"
+      - runFlow:
+          when:
+            visible: "Consenti|Allow"
+          commands:
+            - tapOn: "Consenti|Allow"
+
+# Login if not already authenticated.
+- extendedWaitUntil:
+    visible:
+      text: "TERRIO Sales|Assistenza merchant.*|Terrio|Home|Agente Commerciale"
+    timeout: 30000
+
+- runFlow:
+    when:
+      visible: "TERRIO Sales|Assistenza merchant"
+    commands:
+      - tapOn: { id: "username-input" }
+      - inputText: "dev-sales-agent"
+      - hideKeyboard
+      - tapOn: { id: "password-input" }
+      - inputText: "dev-pass"
+      - hideKeyboard
+      - tapOn: { id: "login-btn" }
+      - extendedWaitUntil:
+          visible: "Home|Panoramica"
+          timeout: 8000
+
+# Dismiss biometric enroll modal cleanly.
+- runFlow:
+    when:
+      visible: "Accesso più rapido"
+    commands:
+      - tapOn:
+          id: "enroll-never"
+
+# Navigate to provisioned beacons list (sales-agent context).
+- tapOn:
+    text: "Beacon|Provisionati|Provisioned"
+- extendedWaitUntil:
+    visible: "Cattura GPS|Capture GPS"
+    timeout: 8000
+
+# Recapture GPS for the first provisioned beacon.
+- tapOn:
+    text: "Cattura GPS"
+
+- extendedWaitUntil:
+    visible: "GPS catturato|GPS acquisito|Salvato|GPS captured"
+    timeout: 30000
+
+- assertVisible:
+    text: "GPS catturato|GPS acquisito|Salvato|GPS captured"
