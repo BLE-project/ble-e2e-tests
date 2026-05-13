@@ -6,28 +6,28 @@ appId: com.terrio.tenant
     stopApp: true
 
 # Warm launches skip the splash and boot directly into Home.
+# IT i18n (2026-05-13): "Tenant admin portal" replaced by "TERRIO Tenant" + IT subtitle;
+# post-login lands on Home/Welcome back/Bentornato.
 - extendedWaitUntil:
     visible:
-      text: "TERRIO Tenant|Tenant admin portal|Welcome back"
+      text: "TERRIO Tenant|Tenant admin portal|Welcome back|Bentornato|Home"
     timeout: 30000
 
 # Previous flows may have persisted auth tokens in SecureStore. Only run
 # the login steps if the login screen is actually showing.
 - runFlow:
     when:
-      visible: "Tenant admin portal"
+      visible: "Tenant admin portal|Accedi"
     commands:
-      - tapOn:
-          text: "Email"
+      - tapOn: { id: "username-input" }
       - inputText: "dev-tenant-admin"
       - hideKeyboard
-      - tapOn:
-          text: "Password"
+      - tapOn: { id: "password-input" }
       - inputText: "dev-pass"
       - hideKeyboard
-      - tapOn: "Sign in"
+      - tapOn: { id: "login-btn" }
       - extendedWaitUntil:
-          visible: "Welcome back"
+          visible: "Welcome back|Bentornato|Home"
           timeout: 8000
 
 # Navigate to Beacons tab

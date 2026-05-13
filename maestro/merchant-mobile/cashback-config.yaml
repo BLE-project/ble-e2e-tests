@@ -7,28 +7,27 @@ appId: com.terrio.merchant
     stopApp: true
 
 # Warm launches skip the splash and boot directly into Dashboard.
+# IT i18n (2026-05-13): subtitle "Gestisci il tuo negozio...", post-login "Panoramica".
 - extendedWaitUntil:
     visible:
-      text: "TERRIO Merchant|Merchant portal|Dashboard"
+      text: "TERRIO Merchant|Merchant portal|Dashboard|Panoramica|Gestisci il tuo negozio"
     timeout: 30000
 
 # Previous flows may have persisted auth tokens in SecureStore. Only run
 # the login steps if the login screen is actually showing.
 - runFlow:
     when:
-      visible: "Merchant portal"
+      visible: "Merchant portal|Gestisci il tuo negozio"
     commands:
-      - tapOn:
-          text: "Email"
+      - tapOn: { id: "username-input" }
       - inputText: "dev-merchant"
       - hideKeyboard
-      - tapOn:
-          text: "Password"
+      - tapOn: { id: "password-input" }
       - inputText: "dev-pass"
       - hideKeyboard
-      - tapOn: "Sign in"
+      - tapOn: { id: "login-btn" }
       - extendedWaitUntil:
-          visible: "Dashboard"
+          visible: "Dashboard|Panoramica"
           timeout: 8000
 
 # Navigate to Cashback tab
