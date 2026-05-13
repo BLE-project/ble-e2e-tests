@@ -17,24 +17,23 @@ appId: com.terrio.consumer
 
 - extendedWaitUntil:
     visible:
-      text: "TERRIO|Discover nearby offers|Nearby"
+      text: "TERRIO|Discover nearby offers|Nearby|Vicini|Avvicinati|Trova offerte"
     timeout: 30000
 
 # Previous flows may have persisted auth tokens in SecureStore. Only run
 # the login steps if the login screen is actually showing.
+# IT i18n (2026-05-13): tagline replaced by IT variant; testID-anchor login fields.
 - runFlow:
     when:
-      visible: "Discover nearby offers"
+      visible: "Discover nearby offers|Avvicinati|Trova offerte|Accedi"
     commands:
-      - tapOn:
-          text: "Email"
+      - tapOn: { id: "username-input" }
       - inputText: "dev-consumer"
       - hideKeyboard
-      - tapOn:
-          text: "Password"
+      - tapOn: { id: "password-input" }
       - inputText: "dev-pass"
       - hideKeyboard
-      - tapOn: "Sign in|Accedi"
+      - tapOn: { id: "login-btn" }
       # FIX-S55-001: federation auto-switch prompt
       - runFlow:
           when:
