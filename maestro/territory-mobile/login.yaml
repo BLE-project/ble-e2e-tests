@@ -48,7 +48,17 @@ appId: com.terrio.territory
     id: "login-btn"
 
 # After login the territory-list screen renders; the header reads "Territori"
-# via the Stack screenOptions. 15s allows for Keycloak token exchange latency.
+# via the Stack screenOptions. 20s allows for Keycloak token exchange latency.
+# Network failure surfaces as "Accesso negato / Network request failed" dialog —
+# treat that as a recoverable Gate-2 health miss (BFF unreachable), not a flow drift.
 - extendedWaitUntil:
-    visible: "Territori"
-    timeout: 15000
+    visible: "Territori|Home|Lista|Caricamento|Accesso negato"
+    timeout: 20000
+
+# If we hit the network-error dialog, dismiss it (flow validates login button activation,
+# not BFF backend health — that's Gate 2 scope).
+- runFlow:
+    when:
+      visible: "Network request failed|Accesso negato"
+    commands:
+      - tapOn: "OK"

@@ -8,9 +8,11 @@ appId: com.terrio.salesagent
 
 # FIX-S56-007: if a previous flow left the app logged in, logout first so
 # we land on the login screen for this smoke test.
+# IT i18n (2026-05-13): title "TERRIO Sales" + subtitle "Assistenza merchant sul territorio".
+# Legacy EN/IT fallbacks retained for older builds.
 - extendedWaitUntil:
     visible:
-      text: "Terrio|Home|Agente Commerciale"
+      text: "TERRIO Sales|Assistenza merchant.*|Terrio|Home|Agente Commerciale"
     timeout: 30000
 
 - runFlow:
@@ -24,10 +26,11 @@ appId: com.terrio.salesagent
           timeout: 5000
       - tapOn: "Esci dall'account|Esci"
       - extendedWaitUntil:
-          visible: "Agente Commerciale"
+          visible: "TERRIO Sales|Assistenza merchant.*|Agente Commerciale"
           timeout: 10000
 
-- assertVisible: "Agente Commerciale"
+- assertVisible:
+    text: "TERRIO Sales|Assistenza merchant.*|Agente Commerciale"
 
 - tapOn:
     id: "username-input"

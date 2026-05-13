@@ -9,7 +9,9 @@ appId: com.terrio.merchant
     visible: "TERRIO Merchant"
     timeout: 30000
 
-- assertVisible: "Merchant portal"
+# IT locale (default): subtitle "Gestisci il tuo negozio...". EN fallback retained.
+- assertVisible:
+    text: "Gestisci il tuo negozio.*|Merchant portal"
 
 - tapOn: { id: "username-input" }
 - inputText: "dev-merchant"
@@ -26,5 +28,5 @@ appId: com.terrio.merchant
     optional: true
 
 - extendedWaitUntil:
-    visible: "Home|Dashboard"
+    visible: "Home|Dashboard|Panoramica"
     timeout: 15000
