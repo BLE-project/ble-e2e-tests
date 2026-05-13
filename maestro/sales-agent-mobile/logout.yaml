@@ -54,7 +54,7 @@ appId: com.terrio.salesagent
     commands:
       - pressKey: Back
 
-- tapOn: "Profilo"
+- tapOn: { id: "tab-profilo" }
 - extendedWaitUntil:
     visible: "Esci dall'account"
     timeout: 5000

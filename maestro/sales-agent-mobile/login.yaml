@@ -35,7 +35,7 @@ appId: com.terrio.salesagent
       visible: "Home"
     commands:
       # sales-agent uses the Profilo tab for sign out
-      - tapOn: "Profilo"
+      - tapOn: { id: "tab-profilo" }
       - extendedWaitUntil:
           visible: "Esci dall'account|Esci"
           timeout: 5000

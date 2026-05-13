@@ -75,35 +75,35 @@ appId: com.terrio.salesagent
     commands:
       - pressKey: Back
 
-# ── Tab navigation ─────────────────────────────────────────────────────────
+# ── Tab navigation (uses tabBarTestID shipped via ble-sales-agent-mobile#36) ─
 
-- tapOn: "Richieste"
+- tapOn: { id: "tab-richieste" }
 - extendedWaitUntil:
     visible: "Richieste"
     timeout: 5000
 
-- tapOn: "Merchant"
+- tapOn: { id: "tab-merchant" }
 - extendedWaitUntil:
     visible: "Merchant"
     timeout: 5000
 
-- tapOn: "Royalties"
+- tapOn: { id: "tab-royalties" }
 - extendedWaitUntil:
     visible: "Royalties"
     timeout: 5000
 
-- tapOn: "Beacon"
+- tapOn: { id: "tab-beacon" }
 - extendedWaitUntil:
     visible: "Beacon"
     timeout: 5000
 
-- tapOn: "Profilo"
+- tapOn: { id: "tab-profilo" }
 - extendedWaitUntil:
     visible: "Profilo"
     timeout: 5000
 
 # Return to home
-- tapOn: "Home"
+- tapOn: { id: "tab-home" }
 # Iter29 (2026-05-06): "Panoramica" (section title) is below-the-fold or
 # rendered after react-query data hydration → unreliable in accessibility
 # tree within 30s. Use "Home" tab label which is in the tree as soon as

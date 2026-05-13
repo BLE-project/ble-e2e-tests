@@ -20,7 +20,7 @@ tags:
     when:
       visible: "Home"
     commands:
-      - tapOn: "Profilo"
+      - tapOn: { id: "tab-profilo" }
       - extendedWaitUntil: { visible: "Esci", timeout: 5000 }
       - tapOn: "Esci"
       - extendedWaitUntil: { visible: "Agente Commerciale", timeout: 10000 }

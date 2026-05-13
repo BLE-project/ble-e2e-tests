@@ -31,7 +31,7 @@ appId: com.terrio.merchant
           timeout: 8000
 
 # Navigate to POS tab
-- tapOn: "POS"
+- tapOn: { id: "tab-pos" }
 - extendedWaitUntil:
     visible: "Loyalty POS"
     timeout: 5000
