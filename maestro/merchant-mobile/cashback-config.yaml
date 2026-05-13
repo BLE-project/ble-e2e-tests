@@ -31,7 +31,7 @@ appId: com.terrio.merchant
           timeout: 8000
 
 # Navigate to Cashback tab
-- tapOn: "Cashback"
+- tapOn: { id: "tab-cashback-config" }
 - extendedWaitUntil:
     visible: "Configurazione Cashback"
     timeout: 5000

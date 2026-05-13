@@ -41,7 +41,7 @@ appId: com.terrio.salesagent
       - pressKey: Back
 
 # Navigate to Richieste tab
-- tapOn: "Richieste"
+- tapOn: { id: "tab-richieste" }
 - extendedWaitUntil:
     visible: "Richieste"
     timeout: 5000
