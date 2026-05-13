@@ -30,20 +30,116 @@ appId: com.terrio.tenant
           visible: "Welcome back|Bentornato|Home"
           timeout: 8000
 
-# Navigate to Beacons tab
-- tapOn: "Beacons"
+# Navigate to Beacons tab. testID convention: `tab-beacons` once app-side
+# adds it (tracked in ble-e2e-tests#24). Fall back to text + IT alias.
+- tapOn:
+    text: "Beacons|Beacon Registry|Registro Beacon"
 - extendedWaitUntil:
-    visible: "Beacon Registry"
+    visible: "Beacon Registry|Registro Beacon"
     timeout: 5000
 
-# Open create modal
-- tapOn: "+ Add"
+# ── CREATE phase ─────────────────────────────────────────────────────────────
+# Open create modal. testID convention: `btn-add-beacon`.
+- tapOn:
+    text: "\\+ Add|Aggiungi|\\+ Aggiungi"
 - extendedWaitUntil:
-    visible: "New Beacon"
+    visible: "New Beacon|Nuovo Beacon"
     timeout: 5000
 
-# Cancel to test modal dismissal
-- tapOn: "Cancel"
+# Fill form. testIDs `beacon-form-{uuid,major,minor,name}` planned app-side.
+# Until then, target by placeholder/label text. Use synthetic UUID that
+# won't collide with the V25 seed (major=999, minor=001).
+- tapOn:
+    text: "UUID|uuid"
+- inputText: "FDA50693-A4E2-4FB1-AFCF-C6EB07647825"
+- hideKeyboard
+
+- tapOn:
+    text: "Major|major"
+- inputText: "999"
+- hideKeyboard
+
+- tapOn:
+    text: "Minor|minor"
+- inputText: "1"
+- hideKeyboard
+
+- tapOn:
+    text: "Name|Nome"
+- inputText: "Maestro-CRUD-test-beacon"
+- hideKeyboard
+
+# Submit create. testID `btn-submit-beacon` planned.
+- tapOn:
+    text: "Submit|Salva|Crea|Save"
+
+# Assert created beacon appears in list. Modal should close + row renders.
 - extendedWaitUntil:
-    visible: "Beacon Registry"
+    visible: "Maestro-CRUD-test-beacon"
+    timeout: 10000
+
+# ── UPDATE phase ─────────────────────────────────────────────────────────────
+# Tap the freshly-created row to open edit. testID `beacon-row-{id}` planned.
+- tapOn:
+    text: "Maestro-CRUD-test-beacon"
+
+- extendedWaitUntil:
+    visible: "Edit|Modifica|New Beacon|Nuovo Beacon"
+    timeout: 5000
+
+# Update the name field. Other fields readonly post-create.
+- tapOn:
+    text: "Name|Nome"
+- eraseText: 50
+- inputText: "Maestro-CRUD-test-updated"
+- hideKeyboard
+
+- tapOn:
+    text: "Save|Salva|Submit"
+
+- extendedWaitUntil:
+    visible: "Maestro-CRUD-test-updated"
+    timeout: 10000
+
+# ── DELETE phase ─────────────────────────────────────────────────────────────
+# Long-press row to surface delete action OR tap row trash button.
+# testID `btn-delete-{id}` planned. Fall back to long-press on text.
+- longPressOn:
+    text: "Maestro-CRUD-test-updated"
+
+- extendedWaitUntil:
+    visible: "Delete|Elimina|Rimuovi|Remove"
+    timeout: 5000
+
+- tapOn:
+    text: "Delete|Elimina|Rimuovi"
+
+# Confirm dialog.
+- runFlow:
+    when:
+      visible: "Conferma|Confirm|Sei sicuro"
+    commands:
+      - tapOn:
+          text: "Conferma|Confirm|OK|Sì"
+
+# Assert row removed from list.
+- extendedWaitUntil:
+    visible: "Beacon Registry|Registro Beacon"
+    timeout: 10000
+
+- assertNotVisible:
+    text: "Maestro-CRUD-test-updated"
+
+# ── Negative-path coverage (optional) ────────────────────────────────────────
+# Cancel-modal-without-save flow retained from prior version for regression.
+- tapOn:
+    text: "\\+ Add|Aggiungi"
+- extendedWaitUntil:
+    visible: "New Beacon|Nuovo Beacon"
+    timeout: 5000
+
+- tapOn:
+    text: "Cancel|Annulla"
+- extendedWaitUntil:
+    visible: "Beacon Registry|Registro Beacon"
     timeout: 5000

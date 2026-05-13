@@ -1,0 +1,94 @@
+appId: com.terrio.merchant
+---
+# Merchant Mobile — BCN-MAP-001 Phase 3a GPS capture flow.
+#
+# Validates the GpsCaptureButton wired into the merchant Beacons screen
+# (terrio-merchant-mobile commit d0c9780e). Each provisioned beacon row
+# exposes a "Cattura GPS" button next to Remove; tapping it acquires a
+# device location (Expo Location, enforced 10 m accuracy) and POSTs the
+# lat/lng to /api/v1/beacons/{id}/gps (V29 endpoint).
+#
+# Scope: this flow tests the FIRST beacon row only. Per-row coverage is
+# out of scope for the smoke check — multi-row covered by a separate
+# bcn-map-multi-row.yaml when needed.
+#
+# Pre-requisite: device has Location permission already granted (granted
+# at first launch via consumer-mobile flow OR by operator manually).
+# Maestro extends a fallback prompt drain for cold-install case.
+
+- launchApp:
+    stopApp: true
+
+# Drain runtime permission prompts (location precision picker on cold install).
+- repeat:
+    times: 3
+    commands:
+      - runFlow:
+          when:
+            visible: "Mentre usi l'app|While using the app"
+          commands:
+            - tapOn: "Mentre usi l'app|While using the app"
+      - runFlow:
+          when:
+            visible: "Consenti|Allow"
+          commands:
+            - tapOn: "Consenti|Allow"
+
+# Login if not already authenticated. Reuses the testID-based login pattern
+# canonicalized by login.yaml.
+- extendedWaitUntil:
+    visible:
+      text: "TERRIO Merchant|Merchant portal|Dashboard|Panoramica|Gestisci il tuo negozio"
+    timeout: 30000
+
+- runFlow:
+    when:
+      visible: "Merchant portal|Gestisci il tuo negozio"
+    commands:
+      - tapOn: { id: "username-input" }
+      - inputText: "dev-merchant"
+      - hideKeyboard
+      - tapOn: { id: "password-input" }
+      - inputText: "dev-pass"
+      - hideKeyboard
+      - tapOn: { id: "login-btn" }
+      - extendedWaitUntil:
+          visible: "Dashboard|Panoramica"
+          timeout: 8000
+
+# Dismiss optional biometric enrollment prompt without logout side-effect.
+- runFlow:
+    when:
+      visible: "Accesso più rapido"
+    commands:
+      - tapOn:
+          id: "enroll-never"
+
+# Navigate to Beacons screen via tab/menu.
+- tapOn:
+    text: "Fleet Beacon|Beacons|Beacon"
+- extendedWaitUntil:
+    visible: "Provisioned|Provisionati|Cattura GPS"
+    timeout: 8000
+
+# Tap the first row's "Cattura GPS" button. testID convention:
+# `btn-capture-gps-{beaconId}` — but flow doesn't know the ID, so fall
+# back to text. Operator may switch to id-based once beacons list testID
+# row anchoring lands (tracked in ble-e2e-tests#24).
+- tapOn:
+    text: "Cattura GPS"
+
+# Geolocation acquisition spinner / progress indicator (≤ 10 m accuracy
+# required by the component; may take 5-10 s on first acquire).
+- extendedWaitUntil:
+    visible: "GPS catturato|GPS acquisito|Salvato|GPS captured"
+    timeout: 30000
+
+# Backend persistence: POST /api/v1/beacons/{id}/gps returns 200.
+# A toast or status badge confirms success.
+- assertVisible:
+    text: "GPS catturato|GPS acquisito|Salvato|GPS captured"
+
+# Optional negative-path verification: simulate degraded accuracy.
+# Out of scope for the smoke check — covered by bcn-map-accuracy-reject.yaml
+# follow-up if needed.
