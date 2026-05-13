@@ -13,12 +13,18 @@ appId: com.terrio.territory
       text: ".*(Terrio|Territory Manager|Territori|TERRIO Territory|Accesso più rapido).*"
     timeout: 30000
 
-# Iter3-A: biometric dialog re-appears on warm launches.
+# Iter29 (2026-05-06): biometric dismiss via enroll-never testID instead
+# of pressKey:Back. Back-press goes through Expo Router native-stack and
+# pops the auth-stack root → app navigates AWAY from dashboard, breaking
+# subsequent tab taps. Tapping enroll-never calls auth.optOut() + onDone()
+# entirely from JS state, no nav side-effect. Mirrors the Iter15 sales-agent
+# fix that flipped sales-agent/login from FAIL to PASS for 10+ iters.
 - runFlow:
     when:
       visible: "Accesso più rapido"
     commands:
-      - pressKey: Back
+      - tapOn:
+          id: "enroll-never"
 
 # Login as TENANT_ADMIN so we can see the "+" FAB (create path).
 # If we came in authenticated as a different user, logout first.
@@ -52,12 +58,13 @@ appId: com.terrio.territory
             - pressKey: Back
       - tapOn:
           id: "login-btn"
-      # Iter4: post-login biometric prompt — Back dismisses without logout.
+      # Iter29 (2026-05-06): post-login biometric — same enroll-never path.
       - runFlow:
           when:
             visible: "Accesso più rapido"
           commands:
-            - pressKey: Back
+            - tapOn:
+                id: "enroll-never"
       - extendedWaitUntil:
           visible: "Territori"
           timeout: 15000
