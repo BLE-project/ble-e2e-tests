@@ -6,6 +6,30 @@ appId: com.terrio.consumer
 - launchApp:
     stopApp: true
 
+# BCN-ATR-001 (2026-05-13): cold-install lands on GDPR pre-registration scan
+# consent screen ("Scan beacon BLE pre-registrazione" / "Acconsento
+# all'attivazione dello scan BLE..."). The Switch widget is accessibility
+# only (content-desc, no text/testID yet) — until testID is added, tap by
+# accessibility text + point fallback to the Switch position. Idempotent —
+# skipped if consent already granted in a warm session.
+- runFlow:
+    when:
+      visible: "Scan beacon BLE pre-registrazione"
+    commands:
+      # Tap consent Switch by accessibility content-desc.
+      - tapOn:
+          text: "Acconsento all'attivazione dello scan BLE"
+      # Fallback: if Switch did not toggle (still showing un-checked path),
+      # tap at the Switch widget left-anchored position (~12.4% × 28.6%).
+      - runFlow:
+          when:
+            visible: "Continua"
+          commands:
+            - tapOn:
+                point: "12%, 29%"
+      # Now confirm by tapping Continua.
+      - tapOn: "Continua"
+
 # FIX-ITER6-001 (2026-05-02): unrooted device + release-signed APK refuses
 # both `install -g` and `pm grant` — runtime permission dialogs always show
 # on cold-install. Loop to drain stacked Android permission prompts (location
