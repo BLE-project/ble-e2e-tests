@@ -19,8 +19,8 @@ tags:
     commands:
       - tapOn: { id: "tab-profilo" }
       - extendedWaitUntil: { visible: "Esci", timeout: 5000 }
-      - tapOn: "Esci"
-      - extendedWaitUntil: { visible: "Agente Commerciale", timeout: 10000 }
+      - tapOn: { id: "btn-logout" }
+      - extendedWaitUntil: { visible: "TERRIO Sales|Assistenza merchant.*|Agente Commerciale", timeout: 10000 }
 
 - tapOn: { id: "username-input" }
 - inputText: "dev-sales-agent"
