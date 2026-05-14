@@ -17,15 +17,17 @@ tags:
 - runFlow:
     when: { visible: "Sign in|Accedi" }
     commands:
-      - tapOn: { text: "Email|email" }
+      - tapOn: { id: "username-input" }
       - inputText: "dev-consumer"
-      - tapOn: { text: "Password|password" }
+      - hideKeyboard
+      - tapOn: { id: "password-input" }
       - inputText: "dev-pass"
-      - tapOn: "Sign in|Accedi"
+      - hideKeyboard
+      - tapOn: { id: "login-btn" }
       - extendedWaitUntil: { visible: "Home|Discover", timeout: 8000 }
 
-# Navigate to Profilo/Settings → Notifications
-- tapOn: "Profilo|Profile|Account"
+# Navigate to Profilo tab → Notifications (tabBarTestID from #78).
+- tapOn: { id: "tab-profilo" }
 - extendedWaitUntil: { visible: "Preferenze|Settings", timeout: 5000 }
 
 - tapOn: "Notifiche|Notifications|Preferenze notifiche"
