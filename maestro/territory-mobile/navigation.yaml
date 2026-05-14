@@ -32,7 +32,7 @@ appId: com.terrio.territory
     when:
       visible: "Esci"
     commands:
-      - tapOn: "Esci"
+      - tapOn: { id: "btn-logout" }
       - extendedWaitUntil:
           visible:
             text: ".*(Territory Manager|TERRIO Territory|Gestisci i tuoi territori).*"

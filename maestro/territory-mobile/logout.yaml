@@ -60,7 +60,7 @@ appId: com.terrio.territory
 
 # We are now on the territory list — scroll is not needed, "Esci" is at the
 # bottom of a fixed footer. Tap it and assert we land on the login screen.
-- tapOn: "Esci"
+- tapOn: { id: "btn-logout" }
 
 - extendedWaitUntil:
     visible:
