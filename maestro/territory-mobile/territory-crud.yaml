@@ -19,7 +19,7 @@ appId: com.terrio.territory
     when:
       visible: "Esci"
     commands:
-      - tapOn: "Esci"
+      - tapOn: { id: "btn-logout" }
       - extendedWaitUntil:
           visible: "Territory Manager"
           timeout: 10000
