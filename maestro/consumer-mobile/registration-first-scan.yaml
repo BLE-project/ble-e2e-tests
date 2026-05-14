@@ -100,20 +100,21 @@ appId: com.terrio.consumer
 - tapOn:
     text: "Accedi ora"
 
-# 6. Login screen again — fill credentials we just used
+# 6. Login screen again — fill credentials we just used.
+# testID anchors shipped fleet-wide via ble-consumer-mobile#77 (login.tsx).
 - extendedWaitUntil:
     visible: "Accedi|Sign in"
     timeout: 15000
 
-- tapOn:
-    text: "Username|Email"
+- tapOn: { id: "username-input" }
 - inputText: "tcr001-${maestroRunId}"
+- hideKeyboard
 
-- tapOn:
-    text: "Password"
+- tapOn: { id: "password-input" }
 - inputText: "Test-Pass-2026!"
+- hideKeyboard
 
-- tapOn: "Accedi"
+- tapOn: { id: "login-btn" }
 
 # Dismiss any "previous programme" or biometric enrol that may foreground
 - runFlow:

@@ -16,19 +16,19 @@ tags:
     timeout: 30000
 
 - runFlow:
-    when: { visible: "Tenant admin portal" }
+    when: { visible: "Tenant admin portal|Accedi" }
     commands:
-      - tapOn: { text: "Email" }
+      - tapOn: { id: "username-input" }
       - inputText: "dev-tenant-admin"
       - hideKeyboard
-      - tapOn: { text: "Password" }
+      - tapOn: { id: "password-input" }
       - inputText: "dev-pass"
       - hideKeyboard
-      - tapOn: "Sign in"
-      - extendedWaitUntil: { visible: "Welcome back", timeout: 8000 }
+      - tapOn: { id: "login-btn" }
+      - extendedWaitUntil: { visible: "Welcome back|Bentornato|Home", timeout: 8000 }
 
-# Navigate to Moderation queue (tenant admin view)
-- tapOn: "Moderation|Moderazioni|ADV Queue"
+# Navigate to Moderation queue (tabBarTestID shipped via ble-tenant-mobile#39).
+- tapOn: { id: "tab-moderazione" }
 
 - extendedWaitUntil:
     visible: "ESCALATED|Escalata"
