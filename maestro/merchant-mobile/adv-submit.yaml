@@ -15,9 +15,9 @@ tags:
 - runFlow:
     when: { visible: "Home" }
     commands:
-      - tapOn: "Profilo|Profile"
+      - tapOn: { id: "tab-account" }
       - extendedWaitUntil: { visible: "Esci|Logout", timeout: 5000 }
-      - tapOn: "Esci|Logout"
+      - tapOn: { id: "btn-logout" }
       - extendedWaitUntil: { visible: "Merchant", timeout: 10000 }
 
 - tapOn: { id: "username-input" }

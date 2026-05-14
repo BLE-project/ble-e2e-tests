@@ -58,7 +58,7 @@ appId: com.terrio.consumer
     commands:
       - pressKey: Back
 
-- tapOn: "Nearby"
+- tapOn: { id: "tab-mappa" }
 - extendedWaitUntil:
     visible: "Nearby"
     timeout: 5000
