@@ -13,7 +13,16 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-ADB="$ANDROID_HOME/platform-tools/adb"
+# adb resolution: prefer one already on PATH (Linux/macOS package install),
+# fall back to the Android SDK location used on Windows dev machines.
+if command -v adb >/dev/null 2>&1; then
+  ADB="$(command -v adb)"
+elif [ -n "${ANDROID_HOME:-}" ] && [ -x "$ANDROID_HOME/platform-tools/adb" ]; then
+  ADB="$ANDROID_HOME/platform-tools/adb"
+else
+  echo "ERROR: adb not found — install Android platform-tools or set ANDROID_HOME"
+  exit 1
+fi
 MAESTRO_HOME="$HOME/.maestro"
 
 export PATH="$PATH:$MAESTRO_HOME/bin"
@@ -21,23 +30,40 @@ export MAESTRO_CLI_NO_ANALYTICS=1
 export MAESTRO_CLI_ANALYSIS_NOTIFICATION_DISABLED=true
 
 # ── Kill stale Maestro Java zombies before starting ──────────────────────
-# Stale Maestro JVMs keep port 7001 bound (Windows WSAEACCES 10013) which
-# silently breaks `adb forward` and causes every flow to fail with a gRPC
-# DEADLINE_EXCEEDED after 120s. Cleanup any orphans before binding the port
-# ourselves. Only kill java.exe maestro processes (not bash.exe run-all.sh
-# instances) to avoid accidentally killing our own parent shell when $$
-# expansion races with Stop-Process.
-if command -v powershell.exe >/dev/null 2>&1; then
-  set +e
-  powershell.exe -NoProfile -Command "Get-WmiObject Win32_Process -Filter \"Name='java.exe'\" | Where-Object { \$_.CommandLine -like '*maestro.cli.AppKt*' } | ForEach-Object { Stop-Process -Id \$_.ProcessId -Force -ErrorAction SilentlyContinue }" >/dev/null 2>&1
-  set -e
-fi
-# Give Windows a moment to release the socket.
+# Stale Maestro JVMs keep port 7001 bound which silently breaks `adb forward`
+# and causes every flow to fail with a gRPC DEADLINE_EXCEEDED after 120s.
+# Clean up orphans before binding the port ourselves. The match targets the
+# Maestro CLI main class (maestro.cli.AppKt), so this script is never hit.
+case "$(uname -s)" in
+  Linux|Darwin)
+    # pkill -f matches the full command line; pkill never kills itself.
+    pkill -f 'maestro\.cli\.AppKt' 2>/dev/null || true
+    ;;
+  MINGW*|MSYS*|CYGWIN*)
+    if command -v powershell.exe >/dev/null 2>&1; then
+      set +e
+      powershell.exe -NoProfile -Command "Get-WmiObject Win32_Process -Filter \"Name='java.exe'\" | Where-Object { \$_.CommandLine -like '*maestro.cli.AppKt*' } | ForEach-Object { Stop-Process -Id \$_.ProcessId -Force -ErrorAction SilentlyContinue }" >/dev/null 2>&1
+      set -e
+    fi
+    ;;
+esac
+# Give the OS a moment to release the socket.
 sleep 1
 # Hard-fail if port 7001 is still bound by something we can't kill.
-if netstat -ano 2>/dev/null | grep -q ":7001 .*LISTENING"; then
+# Linux/macOS: ss or lsof; Windows (Git Bash): netstat. The listening state
+# is "LISTEN" on Linux/macOS and "LISTENING" on Windows — matched case-insensitively.
+port_7001_busy() {
+  if command -v ss >/dev/null 2>&1; then
+    ss -ltn 2>/dev/null | grep -q ':7001 '
+  elif command -v lsof >/dev/null 2>&1; then
+    lsof -iTCP:7001 -sTCP:LISTEN >/dev/null 2>&1
+  else
+    netstat -an 2>/dev/null | grep -E '[:.]7001[^0-9]' | grep -qi 'listen'
+  fi
+}
+if port_7001_busy; then
   echo "ERROR: port 7001 is still in use after zombie cleanup"
-  echo "       run \`netstat -ano | grep 7001\` to identify the holder"
+  echo "       identify the holder:  ss -ltnp | grep 7001   (or: lsof -i :7001)"
   exit 1
 fi
 
