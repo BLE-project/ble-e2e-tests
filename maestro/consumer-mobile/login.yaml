@@ -6,6 +6,15 @@ appId: com.terrio.consumer
 - launchApp:
     stopApp: true
 
+# FU-4 (2026-05-16): wait for the first screen to paint before probing for
+# the consent screen below. On a cold install launchApp returns before the
+# GDPR pre-registration consent screen has rendered, so the runFlow condition
+# was evaluated too early and SKIPPED — leaving the app parked on the consent
+# screen and every downstream wait failing.
+- extendedWaitUntil:
+    visible: "Scan beacon BLE pre-registrazione|Discover nearby offers|Trova offerte|Avvicinati|Accedi|Username|TERRIO|Vicini|Nearby|Accesso più rapido"
+    timeout: 30000
+
 # BCN-ATR-001 (2026-05-13): cold-install lands on GDPR pre-registration scan
 # consent screen ("Scan beacon BLE pre-registrazione" / "Acconsento
 # all'attivazione dello scan BLE..."). The Switch widget is accessibility

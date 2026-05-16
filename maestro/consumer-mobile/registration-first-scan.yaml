@@ -24,6 +24,27 @@ appId: com.terrio.consumer
 - launchApp:
     stopApp: true
 
+# FU-4 (2026-05-16): a cold install lands on the GDPR pre-registration
+# consent screen ("Scan beacon BLE pre-registrazione") first. Wait for the
+# first screen to paint, then dismiss the consent screen if showing — the
+# app otherwise stays parked there and never reaches the login screen.
+- extendedWaitUntil:
+    visible: "Scan beacon BLE pre-registrazione|Discover nearby offers|Trova offerte|Avvicinati|Accedi|Username|TERRIO|Vicini|Nearby"
+    timeout: 30000
+- runFlow:
+    when:
+      visible: "Scan beacon BLE pre-registrazione"
+    commands:
+      - tapOn:
+          text: "Acconsento all'attivazione dello scan BLE"
+      - runFlow:
+          when:
+            visible: "Continua"
+          commands:
+            - tapOn:
+                point: "12%, 29%"
+      - tapOn: "Continua"
+
 # Drain stacked Android runtime permission prompts (location precision,
 # BLE scan, notification) — same pattern as login.yaml.
 - repeat:
