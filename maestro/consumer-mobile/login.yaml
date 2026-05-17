@@ -6,47 +6,57 @@ appId: com.terrio.consumer
 - launchApp:
     stopApp: true
 
-# BCN-ATR-001 (2026-05-13): cold-install lands on GDPR pre-registration scan
-# consent screen ("Scan beacon BLE pre-registrazione" / "Acconsento
-# all'attivazione dello scan BLE..."). The Switch widget is accessibility
-# only (content-desc, no text/testID yet) — until testID is added, tap by
-# accessibility text + point fallback to the Switch position. Idempotent —
-# skipped if consent already granted in a warm session.
-- runFlow:
-    when:
-      visible: "Scan beacon BLE pre-registrazione"
-    commands:
-      # Tap consent Switch by accessibility content-desc.
-      - tapOn:
-          text: "Acconsento all'attivazione dello scan BLE"
-      # Fallback: if Switch did not toggle (still showing un-checked path),
-      # tap at the Switch widget left-anchored position (~12.4% × 28.6%).
-      - runFlow:
-          when:
-            visible: "Continua"
-          commands:
-            - tapOn:
-                point: "12%, 29%"
-      # Now confirm by tapping Continua.
-      - tapOn: "Continua"
-
-# FIX-ITER6-001 (2026-05-02): unrooted device + release-signed APK refuses
-# both `install -g` and `pm grant` — runtime permission dialogs always show
-# on cold-install. Loop to drain stacked Android permission prompts (location
-# precision picker → BLE scan → notification) BEFORE waiting on app UI.
+# FU-10 (2026-05-17): unified cold-install interstitial drain.
+# A cold install of the release-signed APK cannot be pre-granted
+# (`install -g` / `pm grant` are refused), so Android raises runtime
+# permission dialogs (location precision, BLE scan, notification) AND
+# the app renders the in-app BLE pre-registration GDPR consent screen.
+# These surface interleaved in a non-deterministic order — the previous
+# fixed-order handling (consent block first, then a permission-only
+# loop) skipped whichever interstitial was not yet on top, leaving the
+# flow stuck on the one that surfaced second.
+# This single loop drains BOTH interstitial families every pass,
+# repeated, BEFORE any wait on app content. Each block is `when
+# visible`-guarded and the consent Switch is `checked: false`-guarded,
+# so surplus passes are no-ops.
 - repeat:
-    times: 3
+    times: 8
     commands:
+      # OS — precise/approximate location selector (Android 12+)
       - runFlow:
           when:
-            visible: "Mentre usi l'app|While using the app"
+            visible: "Precise|Precisa"
           commands:
-            - tapOn: "Mentre usi l'app|While using the app"
+            - tapOn: "Precise|Precisa"
+      # OS — location grant
+      - runFlow:
+          when:
+            visible: "Mentre usi l'app|While using the app|Solo questa volta|Only this time"
+          commands:
+            - tapOn: "Mentre usi l'app|While using the app|Solo questa volta|Only this time"
+      # OS — generic allow (BLE scan / nearby devices / notification)
       - runFlow:
           when:
             visible: "Consenti|Allow"
           commands:
             - tapOn: "Consenti|Allow"
+      # In-app — BLE pre-registration GDPR consent screen.
+      # The consent Switch carries content-desc "Acconsento all'attivazione
+      # dello scan BLE" with no trailing text; the `$` anchor excludes the
+      # longer paragraph TextView so the toggle is targeted, not double-tapped.
+      - runFlow:
+          when:
+            visible: "Scan beacon BLE pre-registrazione"
+          commands:
+            - runFlow:
+                when:
+                  visible:
+                    text: "Acconsento all'attivazione dello scan BLE$"
+                    checked: false
+                commands:
+                  - tapOn:
+                      text: "Acconsento all'attivazione dello scan BLE$"
+            - tapOn: "Continua"
 
 # FIX-ITER5-001 (2026-05-02): dev-flavor APK lacks CLEAR_APP_USER_DATA so
 # Maestro `clearState` errors out — sessions persist across test runs.
