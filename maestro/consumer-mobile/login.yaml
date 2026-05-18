@@ -74,23 +74,31 @@ appId: com.terrio.consumer
       - tapOn:
           id: "enroll-never"
 
+# FU-52 (2026-05-18): wait on a stable selector that is present on EITHER
+# entry state. The login screen exposes `login-btn`; the home screen exposes
+# the scan-status banner (`scan-status-*`, rendered for every permState).
+# Both replace the rotted "TERRIO|Vicini|Nearby" literal assertion — "TERRIO"
+# is now a runtime-branded value (FU-38) and the home copy changed (FU-28).
 - extendedWaitUntil:
-    visible: "TERRIO|Vicini|Nearby"
+    visible:
+      id: "login-btn|scan-status-.*"
     timeout: 30000
 
 # Only enter credentials when actually on the login screen.
+# Presence of `login-btn` is the canonical "we are on the login screen" signal.
 - runFlow:
     when:
-      notVisible: "Vicini|Nearby"
+      visible:
+        id: "login-btn"
     commands:
-      - assertVisible: "Discover nearby offers"
       - tapOn:
-          text: "Username|Email"
+          id: "username-input"
       - inputText: "dev-consumer"
       - tapOn:
-          text: "Password"
+          id: "password-input"
       - inputText: "dev-pass"
-      - tapOn: "Sign in|Accedi"
+      - tapOn:
+          id: "login-btn"
       - runFlow:
           when:
             visible: "Return to previous programme"
@@ -100,13 +108,15 @@ appId: com.terrio.consumer
           when:
             visible: "Accesso più rapido"
           commands:
-            - pressKey: Back
+            - tapOn:
+                id: "enroll-never"
 
-# Iter20-A fix (2026-05-05): consumer post-login may show EITHER empty-state
-# (Avvicinati|Approach a beacon|Nessun beacon — pre-first-card per design
-# TC-CR-001) OR populated-state (Vicini|Nearby — post-card warm session).
-# Accept both. Full empty-vs-populated-state distinction is out of scope
-# for this flow; dedicated TC-CR-001 test covers the registration arc.
+# Iter20-A fix (2026-05-05): consumer post-login lands on home regardless of
+# empty-vs-populated state. FU-52 (2026-05-18): assert the scan-status banner
+# testID (`scan-status-checking|granted|denied`, app/(app)/index.tsx:262)
+# instead of the brittle "Vicini|Nearby|Avvicinati|..." literal set — the
+# banner renders for every permState so this is state-agnostic.
 - extendedWaitUntil:
-    visible: "Vicini|Nearby|Avvicinati|Approach a beacon|Nessun beacon|Discover nearby"
+    visible:
+      id: "scan-status-.*"
     timeout: 15000

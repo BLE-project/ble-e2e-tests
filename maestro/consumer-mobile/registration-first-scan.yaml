@@ -47,13 +47,17 @@ appId: com.terrio.consumer
     commands:
       - pressKey: Back
 
-# 1. Login screen — wait for the "Crea account" link to be visible
+# 1. Login screen — wait for the stable login testIDs to be visible.
+# FU-52 (2026-05-18): anchor on `login-btn` + `signup-link` testIDs instead
+# of the "Accedi|Sign in" / "Discover nearby offers" literals (FU-38 brand
+# migration + FU-28 copy rework rotted the text).
 - extendedWaitUntil:
-    visible: "Accedi|Sign in"
+    visible:
+      id: "login-btn"
     timeout: 30000
 
 - assertVisible:
-    text: "Discover nearby offers|Crea account"
+    id: "signup-link"
 
 # 2. Tap "Crea account" link (added by MOB-001 in PR #58)
 - tapOn:
@@ -102,8 +106,10 @@ appId: com.terrio.consumer
 
 # 6. Login screen again — fill credentials we just used.
 # testID anchors shipped fleet-wide via ble-consumer-mobile#77 (login.tsx).
+# FU-52 (2026-05-18): wait on the `login-btn` testID, not "Accedi|Sign in".
 - extendedWaitUntil:
-    visible: "Accedi|Sign in"
+    visible:
+      id: "login-btn"
     timeout: 15000
 
 - tapOn: { id: "username-input" }
@@ -128,7 +134,12 @@ appId: com.terrio.consumer
     commands:
       - pressKey: Back
 
-# 7. Land on home — accept BOTH empty (pre-card) and populated (post-card)
+# 7. Land on home — accept BOTH empty (pre-card) and populated (post-card).
+# FU-52 (2026-05-18): the home scan-status banner (`scan-status-.*`,
+# app/(app)/index.tsx:262) renders for every permState and on both the
+# empty-state and populated-list home variants, so it is the state-agnostic
+# "home is reachable" signal — replaces the rotted literal text set.
 - extendedWaitUntil:
-    visible: "Vicini|Nearby|Avvicinati|Approach a beacon|Nessun beacon|Discover nearby"
+    visible:
+      id: "scan-status-.*"
     timeout: 30000
