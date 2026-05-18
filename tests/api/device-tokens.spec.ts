@@ -26,6 +26,14 @@ async function login(username: string, password: string): Promise<string> {
   return token
 }
 
+/** Decode the `sub` claim from a JWT — staff endpoint requires a non-blank staffId. */
+function jwtSub(token: string): string {
+  const payload = JSON.parse(
+    Buffer.from(token.split('.')[1], 'base64url').toString('utf8'),
+  ) as { sub: string }
+  return payload.sub
+}
+
 test.describe('T-162 — consumer push-token registration', () => {
   test('POST /bff/v1/consumer/push-token returns 204', async () => {
     const token = await login(CONSUMER.username, CONSUMER.password)
@@ -116,5 +124,51 @@ test.describe('T-162 — Grafana alert webhook receiver', () => {
     expect(res.status).toBe(200)
     const body = (await res.json()) as { dispatched: number }
     expect(body.dispatched).toBeGreaterThanOrEqual(0)
+  })
+})
+
+test.describe('FU — staff / back-office push-token registration (/staff)', () => {
+  // SALES_AGENT is one of the roles allowed on the staff endpoint; reuse it.
+  test('POST /api/v1/device-tokens/staff returns 201', async () => {
+    const token = await login(SALES.username, SALES.password)
+    const pushToken = `e2e-staff-${Date.now()}`
+
+    const res = await fetch(`${BFF_URL}/api/v1/device-tokens/staff`, {
+      method: 'POST',
+      headers: {
+        'Content-Type':  'application/json',
+        'X-Tenant-Id':   TENANT_ID,
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        staffId: jwtSub(token),       // non-admin: must equal JWT subject
+        audience: 'territory',
+        pushToken, platform: 'web', appVersion: 'e2e', deviceModel: 'e2e-staff',
+      }),
+    })
+    expect([201, 502]).toContain(res.status)   // 502 if notif-service unavailable
+  })
+
+  test('staff missing X-Tenant-Id returns 400', async () => {
+    const token = await login(SALES.username, SALES.password)
+    const res = await fetch(`${BFF_URL}/api/v1/device-tokens/staff`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({
+        staffId: jwtSub(token), audience: 'territory', pushToken: 'x', platform: 'web',
+      }),
+    })
+    expect(res.status).toBe(400)
+  })
+
+  test('staff endpoint without auth returns 401/403', async () => {
+    const res = await fetch(`${BFF_URL}/api/v1/device-tokens/staff`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Tenant-Id': TENANT_ID },
+      body: JSON.stringify({
+        staffId: 'x', audience: 'merchant', pushToken: 'x', platform: 'web',
+      }),
+    })
+    expect([401, 403]).toContain(res.status)
   })
 })
