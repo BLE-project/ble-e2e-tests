@@ -9,23 +9,28 @@ appId: com.terrio.consumer
 # Fase 3.2: removed the manual "Start scan" / "Stop scan" button. The
 # home screen now requests BLE + location permissions on mount and
 # auto-starts the scanner as soon as they're granted. The flow below
-# has been updated to match: no button tap, only wait for the new
-# "Scanning for nearby beacons" or "Waiting for beacons" text banner.
+# has been updated to match: no button tap, only wait for the scan-status
+# banner (testID `scan-status-<permState>`) to reach a resolved state.
 
 - launchApp:
     stopApp: true
 
+# FU-52 (2026-05-18): wait on stable testIDs present on either entry state.
+# `login-btn` = login screen; `scan-status-.*` = home screen scan banner.
+# Replaces the rotted "TERRIO|Discover nearby offers|Nearby|..." literal set
+# (FU-28 home copy rework + FU-38 brand-token migration of "TERRIO").
 - extendedWaitUntil:
     visible:
-      text: "TERRIO|Discover nearby offers|Nearby|Vicini|Avvicinati|Trova offerte"
+      id: "login-btn|scan-status-.*"
     timeout: 30000
 
 # Previous flows may have persisted auth tokens in SecureStore. Only run
 # the login steps if the login screen is actually showing.
-# IT i18n (2026-05-13): tagline replaced by IT variant; testID-anchor login fields.
+# FU-52 (2026-05-18): gate on the `login-btn` testID instead of tagline text.
 - runFlow:
     when:
-      visible: "Discover nearby offers|Avvicinati|Trova offerte|Accedi"
+      visible:
+        id: "login-btn"
     commands:
       - tapOn: { id: "username-input" }
       - inputText: "dev-consumer"
@@ -41,7 +46,8 @@ appId: com.terrio.consumer
           commands:
             - tapOn: "STAY HERE"
       - extendedWaitUntil:
-          visible: "Nearby"
+          visible:
+            id: "scan-status-.*"
           timeout: 10000
 
 # FIX-S55-001: dismiss federation prompt on already-auth launch
@@ -58,9 +64,15 @@ appId: com.terrio.consumer
     commands:
       - pressKey: Back
 
+# FU-52 (2026-05-18): re-open the Home tab via its stable testID. The map
+# tab proves the tab bar mounted; we then return to Home where the scan
+# banner lives. `tab-home`/`tab-mappa` are tabBarButtonTestID anchors
+# (app/(app)/_layout.tsx:77,104).
 - tapOn: { id: "tab-mappa" }
+- tapOn: { id: "tab-home" }
 - extendedWaitUntil:
-    visible: "Nearby"
+    visible:
+      id: "scan-status-.*"
     timeout: 5000
 
 # Grant Bluetooth permission if dialog appears
@@ -84,20 +96,27 @@ appId: com.terrio.consumer
       - tapOn: "Precise"
       - tapOn: "While using the app"
 
-# Fase 3.2: scanner auto-starts — no manual button to tap. Just wait for
-# the banner text that proves the permission state resolved and (if
-# granted) the scanner is running. The banner has three possible states:
-#   - "Checking permissions…"   (transient; auto-resolves in < 1 s)
-#   - "Scanning for nearby beacons" (granted; the happy path)
-#   - "Grant permission"          (denied; user needs to retry)
+# Fase 3.2: scanner auto-starts — no manual button to tap. The scan-status
+# banner View carries a permState-suffixed testID (app/(app)/index.tsx:262):
+#   - scan-status-checking  (transient; auto-resolves in < 1 s)
+#   - scan-status-granted   (granted; the happy path — "Scanning…" copy)
+#   - scan-status-denied    (denied; shows scan-retry-btn / scan-settings-btn)
 #
 # On CI with a stub build, isNativeBleAvailable() returns false so
-# requestBlePermissions() short-circuits to "granted" and the banner
-# shows the Scanning copy immediately. Either the empty-list state or a
-# real beacon detection is a valid flow exit.
+# requestBlePermissions() short-circuits to "granted".
+#
+# FU-52 (2026-05-18): assert the resolved-permission banner via testID
+# instead of the brittle "Scanning for nearby beacons|Waiting for beacons|..."
+# copy set. `scan-status-granted` OR `scan-status-denied` both prove the
+# permission state resolved (only `scan-status-checking` is the transient
+# pre-resolution state). The empty-list state (`empty-state`) or a real
+# beacon detection is a valid flow exit.
 - extendedWaitUntil:
     visible:
-      text: "Scanning for nearby beacons|Waiting for beacons|Grant permission|Holy-IOT|Beacon|Tenant"
+      id: "scan-status-granted|scan-status-denied"
     timeout: 15000
 
-- assertVisible: "Nearby"
+# Home is reachable: the empty-state placeholder (no beacons) or the
+# detected-beacon list. `empty-state` testID = app/(app)/index.tsx:298.
+- assertVisible:
+    id: "empty-state|scan-status-granted"
