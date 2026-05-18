@@ -1,4 +1,4 @@
-appId: com.terrio.consumer
+appId: it.terrio.consumer
 ---
 # Consumer Mobile — Beacon push notification when app is backgrounded (S56)
 #

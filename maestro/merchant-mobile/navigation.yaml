@@ -1,4 +1,4 @@
-appId: com.terrio.merchant
+appId: it.terrio.merchant
 ---
 # Merchant Mobile — Tab navigation smoke test
 # Iter3 (2026-05-02): tabs realigned to actual app UI captured via uiautomator dump.

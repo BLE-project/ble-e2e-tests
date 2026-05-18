@@ -1,4 +1,4 @@
-appId: com.terrio.merchant
+appId: it.terrio.merchant
 ---
 # Merchant Mobile — Cashback configuration screen (FEAT-MIN-SPEND-001)
 # Tests: view current values, edit rate + min-spend, >25% warning

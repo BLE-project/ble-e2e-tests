@@ -92,11 +92,11 @@ ensure_maestro_driver() {
 }
 
 APPS=(
-  "consumer-mobile:com.terrio.consumer:terrio-consumer-mobile"
-  "merchant-mobile:com.terrio.merchant:terrio-merchant-mobile"
-  "tenant-mobile:com.terrio.tenant:terrio-tenant-mobile"
-  "sales-agent-mobile:com.terrio.salesagent:terrio-sales-agent-mobile"
-  "territory-mobile:com.terrio.territory:terrio-territory-mobile"
+  "consumer-mobile:it.terrio.consumer:terrio-consumer-mobile"
+  "merchant-mobile:it.terrio.merchant:terrio-merchant-mobile"
+  "tenant-mobile:it.terrio.tenant:terrio-tenant-mobile"
+  "sales-agent-mobile:it.terrio.salesagent:terrio-sales-agent-mobile"
+  "territory-mobile:it.terrio.territory:terrio-territory-mobile"
 )
 
 # Returns the preferred APK path for a repo: release if present, else debug.

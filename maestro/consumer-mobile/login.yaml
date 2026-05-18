@@ -1,4 +1,4 @@
-appId: com.terrio.consumer
+appId: it.terrio.consumer
 ---
 # Consumer Mobile — Login flow + immediate navigation verification
 # Validates BUG-003 fix: login must navigate WITHOUT manual refresh

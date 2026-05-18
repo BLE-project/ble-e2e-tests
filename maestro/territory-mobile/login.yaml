@@ -1,4 +1,4 @@
-appId: com.terrio.territory
+appId: it.terrio.territory
 ---
 # Territory Mobile — Login flow
 # Uses testID selectors: username-input, password-input, login-btn

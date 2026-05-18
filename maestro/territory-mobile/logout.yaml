@@ -1,4 +1,4 @@
-appId: com.terrio.territory
+appId: it.terrio.territory
 ---
 # Territory Mobile — Logout smoke test
 # Verifies that tapping "Esci" from the territory list screen clears the

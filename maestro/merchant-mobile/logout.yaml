@@ -1,4 +1,4 @@
-appId: com.terrio.merchant
+appId: it.terrio.merchant
 ---
 # Merchant Mobile — Logout flow
 # Iter3 (2026-05-02): "Home" tab is identified by content-desc=", Home" not text "Home".

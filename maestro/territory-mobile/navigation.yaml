@@ -1,4 +1,4 @@
-appId: com.terrio.territory
+appId: it.terrio.territory
 ---
 # Territory Mobile — Navigation smoke test
 # Verifies the stack navigation: list → detail → back → list → new → back → list.

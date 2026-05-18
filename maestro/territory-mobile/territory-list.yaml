@@ -1,4 +1,4 @@
-appId: com.terrio.territory
+appId: it.terrio.territory
 ---
 # Territory Mobile — List screen + drill-down smoke test
 # Session 52 — verifies the read-only flow: login → territory list → detail.
