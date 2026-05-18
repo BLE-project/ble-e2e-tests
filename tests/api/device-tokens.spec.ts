@@ -26,12 +26,25 @@ async function login(username: string, password: string): Promise<string> {
   return token
 }
 
-/** Decode the `sub` claim from a JWT — staff endpoint requires a non-blank staffId. */
-function jwtSub(token: string): string {
-  const payload = JSON.parse(
+/** Decode a JWT payload (no signature check — test-only introspection). */
+function jwtPayload(token: string): { sub: string; tenant_id?: string } {
+  return JSON.parse(
     Buffer.from(token.split('.')[1], 'base64url').toString('utf8'),
-  ) as { sub: string }
-  return payload.sub
+  ) as { sub: string; tenant_id?: string }
+}
+
+/** `sub` claim — staff endpoint requires a non-blank staffId. */
+function jwtSub(token: string): string {
+  return jwtPayload(token).sub
+}
+
+/**
+ * `tenant_id` claim — the gateway enforces `X-Tenant-Id === tenant claim`
+ * (TENANT_MISMATCH → 403). Tests must send the caller's real tenant, not a
+ * hardcoded UUID. The wildcard `ANY` (used by dev-consumer) matches any header.
+ */
+function jwtTenant(token: string): string {
+  return jwtPayload(token).tenant_id ?? TENANT_ID
 }
 
 test.describe('T-162 — consumer push-token registration', () => {
@@ -73,7 +86,7 @@ test.describe('T-162 — sales-agent push-token with territories', () => {
       method: 'POST',
       headers: {
         'Content-Type':  'application/json',
-        'X-Tenant-Id':   TENANT_ID,
+        'X-Tenant-Id':   jwtTenant(token),   // sales-agent owns a concrete tenant
         'Authorization': `Bearer ${token}`,
       },
       body: JSON.stringify({
@@ -137,7 +150,7 @@ test.describe('FU — staff / back-office push-token registration (/staff)', () 
       method: 'POST',
       headers: {
         'Content-Type':  'application/json',
-        'X-Tenant-Id':   TENANT_ID,
+        'X-Tenant-Id':   jwtTenant(token),   // must match the caller's tenant claim
         'Authorization': `Bearer ${token}`,
       },
       body: JSON.stringify({
