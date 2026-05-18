@@ -1,4 +1,4 @@
-appId: com.terrio.consumer
+appId: it.terrio.consumer
 ---
 # TC-CR-001 — Consumer registration → auto-login → first-scan empty state
 # Spec: terrio-platform-docs/design_handoff/specs/consumer-registration-flow-2026-05-05.md

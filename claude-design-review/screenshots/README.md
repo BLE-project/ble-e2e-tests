@@ -36,7 +36,7 @@ cd terrio-e2e-tests/claude-design-review
 Prerequisites:
 - Docker stack `make up-fresh` → all 20+ containers healthy
 - Android device connected (`adb devices` shows one)
-- All 5 Terrio APKs installed (verify: `adb shell pm list packages | grep com.terrio`)
+- All 5 Terrio APKs installed (verify: `adb shell pm list packages | grep it.terrio`)
 - Maestro CLI 2.4+ (`maestro --version`)
 
 The tours defined in `../flows/*.yaml` log-in with dev users (`dev-consumer`,
@@ -47,8 +47,8 @@ after each state change.
 
 ```bash
 for app in consumer merchant tenant salesagent territory ; do
-  case $app in salesagent) pkg="com.terrio.salesagent"; out="sales-agent" ;;
-             *) pkg="com.terrio.$app"; out="$app" ;; esac
+  case $app in salesagent) pkg="it.terrio.salesagent"; out="sales-agent" ;;
+             *) pkg="it.terrio.$app"; out="$app" ;; esac
   adb shell am force-stop $pkg
   adb shell monkey -p $pkg -c android.intent.category.LAUNCHER 1
   sleep 8

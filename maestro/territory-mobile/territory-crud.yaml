@@ -1,4 +1,4 @@
-appId: com.terrio.territory
+appId: it.terrio.territory
 ---
 # Territory Mobile — CRUD happy-path
 # Session 52 — verifies create → edit → delete against the real backend.

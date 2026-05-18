@@ -1,4 +1,4 @@
-appId: com.terrio.consumer
+appId: it.terrio.consumer
 ---
 # Consumer Mobile — BLE beacon scanning flow
 # UI-only version: verifies the scan screen renders correctly and the
@@ -14,6 +14,18 @@ appId: com.terrio.consumer
 
 - launchApp:
     stopApp: true
+
+# FU-52 (2026-05-18, follow-up): a persisted session from a prior flow
+# foregrounds the biometric-enrol modal on relaunch, covering both entry
+# testIDs. Dismiss it via the stable `enroll-never` testID
+# (BiometricEnrollModal.tsx) before asserting the entry state.
+- runFlow:
+    when:
+      visible:
+        id: "enroll-never"
+    commands:
+      - tapOn:
+          id: "enroll-never"
 
 # FU-52 (2026-05-18): wait on stable testIDs present on either entry state.
 # `login-btn` = login screen; `scan-status-.*` = home screen scan banner.

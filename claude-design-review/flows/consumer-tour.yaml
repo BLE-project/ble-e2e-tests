@@ -1,4 +1,4 @@
-appId: com.terrio.consumer
+appId: it.terrio.consumer
 ---
 # Claude Design UX/UI review — consumer-mobile tour with screenshots.
 # Captures each major screen state. Output: claude-design-review/screenshots/consumer/*.png

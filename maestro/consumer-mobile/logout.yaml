@@ -1,4 +1,4 @@
-appId: com.terrio.consumer
+appId: it.terrio.consumer
 ---
 # Consumer Mobile — Logout flow
 # The "Sign out" button lives on the Home (Nearby) tab header, not on

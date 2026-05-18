@@ -42,11 +42,11 @@ echo "Simulator: $BOOTED_SIM"
 echo ""
 
 APPS=(
-  "consumer-mobile:com.terrio.consumer"
-  "merchant-mobile:com.terrio.merchant"
-  "tenant-mobile:com.terrio.tenant"
-  "sales-agent-mobile:com.terrio.salesagent"
-  "territory-mobile:com.terrio.territory"
+  "consumer-mobile:it.terrio.consumer"
+  "merchant-mobile:it.terrio.merchant"
+  "tenant-mobile:it.terrio.tenant"
+  "sales-agent-mobile:it.terrio.salesagent"
+  "territory-mobile:it.terrio.territory"
 )
 
 # Flow execution order per app — mirrors run-all.sh for Android.
