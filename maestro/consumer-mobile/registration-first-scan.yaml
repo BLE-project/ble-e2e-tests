@@ -6,7 +6,7 @@ appId: it.terrio.consumer
 # This flow exercises the "new consumer" arc end-to-end at the UI level:
 #   1. Cold install (or post-logout) → login screen
 #   2. Tap "Crea account" link → register screen
-#   3. Fill fields with a unique email (Maestro runId suffix) → submit
+#   3. Fill fields with a per-run unique email (Date.now() suffix) → submit
 #   4. Success screen → "Accedi ora" → back to login (form pre-filled or empty)
 #   5. Login with the just-registered credentials
 #   6. Land on home — empty state ("Avvicinati ad un beacon") OR populated
@@ -92,6 +92,17 @@ appId: it.terrio.consumer
       id: "register-nome-input"
     timeout: 10000
 
+# FU-57 (2026-05-19): generate a genuinely unique run token.
+# The previous fixture interpolated `${maestroRunId}` — NOT a Maestro
+# built-in variable, so it evaluated to the literal string "undefined".
+# Every run therefore submitted `tcr001-undefined@terrio.test`; the first
+# run created that Keycloak user and EVERY run afterwards failed with
+# identity-access `409 "User exists with same email"`, surfacing in the app
+# as the "Errore — Registrazione fallita" dialog. `clearState`/`pm clear`
+# cannot recover it (the user lives in Keycloak, not on-device state).
+# `Date.now()` is monotonic per invocation → a fresh email every run.
+- evalScript: ${output.runToken = Date.now()}
+
 # FU-54 (2026-05-19): hideKeyboard after every field — the soft keyboard
 # otherwise stays up and covers the next input (register-confirm-input was
 # unreachable). Same per-field pattern as login.yaml.
@@ -107,12 +118,12 @@ appId: it.terrio.consumer
 
 - tapOn:
     id: "register-username-input"
-- inputText: "tcr001-${maestroRunId}"
+- inputText: "tcr001-${output.runToken}"
 - hideKeyboard
 
 - tapOn:
     id: "register-email-input"
-- inputText: "tcr001-${maestroRunId}@terrio.test"
+- inputText: "tcr001-${output.runToken}@terrio.test"
 - hideKeyboard
 
 - tapOn:
@@ -149,7 +160,7 @@ appId: it.terrio.consumer
     timeout: 15000
 
 - tapOn: { id: "username-input" }
-- inputText: "tcr001-${maestroRunId}"
+- inputText: "tcr001-${output.runToken}"
 - hideKeyboard
 
 - tapOn: { id: "password-input" }
