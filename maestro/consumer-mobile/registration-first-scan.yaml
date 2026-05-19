@@ -158,17 +158,39 @@ appId: it.terrio.consumer
 
 - tapOn: { id: "login-btn" }
 
-# Dismiss any "previous programme" or biometric enrol that may foreground
-- runFlow:
-    when:
-      visible: "Return to previous programme"
+# FU-56 (2026-05-19): drain ALL post-login interstitials before asserting
+# Home — the federation prompt, the biometric modal, AND the BLE/location
+# runtime permission dialogs the Home requests on mount (the permission
+# dialog overlays the scan-status banner). Order-agnostic repeat loop; each
+# iteration is a no-op once Home is clear.
+- repeat:
+    times: 6
     commands:
-      - tapOn: "STAY HERE"
-- runFlow:
-    when:
-      visible: "Accesso più rapido"
-    commands:
-      - pressKey: Back
+      - runFlow:
+          when:
+            visible: "Return to previous programme"
+          commands:
+            - tapOn: "STAY HERE"
+      - runFlow:
+          when:
+            visible: "Accesso più rapido"
+          commands:
+            - pressKey: Back
+      - runFlow:
+          when:
+            visible: "Mentre usi l'app|While using the app"
+          commands:
+            - tapOn: "Mentre usi l'app|While using the app"
+      - runFlow:
+          when:
+            visible: "Consenti|Allow"
+          commands:
+            - tapOn: "Consenti|Allow"
+      - runFlow:
+          when:
+            visible: "Precise|Posizione esatta"
+          commands:
+            - tapOn: "Precise|Posizione esatta"
 
 # 7. Land on home — accept BOTH empty (pre-card) and populated (post-card).
 # FU-52 (2026-05-18): the home scan-status banner (`scan-status-.*`,
