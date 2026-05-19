@@ -21,19 +21,24 @@ appId: it.terrio.consumer
 # `BeaconEarnConsumerTest.first_detection_creates_card_via_loyalty_card_client`
 # (see ble-cashback-ledger PR #38) plus the manual hardware harness.
 
-# FU-54 (2026-05-19): clear app state on launch so this flow ALWAYS starts
-# logged-out. Previously a persisted session from a prior `login` flow landed
-# the app on Home, and the register form was never reached. `clearState`
-# wipes SecureStore (auth token) + AsyncStorage (beacon consent) so we get a
-# deterministic cold-install entry point every run.
+# FU-54 (2026-05-19): this flow needs a logged-out, cold-install state.
+# Maestro `clearState` cannot deliver it here — its on-device driver runs as
+# an unprivileged app and lacks CLEAR_APP_USER_DATA (SecurityException). The
+# e2e harness clears the package via `adb shell pm clear` (the shell uid
+# holds that permission) before invoking this flow, so here we just
+# stop+relaunch onto the resulting cold-install state.
 - launchApp:
     stopApp: true
-    clearState: true
 
-# Drain stacked Android runtime permission prompts (location precision,
-# BLE scan, notification) — same pattern as login.yaml.
+# FU-54 (2026-05-19): on a cold-install launch the consumer app shows up to
+# three interstitials whose order is NOT deterministic — stacked Android
+# runtime permission prompts, the BLE-consent gate (app/_layout.tsx redirects
+# to /onboarding/beacon-consent), and the biometric-enrol modal. Drain all of
+# them in one repeat loop so the order does not matter; each iteration is a
+# no-op once the login screen is reached. `consent-continue` testID =
+# app/onboarding/beacon-consent.tsx.
 - repeat:
-    times: 3
+    times: 6
     commands:
       - runFlow:
           when:
@@ -45,26 +50,22 @@ appId: it.terrio.consumer
             visible: "Consenti|Allow"
           commands:
             - tapOn: "Consenti|Allow"
-
-# FU-54 (2026-05-19): on a cleared/cold install the BLE-consent gate
-# (app/_layout.tsx) redirects to /onboarding/beacon-consent BEFORE /login.
-# Dismiss it via the new stable `consent-continue` testID
-# (app/onboarding/beacon-consent.tsx:127). The toggle is optional for this
-# flow, so we just continue to the login screen.
-- runFlow:
-    when:
-      visible:
-        id: "consent-continue"
-    commands:
-      - tapOn:
-          id: "consent-continue"
-
-# Dismiss biometric enrol modal if app foregrounds it
-- runFlow:
-    when:
-      visible: "Accesso più rapido"
-    commands:
-      - pressKey: Back
+      # The _layout consent gate bounces /login back to this screen until
+      # consent.granted is true, so the toggle must be ON before Continua.
+      - runFlow:
+          when:
+            visible:
+              id: "consent-continue"
+          commands:
+            - tapOn:
+                id: "consent-toggle"
+            - tapOn:
+                id: "consent-continue"
+      - runFlow:
+          when:
+            visible: "Accesso più rapido"
+          commands:
+            - pressKey: Back
 
 # 1. Login screen — wait for the stable login testIDs to be visible.
 # FU-52 (2026-05-18): anchor on `login-btn` + `signup-link` testIDs instead
@@ -91,25 +92,33 @@ appId: it.terrio.consumer
       id: "register-nome-input"
     timeout: 10000
 
+# FU-54 (2026-05-19): hideKeyboard after every field — the soft keyboard
+# otherwise stays up and covers the next input (register-confirm-input was
+# unreachable). Same per-field pattern as login.yaml.
 - tapOn:
     id: "register-nome-input"
 - inputText: "Test"
+- hideKeyboard
 
 - tapOn:
     id: "register-cognome-input"
 - inputText: "Auto"
+- hideKeyboard
 
 - tapOn:
     id: "register-username-input"
 - inputText: "tcr001-${maestroRunId}"
+- hideKeyboard
 
 - tapOn:
     id: "register-email-input"
 - inputText: "tcr001-${maestroRunId}@terrio.test"
+- hideKeyboard
 
 - tapOn:
     id: "register-password-input"
 - inputText: "Test-Pass-2026!"
+- hideKeyboard
 
 - tapOn:
     id: "register-confirm-input"
