@@ -21,8 +21,14 @@ appId: it.terrio.consumer
 # `BeaconEarnConsumerTest.first_detection_creates_card_via_loyalty_card_client`
 # (see ble-cashback-ledger PR #38) plus the manual hardware harness.
 
+# FU-54 (2026-05-19): clear app state on launch so this flow ALWAYS starts
+# logged-out. Previously a persisted session from a prior `login` flow landed
+# the app on Home, and the register form was never reached. `clearState`
+# wipes SecureStore (auth token) + AsyncStorage (beacon consent) so we get a
+# deterministic cold-install entry point every run.
 - launchApp:
     stopApp: true
+    clearState: true
 
 # Drain stacked Android runtime permission prompts (location precision,
 # BLE scan, notification) — same pattern as login.yaml.
@@ -39,6 +45,19 @@ appId: it.terrio.consumer
             visible: "Consenti|Allow"
           commands:
             - tapOn: "Consenti|Allow"
+
+# FU-54 (2026-05-19): on a cleared/cold install the BLE-consent gate
+# (app/_layout.tsx) redirects to /onboarding/beacon-consent BEFORE /login.
+# Dismiss it via the new stable `consent-continue` testID
+# (app/onboarding/beacon-consent.tsx:127). The toggle is optional for this
+# flow, so we just continue to the login screen.
+- runFlow:
+    when:
+      visible:
+        id: "consent-continue"
+    commands:
+      - tapOn:
+          id: "consent-continue"
 
 # Dismiss biometric enrol modal if app foregrounds it
 - runFlow:
@@ -63,46 +82,54 @@ appId: it.terrio.consumer
 - tapOn:
     id: "signup-link"
 
-# 3. Register form — fill with unique email per run
+# 3. Register form — fill with unique email per run.
+# FU-54 (2026-05-19): anchor on the `register-*` testIDs added by
+# ble-consumer-mobile#90 (app/register.tsx) instead of the i18n label text
+# ("Nome *" etc.), which is brittle and rots on copy/i18n reworks.
 - extendedWaitUntil:
-    visible: "Crea account|Registrati"
+    visible:
+      id: "register-nome-input"
     timeout: 10000
 
 - tapOn:
-    text: "Nome \\*"
+    id: "register-nome-input"
 - inputText: "Test"
 
 - tapOn:
-    text: "Cognome"
+    id: "register-cognome-input"
 - inputText: "Auto"
 
 - tapOn:
-    text: "Username \\*"
+    id: "register-username-input"
 - inputText: "tcr001-${maestroRunId}"
 
 - tapOn:
-    text: "Email \\*"
+    id: "register-email-input"
 - inputText: "tcr001-${maestroRunId}@terrio.test"
 
 - tapOn:
-    text: "Password \\*"
+    id: "register-password-input"
 - inputText: "Test-Pass-2026!"
 
 - tapOn:
-    text: "Conferma password \\*"
+    id: "register-confirm-input"
 - inputText: "Test-Pass-2026!"
+- hideKeyboard
 
 # 4. Submit registration
 - tapOn:
-    text: "Crea account"
+    id: "register-submit"
 
-# 5. Success screen — "Benvenuto in Terrio!" then "Accedi ora"
+# 5. Success screen — `register-success` container, then `register-goto-login`.
+# FU-54 (2026-05-19): anchor on the new testIDs (app/register.tsx) instead of
+# the "Benvenuto in Terrio" / "Accedi ora" literals.
 - extendedWaitUntil:
-    visible: "Benvenuto in Terrio|Welcome to Terrio"
+    visible:
+      id: "register-success"
     timeout: 20000
 
 - tapOn:
-    text: "Accedi ora"
+    id: "register-goto-login"
 
 # 6. Login screen again — fill credentials we just used.
 # testID anchors shipped fleet-wide via ble-consumer-mobile#77 (login.tsx).

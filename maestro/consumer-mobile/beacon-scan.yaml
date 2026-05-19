@@ -76,12 +76,16 @@ appId: it.terrio.consumer
     commands:
       - pressKey: Back
 
-# FU-52 (2026-05-18): re-open the Home tab via its stable testID. The map
-# tab proves the tab bar mounted; we then return to Home where the scan
-# banner lives. `tab-home`/`tab-mappa` are tabBarButtonTestID anchors
-# (app/(app)/_layout.tsx:77,104).
-- tapOn: { id: "tab-mappa" }
-- tapOn: { id: "tab-home" }
+# FU-54 (2026-05-19): removed the tab-mappa -> tab-home round-trip.
+# Rationale: after login the app is ALREADY on the Home tab, which is where
+# the `scan-status-*` banner lives — that banner is the real assertion
+# target of this flow. The old detour tapped `tab-mappa` purely to prove the
+# tab bar mounted, but opening the Map screen triggers the Android
+# location-permission dialog, which overlays the tab bar and made the
+# subsequent `tapOn: tab-home` fail with "Element not found: tab-home".
+# Dropping the detour removes the fragility entirely; tab-bar mount is still
+# implicitly proven by the home scan-status banner rendering. The tab
+# anchors (app/(app)/_layout.tsx:77,104) remain available for navigation.yaml.
 - extendedWaitUntil:
     visible:
       id: "scan-status-.*"
