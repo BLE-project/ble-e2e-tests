@@ -42,6 +42,15 @@ appId: it.terrio.territory
 
 - assertVisible: ".*(Territory Manager|TERRIO Territory|Gestisci i tuoi territori).*"
 
+# A warm restart can land on the "Accesso più rapido" biometric enrollment
+# modal BEFORE the login form is reachable (carry-over from a prior session
+# that triggered the prompt). Dismiss it via the testID-bound opt-out tap.
+- runFlow:
+    when:
+      visible: "Accesso più rapido"
+    commands:
+      - tapOn: { id: "enroll-never" }
+
 - tapOn:
     id: "username-input"
 - inputText: "dev-territory-admin"
