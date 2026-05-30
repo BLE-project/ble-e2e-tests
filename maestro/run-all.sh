@@ -173,9 +173,12 @@ cleanup() {
 }
 trap cleanup EXIT
 
-# ── Setup adb reverse for backend access (BFF on 8080) ────────────────────
-"$ADB" -s "$DEVICE" reverse tcp:8080 tcp:8080 >/dev/null 2>&1
-echo "adb reverse 8080 → 8080 configured"
+# ── Setup adb reverse for backend access ─────────────────────────────────
+# Device hits 127.0.0.1:8080 to reach the BFF; host BFF listens on :8082
+# (api-gateway-bff container's published port). Map device:8080 → host:8082
+# so seed-data + every flow's HTTP calls land on the running BFF.
+"$ADB" -s "$DEVICE" reverse tcp:8080 tcp:8082 >/dev/null 2>&1
+echo "adb reverse device:8080 → host:8082 (BFF) configured"
 echo ""
 
 # ── Install APKs (prefer release, fall back to debug) ────────────────────
@@ -238,7 +241,12 @@ seed_custom_branding() {
     return 0
   fi
   echo -n "  seeding custom-branding fixture ... "
-  if (cd "$REPO_ROOT/terrio-e2e-tests" && npx -y tsx fixtures/seed-custom-branding-fixtures.ts >/tmp/seed-custom-branding.log 2>&1); then
+  # seed-data.ts runs on the host (not the device) so adb reverse does not
+  # help — pin BFF_URL to the BFF's host port 8082 instead of the stale
+  # 8080 default that the .env.example carries.
+  if (cd "$REPO_ROOT/terrio-e2e-tests" \
+      && BFF_URL="${BFF_URL:-http://localhost:8082}" \
+         npx -y tsx fixtures/seed-custom-branding-fixtures.ts >/tmp/seed-custom-branding.log 2>&1); then
     echo "OK"
   else
     echo "FAIL (log: /tmp/seed-custom-branding.log) — continuing"
