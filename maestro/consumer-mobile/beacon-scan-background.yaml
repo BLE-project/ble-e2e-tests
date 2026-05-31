@@ -18,9 +18,43 @@ appId: it.terrio.consumer
 - launchApp:
     stopApp: true
 
+# FU-10: drain cold-launch OS permission dialogs + in-app BLE consent screen
+# BEFORE waiting on app content (same proven block as login.yaml).
+- repeat:
+    times: 8
+    commands:
+      - runFlow:
+          when:
+            visible: "Precise|Precisa"
+          commands:
+            - tapOn: "Precise|Precisa"
+      - runFlow:
+          when:
+            visible: "Mentre usi l'app|While using the app|Solo questa volta|Only this time"
+          commands:
+            - tapOn: "Mentre usi l'app|While using the app|Solo questa volta|Only this time"
+      - runFlow:
+          when:
+            visible: "Consenti|Allow"
+          commands:
+            - tapOn: "Consenti|Allow"
+      - runFlow:
+          when:
+            visible: "Scan beacon BLE pre-registrazione"
+          commands:
+            - runFlow:
+                when:
+                  visible:
+                    text: "Acconsento all'attivazione dello scan BLE$"
+                    checked: false
+                commands:
+                  - tapOn:
+                      text: "Acconsento all'attivazione dello scan BLE$"
+            - tapOn: "Continua"
+
 - extendedWaitUntil:
     visible:
-      text: "TERRIO|Discover nearby offers|Nearby"
+      text: ".*(TERRIO|Discover nearby offers|Nearby|Accesso più rapido).*"
     timeout: 30000
 
 # Login if the login screen is showing.

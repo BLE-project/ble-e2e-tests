@@ -8,16 +8,26 @@ appId: it.terrio.merchant
 
 # Warm launches skip the splash and boot directly into Dashboard.
 # IT i18n (2026-05-13): subtitle "Gestisci il tuo negozio...", post-login "Panoramica".
+# Sentinel includes "Accesso più rapido" + the actual post-login home tiles
+# (Today revenue/Transactions), wrapped .*(...).* so substring matches the full
+# element text. Mirrors the proven navigation.yaml preamble.
 - extendedWaitUntil:
     visible:
-      text: "TERRIO Merchant|Merchant portal|Dashboard|Panoramica|Gestisci il tuo negozio"
+      text: ".*(TERRIO Merchant|Merchant portal|Dashboard|Panoramica|Gestisci il tuo negozio|Today revenue|Transactions|Accesso più rapido).*"
     timeout: 30000
+
+# Dismiss biometric enrollment modal if it surfaced on launch.
+- runFlow:
+    when:
+      visible: "Accesso più rapido"
+    commands:
+      - pressKey: Back
 
 # Previous flows may have persisted auth tokens in SecureStore. Only run
 # the login steps if the login screen is actually showing.
 - runFlow:
     when:
-      visible: "Merchant portal|Gestisci il tuo negozio"
+      visible: "Merchant portal|Gestisci il tuo negozio|Accedi"
     commands:
       - tapOn: { id: "username-input" }
       - inputText: "dev-merchant"
@@ -26,9 +36,15 @@ appId: it.terrio.merchant
       - inputText: "dev-pass"
       - hideKeyboard
       - tapOn: { id: "login-btn" }
+      - runFlow:
+          when:
+            visible: "Accesso più rapido"
+          commands:
+            - pressKey: Back
       - extendedWaitUntil:
-          visible: "Dashboard|Panoramica"
-          timeout: 8000
+          visible:
+            text: ".*(Dashboard|Panoramica|Today revenue|Transactions|Merchant).*"
+          timeout: 15000
 
 # Navigate to Cashback tab
 - tapOn: { id: "tab-cashback-config" }

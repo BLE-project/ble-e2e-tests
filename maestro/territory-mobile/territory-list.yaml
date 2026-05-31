@@ -7,27 +7,53 @@ appId: it.terrio.territory
 - launchApp:
     stopApp: true
 
+# Drain cold-launch runtime permission dialogs (location/BLE/notification) —
+# unrooted device + release APK can't pre-grant. Same block as login.yaml.
+- repeat:
+    times: 3
+    commands:
+      - runFlow:
+          when:
+            visible: "Mentre usi l'app|While using the app"
+          commands:
+            - tapOn: "Mentre usi l'app|While using the app"
+      - runFlow:
+          when:
+            visible: "Consenti|Allow"
+          commands:
+            - tapOn: "Consenti|Allow"
+
+# Sentinel INCLUDES "Accesso più rapido" so a warm-restart biometric modal
+# counts as "screen reached" (else the bare list text never matches → 30s timeout).
+# Wrapped in .*(...).* so substring matches the full element text.
 - extendedWaitUntil:
     visible:
-      text: "Terrio|Territory Manager|Territori|Nessun territorio"
+      text: ".*(Terrio|Territory Manager|Territori|TERRIO Territory|Accesso più rapido).*"
     timeout: 30000
 
-# If a previous flow (e.g. territory-crud) left the app authenticated
-# as dev-tenant-admin, logout first so the assertion below runs against
-# dev-territory-admin (who does NOT see the "+" FAB).
+# Dismiss biometric enrollment via the enroll-never testID — NOT pressKey:Back,
+# which pops the Expo Router auth stack and navigates away (Iter29 fix).
+- runFlow:
+    when:
+      visible: "Accesso più rapido"
+    commands:
+      - tapOn: { id: "enroll-never" }
+
+# If a previous flow left the app authenticated as a different user, logout
+# first so the assertion below runs against dev-territory-admin (no "+" FAB).
 - runFlow:
     when:
       visible: "Esci"
     commands:
       - tapOn: { id: "btn-logout" }
       - extendedWaitUntil:
-          visible: "Territory Manager"
+          visible: ".*(Territory Manager|TERRIO Territory).*"
           timeout: 10000
 
 # Login as dev-territory-admin (restricted role, no create permission).
 - runFlow:
     when:
-      visible: "Territory Manager"
+      visible: "Territory Manager|TERRIO Territory|Accedi"
     commands:
       - tapOn:
           id: "username-input"
@@ -44,8 +70,13 @@ appId: it.terrio.territory
             - pressKey: Back
       - tapOn:
           id: "login-btn"
+      - runFlow:
+          when:
+            visible: "Accesso più rapido"
+          commands:
+            - pressKey: Back
       - extendedWaitUntil:
-          visible: "Territori"
+          visible: ".*(Territori|Errore nel caricamento).*"
           timeout: 15000
 
 # Clipboard suggestion panel hiding the list — dismiss if present.
