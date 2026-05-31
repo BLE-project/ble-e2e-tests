@@ -8,16 +8,24 @@ appId: it.terrio.tenant
 # Warm launches skip the splash and boot directly into Home.
 # IT i18n (2026-05-13): "Tenant admin portal" replaced by "TERRIO Tenant" + IT subtitle;
 # post-login lands on Home/Welcome back/Bentornato.
+# Sentinel includes "Accesso più rapido" + wrapped .*(...).* (proven nav preamble).
 - extendedWaitUntil:
     visible:
-      text: "TERRIO Tenant|Tenant admin portal|Welcome back|Bentornato|Home"
+      text: ".*(TERRIO Tenant|Tenant admin portal|Welcome back|Bentornato|Home|Amministra il tuo programma|Accesso più rapido).*"
     timeout: 30000
+
+# Dismiss biometric enrollment modal if it surfaced on launch.
+- runFlow:
+    when:
+      visible: "Accesso più rapido"
+    commands:
+      - pressKey: Back
 
 # Previous flows may have persisted auth tokens in SecureStore. Only run
 # the login steps if the login screen is actually showing.
 - runFlow:
     when:
-      visible: "Tenant admin portal|Accedi"
+      visible: "Tenant admin portal|Accedi|Sign in"
     commands:
       - tapOn: { id: "username-input" }
       - inputText: "dev-tenant-admin"
@@ -26,9 +34,15 @@ appId: it.terrio.tenant
       - inputText: "dev-pass"
       - hideKeyboard
       - tapOn: { id: "login-btn" }
+      - runFlow:
+          when:
+            visible: "Accesso più rapido"
+          commands:
+            - pressKey: Back
       - extendedWaitUntil:
-          visible: "Welcome back|Bentornato|Home"
-          timeout: 8000
+          visible:
+            text: ".*(Welcome back|Bentornato|Home).*"
+          timeout: 15000
 
 # Navigate to Beacons tab. testID convention: `tab-beacons` once app-side
 # adds it (tracked in ble-e2e-tests#24). Fall back to text + IT alias.

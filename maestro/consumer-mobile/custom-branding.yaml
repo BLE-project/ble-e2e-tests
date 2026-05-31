@@ -29,31 +29,75 @@ appId: it.terrio.consumer
 - launchApp:
     stopApp: true
 
-# Wait for login screen to load — same sentinel the login flow uses.
+# FU-10: drain cold-launch OS permission dialogs + in-app BLE consent screen
+# (interleaved, non-deterministic order) BEFORE waiting on app content.
+# Same proven block as login.yaml — each when-visible-guarded, surplus passes no-op.
+- repeat:
+    times: 8
+    commands:
+      - runFlow:
+          when:
+            visible: "Precise|Precisa"
+          commands:
+            - tapOn: "Precise|Precisa"
+      - runFlow:
+          when:
+            visible: "Mentre usi l'app|While using the app|Solo questa volta|Only this time"
+          commands:
+            - tapOn: "Mentre usi l'app|While using the app|Solo questa volta|Only this time"
+      - runFlow:
+          when:
+            visible: "Consenti|Allow"
+          commands:
+            - tapOn: "Consenti|Allow"
+      - runFlow:
+          when:
+            visible: "Scan beacon BLE pre-registrazione"
+          commands:
+            - runFlow:
+                when:
+                  visible:
+                    text: "Acconsento all'attivazione dello scan BLE$"
+                    checked: false
+                commands:
+                  - tapOn:
+                      text: "Acconsento all'attivazione dello scan BLE$"
+            - tapOn: "Continua"
+
+# Wait for login screen to load — wrapped .*(...).* for substring match.
 - extendedWaitUntil:
-    visible: "TERRIO"
+    visible:
+      text: ".*(TERRIO|Discover nearby offers|Accesso più rapido).*"
     timeout: 30000
 
-- assertVisible: "Discover nearby offers"
+- assertVisible:
+    text: ".*(Discover nearby offers|TERRIO).*"
 
-# ── Login ───────────────────────────────────────────────────────────────
+# ── Login (only if the login screen is showing — a previous flow may have
+# left the app authenticated; cold-launch then boots straight to Nearby) ──
 # testID anchors shipped fleet-wide via ble-consumer-mobile#77 (login.tsx).
-- tapOn: { id: "username-input" }
-- inputText: "dev-consumer"
-- hideKeyboard
-
-- tapOn: { id: "password-input" }
-- inputText: "dev-pass"
-- hideKeyboard
-
-- tapOn: { id: "login-btn" }
-
-# FIX-S55-001: federation auto-switch prompt may appear after login
 - runFlow:
     when:
-      visible: "Return to previous programme"
+      visible: "Discover nearby offers|username-input|Accedi|Sign in"
     commands:
-      - tapOn: "STAY HERE"
+      - tapOn: { id: "username-input" }
+      - inputText: "dev-consumer"
+      - hideKeyboard
+      - tapOn: { id: "password-input" }
+      - inputText: "dev-pass"
+      - hideKeyboard
+      - tapOn: { id: "login-btn" }
+      # FIX-S55-001: federation auto-switch prompt may appear after login
+      - runFlow:
+          when:
+            visible: "Return to previous programme"
+          commands:
+            - tapOn: "STAY HERE"
+      - runFlow:
+          when:
+            visible: "Accesso più rapido"
+          commands:
+            - pressKey: Back
 
 # Wait for Nearby tab to be reachable.
 - extendedWaitUntil:

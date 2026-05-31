@@ -6,29 +6,42 @@ appId: it.terrio.merchant
     stopApp: true
 
 # Warm launches skip the splash and boot directly into Dashboard.
+# Wrapped sentinel incl. post-login tiles + biometric modal (proven nav preamble).
 - extendedWaitUntil:
     visible:
-      text: "TERRIO Merchant|Merchant portal|Dashboard"
+      text: ".*(TERRIO Merchant|Merchant portal|Dashboard|Today revenue|Transactions|Accesso più rapido).*"
     timeout: 30000
 
-# Previous flows may have persisted auth tokens in SecureStore. Only run
-# the login steps if the login screen is actually showing.
+# Dismiss biometric enrollment modal if it surfaced on launch.
 - runFlow:
     when:
-      visible: "Merchant portal"
+      visible: "Accesso più rapido"
     commands:
-      - tapOn:
-          text: "Email"
+      - pressKey: Back
+
+# Previous flows may have persisted auth tokens in SecureStore. Only run
+# the login steps if the login screen is actually showing. Login screen shows
+# placeholders only (no visible "Email" label) → use testID anchors.
+- runFlow:
+    when:
+      visible: "Merchant portal|Accedi|Sign in"
+    commands:
+      - tapOn: { id: "username-input" }
       - inputText: "dev-merchant"
       - hideKeyboard
-      - tapOn:
-          text: "Password"
+      - tapOn: { id: "password-input" }
       - inputText: "dev-pass"
       - hideKeyboard
-      - tapOn: "Sign in"
+      - tapOn: { id: "login-btn" }
+      - runFlow:
+          when:
+            visible: "Accesso più rapido"
+          commands:
+            - pressKey: Back
       - extendedWaitUntil:
-          visible: "Dashboard"
-          timeout: 8000
+          visible:
+            text: ".*(Dashboard|Today revenue|Transactions|Merchant).*"
+          timeout: 15000
 
 # Navigate to POS tab
 - tapOn: { id: "tab-pos" }
