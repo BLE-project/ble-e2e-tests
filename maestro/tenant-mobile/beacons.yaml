@@ -64,85 +64,50 @@ appId: it.terrio.tenant
 # Until then, target by placeholder/label text. Use synthetic UUID that
 # won't collide with the V25 seed (major=999, minor=001).
 - tapOn:
-    text: "UUID|uuid"
+    id: "beacon-form-uuid"
 - inputText: "FDA50693-A4E2-4FB1-AFCF-C6EB07647825"
 - hideKeyboard
 
 - tapOn:
-    text: "Major|major"
+    id: "beacon-form-major"
 - inputText: "999"
 - hideKeyboard
 
 - tapOn:
-    text: "Minor|minor"
+    id: "beacon-form-minor"
 - inputText: "1"
 - hideKeyboard
 
+# The create form has no 'name' field — the optional 'Label' input is the
+# closest (testID beacon-form-label). The beacon's display name = label.
 - tapOn:
-    text: "Name|Nome"
+    id: "beacon-form-label"
 - inputText: "Maestro-CRUD-test-beacon"
 - hideKeyboard
 
-# Submit create. testID `btn-submit-beacon` planned.
+# territoryId is required (FK) — empty string → BFF 400. Fill with the E2E Dev
+# Tenant's seeded territory (Ter2). beaconType defaults to TRACKING in the form.
 - tapOn:
-    text: "Submit|Salva|Crea|Save"
+    id: "beacon-form-territoryId"
+- inputText: "8112bd70-1a4d-465c-89a3-c5168ce02f56"
+- hideKeyboard
 
-# Assert created beacon appears in list. Modal should close + row renders.
+# Submit create. The app's create button reads "Create beacon" ("Creating…"
+# while the mutation is pending). No testID app-side yet (T-112).
+- tapOn:
+    text: "Create beacon|Creating"
+
+# Assert created beacon appears in the list. Modal closes + the row renders.
+# This verifies the beacon-registry create path end-to-end (form → BFF → list).
 - extendedWaitUntil:
     visible: "Maestro-CRUD-test-beacon"
     timeout: 10000
 
-# ── UPDATE phase ─────────────────────────────────────────────────────────────
-# Tap the freshly-created row to open edit. testID `beacon-row-{id}` planned.
-- tapOn:
-    text: "Maestro-CRUD-test-beacon"
-
-- extendedWaitUntil:
-    visible: "Edit|Modifica|New Beacon|Nuovo Beacon"
-    timeout: 5000
-
-# Update the name field. Other fields readonly post-create.
-- tapOn:
-    text: "Name|Nome"
-- eraseText: 50
-- inputText: "Maestro-CRUD-test-updated"
-- hideKeyboard
-
-- tapOn:
-    text: "Save|Salva|Submit"
-
-- extendedWaitUntil:
-    visible: "Maestro-CRUD-test-updated"
-    timeout: 10000
-
-# ── DELETE phase ─────────────────────────────────────────────────────────────
-# Long-press row to surface delete action OR tap row trash button.
-# testID `btn-delete-{id}` planned. Fall back to long-press on text.
-- longPressOn:
-    text: "Maestro-CRUD-test-updated"
-
-- extendedWaitUntil:
-    visible: "Delete|Elimina|Rimuovi|Remove"
-    timeout: 5000
-
-- tapOn:
-    text: "Delete|Elimina|Rimuovi"
-
-# Confirm dialog.
-- runFlow:
-    when:
-      visible: "Conferma|Confirm|Sei sicuro"
-    commands:
-      - tapOn:
-          text: "Conferma|Confirm|OK|Sì"
-
-# Assert row removed from list.
-- extendedWaitUntil:
-    visible: "Beacon Registry|Registro Beacon"
-    timeout: 10000
-
-- assertNotVisible:
-    text: "Maestro-CRUD-test-updated"
+# NOTE (2026-06-01): UPDATE + DELETE phases removed — the current app
+# (beacons.tsx, T-112 "list, create, delete") has NO edit/update UI, and its
+# delete is a per-row "✕" + Alert with no per-row testID to target reliably.
+# Re-add a delete assertion once the app ships beacon-row / beacon-delete
+# testIDs (tracked in ble-e2e-tests#53).
 
 # ── Negative-path coverage (optional) ────────────────────────────────────────
 # Cancel-modal-without-save flow retained from prior version for regression.
