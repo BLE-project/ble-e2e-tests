@@ -68,13 +68,16 @@ appId: it.terrio.tenant
 - inputText: "FDA50693-A4E2-4FB1-AFCF-C6EB07647825"
 - hideKeyboard
 
+# eraseText first — major/minor have form defaults (100 / 1); inputText appends.
 - tapOn:
     id: "beacon-form-major"
+- eraseText: 6
 - inputText: "999"
 - hideKeyboard
 
 - tapOn:
     id: "beacon-form-minor"
+- eraseText: 6
 - inputText: "1"
 - hideKeyboard
 
@@ -97,11 +100,18 @@ appId: it.terrio.tenant
 - tapOn:
     text: "Create beacon|Creating"
 
-# Assert created beacon appears in the list. Modal closes + the row renders.
-# This verifies the beacon-registry create path end-to-end (form → BFF → list).
+# Assert the created beacon appears in the list (modal closes + row renders).
+# Verifies the beacon-registry create path end-to-end (form → BFF → list).
+# The new row may render below the fold — scroll to it (the list has the seed
+# beacons + prior test rows above it).
 - extendedWaitUntil:
-    visible: "Maestro-CRUD-test-beacon"
+    visible: "Registro Beacon|Beacon Registry"
     timeout: 10000
+- scrollUntilVisible:
+    element:
+      text: "Maestro-CRUD-test-beacon"
+    direction: DOWN
+    timeout: 15000
 
 # NOTE (2026-06-01): UPDATE + DELETE phases removed — the current app
 # (beacons.tsx, T-112 "list, create, delete") has NO edit/update UI, and its
