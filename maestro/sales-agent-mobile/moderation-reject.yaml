@@ -30,10 +30,17 @@ tags:
     when: { visible: "Clipboard" }
     commands: [ { pressKey: Back } ]
 - tapOn: { id: "login-btn" }
+# Fresh-install biometric enrolment prompt appears POST-login → dismiss it.
+- runFlow:
+    when: { visible: "Accesso più rapido" }
+    commands: [ { tapOn: "Non chiedermelo più" } ]
 - extendedWaitUntil: { visible: "Home", timeout: 8000 }
 
 - tapOn: "Moderazioni"
-- extendedWaitUntil: { visible: "in attesa", timeout: 5000 }
+- extendedWaitUntil:
+    visible:
+      id: "moderation-row"
+    timeout: 20000
 
 - tapOn:
     id: "moderation-row"
@@ -52,14 +59,16 @@ tags:
 - tapOn:
     id: "reason-input"
 - inputText: "Violazione policy prodotti regolamentati"
+- hideKeyboard
 
 - tapOn:
     id: "totp-input"
 - inputText: "123456"
+- hideKeyboard
 
 - tapOn:
     id: "confirm-action"
 
 - extendedWaitUntil:
-    visible: "Rifiutata|rifiutata|Moderazioni"
+    visible: "Rifiutata|rifiutata|ADV rifiutata"
     timeout: 10000
