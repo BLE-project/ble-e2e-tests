@@ -10,6 +10,8 @@ tags:
 - launchApp:
     stopApp: true
 
+- runFlow: _gates.yaml
+
 - extendedWaitUntil:
     visible: "Home|Discover|Terrio"
     timeout: 30000
