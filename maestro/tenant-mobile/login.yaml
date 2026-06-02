@@ -22,11 +22,13 @@ appId: it.terrio.tenant
           commands:
             - tapOn: "Consenti|Allow"
 
+# Wait for the login screen — accept the i18n header ("TERRIO Tenant") and the
+# legacy/subtitle variants so the flow does not rot on copy changes.
 - extendedWaitUntil:
-    visible: "TERRIO Tenant"
+    visible: ".*(TERRIO Tenant|Tenant admin portal|Amministra il tuo programma|Accedi|Sign in).*"
     timeout: 30000
 
-- assertVisible: ".*(Tenant admin portal|Amministra il tuo programma).*"
+- assertVisible: ".*(TERRIO Tenant|Tenant admin portal|Amministra il tuo programma).*"
 
 - tapOn: { id: "username-input" }
 - inputText: "dev-tenant-admin"
