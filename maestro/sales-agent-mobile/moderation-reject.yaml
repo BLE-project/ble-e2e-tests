@@ -9,21 +9,26 @@ tags:
     stopApp: true
 
 - extendedWaitUntil:
-    visible: "Terrio|Home|Agente Commerciale"
+    visible: "Terrio|TERRIO Sales|Assistenza merchant|Home|Agente Commerciale"
     timeout: 30000
 
 - runFlow:
     when: { visible: "Home" }
     commands:
       - tapOn: { id: "tab-profilo" }
-      - extendedWaitUntil: { visible: "Esci", timeout: 5000 }
+      - extendedWaitUntil: { visible: "Esci dall'account|Esci|Logout", timeout: 5000 }
       - tapOn: { id: "btn-logout" }
       - extendedWaitUntil: { visible: "TERRIO Sales|Assistenza merchant.*|Agente Commerciale", timeout: 10000 }
 
 - tapOn: { id: "username-input" }
 - inputText: "dev-sales-agent"
+- hideKeyboard
 - tapOn: { id: "password-input" }
 - inputText: "dev-pass"
+- hideKeyboard
+- runFlow:
+    when: { visible: "Clipboard" }
+    commands: [ { pressKey: Back } ]
 - tapOn: { id: "login-btn" }
 - extendedWaitUntil: { visible: "Home", timeout: 8000 }
 

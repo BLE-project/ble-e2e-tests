@@ -11,7 +11,7 @@ tags:
     stopApp: true
 
 - extendedWaitUntil:
-    visible: "Terrio|Home|Agente Commerciale"
+    visible: "Terrio|TERRIO Sales|Assistenza merchant|Home|Agente Commerciale"
     timeout: 30000
 
 - runFlow:
