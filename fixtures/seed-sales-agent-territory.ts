@@ -40,8 +40,14 @@ async function salesAgentLogin(): Promise<string> {
 }
 
 async function fetchSalesAgentMe(token: string): Promise<SalesAgentMe> {
+  // /v1/* requires X-Tenant-Id; derive it from the JWT ble_tenant_id claim so
+  // the gateway TenantContextFilter doesn't 400.
+  const claims = JSON.parse(
+    Buffer.from(token.split('.')[1], 'base64url').toString('utf8'),
+  ) as { tenant_id?: string; ble_tenant_id?: string }
+  const tenantId = claims.tenant_id ?? claims.ble_tenant_id ?? ''
   const res = await fetch(`${BFF_URL}/api/v1/sales-agents/me`, {
-    headers: { Authorization: `Bearer ${token}` },
+    headers: { Authorization: `Bearer ${token}`, 'X-Tenant-Id': tenantId },
   })
   if (!res.ok) throw new Error(`/me failed: ${res.status} ${await res.text()}`)
   return res.json()

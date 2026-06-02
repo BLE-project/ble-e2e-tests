@@ -13,8 +13,12 @@ appId: it.terrio.salesagent
 # Previous flows may have persisted auth tokens in SecureStore. Only run
 # the login steps if the login screen is actually showing.
 - runFlow:
+    # Login only when the login screen is showing. Its real sentinel is
+    # "TERRIO Sales / Assistenza merchant sul territorio / Accedi" — NOT
+    # "Agente Commerciale" (which never renders on the login screen, so the old
+    # gate skipped login and the flow failed at tab-profilo when logged out).
     when:
-      visible: "Agente Commerciale"
+      visible: "TERRIO Sales|Assistenza merchant|Accedi"
     commands:
       - tapOn:
           id: "username-input"

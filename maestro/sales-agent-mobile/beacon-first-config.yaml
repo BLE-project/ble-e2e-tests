@@ -15,17 +15,26 @@ tags:
     timeout: 30000
 
 - runFlow:
-    when: { visible: "Agente Commerciale" }
+    # Login screen sentinel is "TERRIO Sales / Assistenza merchant / Accedi"
+    # (not "Agente Commerciale"). Gate on the real copy so login runs when
+    # logged out.
+    when: { visible: "TERRIO Sales|Assistenza merchant|Accedi" }
     commands:
       - tapOn: { id: "username-input" }
       - inputText: "dev-sales-agent"
+      - hideKeyboard
       - tapOn: { id: "password-input" }
       - inputText: "dev-pass"
+      - hideKeyboard
       - tapOn: { id: "login-btn" }
+      # Fresh-install biometric enrolment prompt appears POST-login → dismiss.
+      - runFlow:
+          when: { visible: "Accesso più rapido" }
+          commands: [ { tapOn: "Non chiedermelo più" } ]
       - extendedWaitUntil: { visible: "Home", timeout: 8000 }
 
-# Navigate to merchants → first → BLE test
-- tapOn: "Merchants|Attività|merchants"
+# Navigate to merchants tab (id is stable; the visible label is "Merchant").
+- tapOn: { id: "tab-merchant" }
 - extendedWaitUntil: { visible: "Test BLE|Ingresso|Cassa", timeout: 10000, optional: true }
 
 - tapOn:
