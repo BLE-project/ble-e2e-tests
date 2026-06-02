@@ -18,6 +18,36 @@ import { ensureSeedData } from './seed-data'
 
 const BFF_URL = process.env.BFF_URL ?? 'http://localhost:8080'
 
+// ADV submit + merchant create are tenant-scoped. notification-service's
+// TenantValidator (and core-registry RLS) require X-Tenant-Id to match the JWT
+// tenant_id claim. A SUPER_ADMIN token carries tenant_id="*" (≠ any real tenant)
+// → 403 TENANT_MISMATCH on /v1/adv. So authenticate as a TENANT_ADMIN whose claim
+// IS the target tenant, and derive the tenant id from that same claim so the
+// header always equals the claim.
+const TENANT_ADMIN_USER = process.env.TENANT_ADMIN_USER ?? 'dev-tenant-admin'
+const TENANT_ADMIN_PASS = process.env.TENANT_ADMIN_PASS ?? 'dev-pass'
+
+async function loginTenantAdmin(): Promise<{ token: string; tenantId: string }> {
+  const res = await fetch(`${BFF_URL}/api/v1/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username: TENANT_ADMIN_USER, password: TENANT_ADMIN_PASS }),
+  })
+  if (!res.ok) {
+    const body = await res.text().catch(() => '(no body)')
+    throw new Error(`Tenant-admin login failed: ${res.status} ${body}`)
+  }
+  const { token } = (await res.json()) as { token: string }
+  const claims = JSON.parse(
+    Buffer.from(token.split('.')[1], 'base64url').toString('utf8'),
+  ) as { tenant_id?: string; ble_tenant_id?: string }
+  const tenantId = claims.tenant_id ?? claims.ble_tenant_id
+  if (!tenantId || tenantId === '*') {
+    throw new Error(`Tenant-admin token has no concrete tenant_id claim (got "${tenantId}")`)
+  }
+  return { token, tenantId }
+}
+
 export interface ModerationSeedAdv {
   title: string
   description: string
@@ -90,8 +120,12 @@ let _cache: ModerationQueueResult | null = null
 export async function ensureModerationQueue(): Promise<ModerationQueueResult> {
   if (_cache) return _cache
 
-  const base = await ensureSeedData()
-  const { token, tenantId } = base
+  // Ensure the canonical tenant + territory exist (uses the seed super-admin).
+  await ensureSeedData()
+
+  // Use a TENANT_ADMIN token for the tenant-scoped writes so X-Tenant-Id matches
+  // the JWT claim (see loginTenantAdmin above).
+  const { token, tenantId } = await loginTenantAdmin()
 
   const headers = {
     Authorization: `Bearer ${token}`,
