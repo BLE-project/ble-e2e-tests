@@ -11,12 +11,20 @@ tags:
 - launchApp:
     stopApp: true
 
+# On the tenant app the fresh-install biometric enrolment prompt ("Accesso più
+# rapido") appears at LAUNCH, BEFORE login (verified via uiautomator dump). Wait
+# for either it or the login button, dismiss the prompt, then proceed.
 - extendedWaitUntil:
-    visible: "TERRIO Tenant|Tenant admin portal|Welcome back"
+    visible: "Accesso più rapido|Accedi|Sign in|Amministra il tuo programma|Welcome back"
     timeout: 30000
-
 - runFlow:
-    when: { visible: "Tenant admin portal|Accedi" }
+    when: { visible: "Accesso più rapido" }
+    commands: [ { tapOn: "Non chiedermelo più" } ]
+
+# Gate login on the "Accedi"/"Sign in" button — deterministically marks the
+# unauthenticated screen (login screen shows placeholders, not an "Email" label).
+- runFlow:
+    when: { visible: "Accedi|Sign in" }
     commands:
       - tapOn: { id: "username-input" }
       - inputText: "dev-tenant-admin"
@@ -25,14 +33,31 @@ tags:
       - inputText: "dev-pass"
       - hideKeyboard
       - tapOn: { id: "login-btn" }
-      - extendedWaitUntil: { visible: "Welcome back|Bentornato|Home", timeout: 8000 }
+      # biometric prompt may re-appear post-login on some builds → dismiss again
+      - runFlow:
+          when: { visible: "Accesso più rapido" }
+          commands: [ { tapOn: "Non chiedermelo più" } ]
+      - extendedWaitUntil: { visible: "Welcome back|Bentornato|Home|Amministra il tuo programma", timeout: 8000 }
 
-# Navigate to Moderation queue (tabBarTestID shipped via ble-tenant-mobile#39).
-- tapOn: { id: "tab-moderazione" }
-
+# Navigate to Moderation queue. The installed APK exposes tabs via Android
+# content-desc ("tab N of M, Moderazione"), not the tab-moderazione testID — so
+# match the same ".*, <Tab>" pattern that navigation.yaml uses. Waiting on the
+# tab also serves as the post-login settle (the "Accedi" block is skipped when
+# the app is already logged in).
 - extendedWaitUntil:
-    visible: "ESCALATED|Escalata"
-    timeout: 10000
+    visible:
+      text: ".*, Moderazione"
+    timeout: 15000
+- tapOn:
+    text: ".*, Moderazione"
+
+# Wait on the list row id — the status badge ("ESCALATED"/"Escalata") is styled
+# text that Maestro doesn't reliably match (§4 copy-drift). The queue is seeded
+# with ESCALATED_TO_ADMIN rows (TENANT_ADMIN review scope) via seed-moderation-queue.
+- extendedWaitUntil:
+    visible:
+      id: "moderation-row"
+    timeout: 15000
 
 - tapOn:
     id: "moderation-row"

@@ -10,6 +10,7 @@ import { ensureSeedData } from './fixtures/seed-data'
 import { ensureBeaconFirstConfig } from './fixtures/seed-beacon-first-config'
 import { ensureTenantBeaconCrudSlotFree } from './fixtures/seed-tenant-beacon-crud'
 import { ensureBudgetDegradedAdv } from './fixtures/seed-budget-degraded'
+import { ensureModerationQueue } from './fixtures/seed-moderation-queue'
 
 const KC_URL = process.env.KC_URL ?? 'http://localhost:8180'
 
@@ -166,6 +167,19 @@ export default async function globalSetup() {
       console.log(`[global-setup] Budget-degraded ADV: ${bd.advId} (created=${bd.created})`)
     } catch (e) {
       console.warn('[global-setup] budget-degraded seed skipped:', (e as Error).message)
+    }
+
+    // Top up the ADV moderation review queue so approve/reject/escalate (sales)
+    // and tenant-review have actionable rows. Reconciles by queue STATE (not by
+    // title) so repeated suite runs — which consume rows into terminal states —
+    // stay green instead of poisoning the next run. Runs AFTER budget-degraded
+    // so the tenant tier is back to NORMAL and the new ADVs get a Claude verdict.
+    // Best-effort: a short queue only fails the moderation flows.
+    try {
+      const mq = await ensureModerationQueue()
+      console.log(`[global-setup] Moderation queue: ${mq.advs.length} actionable rows`)
+    } catch (e) {
+      console.warn('[global-setup] moderation queue seed skipped:', (e as Error).message)
     }
 
     // Write to a temp file for cross-process sharing
