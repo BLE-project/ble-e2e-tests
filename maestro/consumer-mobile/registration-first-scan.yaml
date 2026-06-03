@@ -30,6 +30,8 @@ appId: it.terrio.consumer
 - launchApp:
     stopApp: true
 
+- runFlow: _gates.yaml
+
 # FU-54 (2026-05-19): on a cold-install launch the consumer app shows up to
 # three interstitials whose order is NOT deterministic — stacked Android
 # runtime permission prompts, the BLE-consent gate (app/_layout.tsx redirects

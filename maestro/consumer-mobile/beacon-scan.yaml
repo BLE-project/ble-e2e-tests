@@ -27,6 +27,35 @@ appId: it.terrio.consumer
       - tapOn:
           id: "enroll-never"
 
+# FU-?? (2026-06-02): on a fresh install the boot order is
+#   permission dialogs -> BLE-consent gate (FU-10) -> login -> home.
+# Drain the OS permission dialogs (device locale is IT, so match both IT and
+# EN button copy) then accept the BLE-consent screen, BEFORE waiting on the
+# login/home testIDs. The repeat covers the location->bluetooth->notification
+# dialog chain.
+- repeat:
+    times: 4
+    commands:
+      - runFlow:
+          when:
+            visible: "Esatta|Precise"
+          commands:
+            - tapOn: "Esatta|Precise"
+      - runFlow:
+          when:
+            visible: "Mentre usi l'app|While using the app|Consenti|Allow"
+          commands:
+            - tapOn: "Mentre usi l'app|While using the app|Consenti|Allow"
+- runFlow:
+    when:
+      visible:
+        id: "consent-continue"
+    commands:
+      - tapOn:
+          id: "consent-toggle"
+      - tapOn:
+          id: "consent-continue"
+
 # FU-52 (2026-05-18): wait on stable testIDs present on either entry state.
 # `login-btn` = login screen; `scan-status-.*` = home screen scan banner.
 # Replaces the rotted "TERRIO|Discover nearby offers|Nearby|..." literal set
@@ -57,10 +86,24 @@ appId: it.terrio.consumer
             visible: "Return to previous programme"
           commands:
             - tapOn: "STAY HERE"
+      # The home requests BLE/location permissions on mount (IT locale dialogs).
+      - repeat:
+          times: 4
+          commands:
+            - runFlow:
+                when:
+                  visible: "Esatta|Precise"
+                commands:
+                  - tapOn: "Esatta|Precise"
+            - runFlow:
+                when:
+                  visible: "Mentre usi l'app|While using the app|Consenti|Allow"
+                commands:
+                  - tapOn: "Mentre usi l'app|While using the app|Consenti|Allow"
       - extendedWaitUntil:
           visible:
             id: "scan-status-.*"
-          timeout: 10000
+          timeout: 15000
 
 # FIX-S55-001: dismiss federation prompt on already-auth launch
 - runFlow:

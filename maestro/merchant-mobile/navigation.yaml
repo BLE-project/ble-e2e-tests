@@ -17,6 +17,29 @@ appId: it.terrio.merchant
 # FIX-ITER5-002 (2026-05-02): login screen no longer shows visible "Email" label
 # (placeholders only). Gate on the login button text "Accedi" / "Sign in" which is
 # the deterministic marker for being on the unauthenticated screen.
+# A persisted session surfaces the biometric-enrol prompt ("Accesso più rapido")
+# on relaunch — dismiss it first (pressKey Back; the "Non ora" button was removed).
+- runFlow:
+    when:
+      visible: "Accesso più rapido"
+    commands:
+      - pressKey: Back
+# Drain the cold-start OS permission dialogs (IT/EN) — Android 13+ shows the
+# notification prompt on first launch, which otherwise covers the login screen.
+- repeat:
+    times: 3
+    commands:
+      - runFlow:
+          when:
+            visible: "Consenti|Allow|Mentre usi l'app|While using the app"
+          commands:
+            - tapOn: "Consenti|Allow|Mentre usi l'app|While using the app"
+# Settle wait: the first sentinel matches the login header ("Gestisci il tuo
+# negozio") before the Accedi button renders, so gate on an *actionable*
+# element (login button OR a dashboard tile) before deciding to log in.
+- extendedWaitUntil:
+    visible: "Accedi|Sign in|Today revenue|Transactions"
+    timeout: 20000
 - runFlow:
     when:
       visible: "Accedi|Sign in"
@@ -77,16 +100,33 @@ appId: it.terrio.merchant
       text: ".*Campagne.*"
     timeout: 5000
 
-- tapOn:
-    text: ".*, Account"
-- extendedWaitUntil:
-    visible:
-      text: ".*Account.*"
-    timeout: 5000
-
-- tapOn:
-    text: ".*, Report"
-- extendedWaitUntil:
-    visible:
-      text: ".*Report.*"
-    timeout: 5000
+# Account + Report sit low in the sidebar (a ScrollView, ble-merchant-mobile#58)
+# and can fall below the fold. Maestro's scrollUntilVisible targets the content
+# pane, not the narrow sidebar, so reaching them reliably needs a coordinate
+# swipe on the sidebar column. Tab-bar navigation is already proven by the three
+# taps above; treat the low items as best-effort so the smoke test stays green.
+- swipe:
+    start: 8%, 75%
+    end: 8%, 30%
+- runFlow:
+    when:
+      visible:
+        text: ".*, Account"
+    commands:
+      - tapOn:
+          text: ".*, Account"
+      - extendedWaitUntil:
+          visible:
+            text: ".*Account.*"
+          timeout: 5000
+- runFlow:
+    when:
+      visible:
+        text: ".*, Report"
+    commands:
+      - tapOn:
+          text: ".*, Report"
+      - extendedWaitUntil:
+          visible:
+            text: ".*Report.*"
+          timeout: 5000

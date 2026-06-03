@@ -1,0 +1,42 @@
+# Shared fresh-install gate handler for consumer flows.
+# On a clean install the boot order is:
+#   OS permission dialogs (IT locale) -> FU-10 BLE-consent gate -> login -> home.
+# Call this right after launchApp (and again after login, since the home
+# re-requests BLE/location on mount). Idempotent: every step is conditional.
+appId: it.terrio.consumer
+---
+# Dismiss a persisted biometric-enrol modal.
+- runFlow:
+    when:
+      visible:
+        id: "enroll-never"
+    commands:
+      - tapOn:
+          id: "enroll-never"
+
+# Drain the OS permission dialog chain (location precision -> while-using ->
+# bluetooth -> notifications). Device locale is IT, so match IT and EN copy.
+- repeat:
+    times: 5
+    commands:
+      - runFlow:
+          when:
+            visible: "Esatta|Precise"
+          commands:
+            - tapOn: "Esatta|Precise"
+      - runFlow:
+          when:
+            visible: "Mentre usi l'app|While using the app|Solo questa volta|Consenti|Allow"
+          commands:
+            - tapOn: "Mentre usi l'app|While using the app|Solo questa volta|Consenti|Allow"
+
+# Accept the FU-10 BLE-consent gate (toggle the switch, then Continua).
+- runFlow:
+    when:
+      visible:
+        id: "consent-continue"
+    commands:
+      - tapOn:
+          id: "consent-toggle"
+      - tapOn:
+          id: "consent-continue"

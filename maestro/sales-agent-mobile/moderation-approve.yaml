@@ -13,7 +13,7 @@ tags:
 # Login (copied from login.yaml logout-first guard)
 - extendedWaitUntil:
     visible:
-      text: "Terrio|Home|Agente Commerciale"
+      text: "Terrio|TERRIO Sales|Assistenza merchant|Home|Agente Commerciale"
     timeout: 30000
 
 - runFlow:
@@ -21,25 +21,37 @@ tags:
       visible: "Home"
     commands:
       - tapOn: { id: "tab-profilo" }
-      - extendedWaitUntil: { visible: "Esci", timeout: 5000 }
+      - extendedWaitUntil: { visible: "Esci dall'account|Esci|Logout", timeout: 5000 }
       - tapOn: { id: "btn-logout" }
       - extendedWaitUntil: { visible: "TERRIO Sales|Assistenza merchant.*|Agente Commerciale", timeout: 10000 }
 
 - tapOn: { id: "username-input" }
 - inputText: "dev-sales-agent"
+- hideKeyboard
 - tapOn: { id: "password-input" }
 - inputText: "dev-pass"
+- hideKeyboard
+- runFlow:
+    when: { visible: "Clipboard" }
+    commands: [ { pressKey: Back } ]
 - tapOn: { id: "login-btn" }
+# Fresh-install biometric enrolment prompt appears POST-login → dismiss it.
+- runFlow:
+    when: { visible: "Accesso più rapido" }
+    commands: [ { tapOn: "Non chiedermelo più" } ]
 - extendedWaitUntil: { visible: "Home", timeout: 8000 }
 
 # Home shows Moderazioni tile with count
 - assertVisible: "Moderazioni"
 
-# Navigate to moderation queue
+# Navigate to moderation queue. Wait on the actual list row (the next tap target)
+# rather than the header copy — the first list fetch can take >5s on a cold start
+# and the row id is the real precondition.
 - tapOn: "Moderazioni"
 - extendedWaitUntil:
-    visible: "in attesa"
-    timeout: 5000
+    visible:
+      id: "moderation-row"
+    timeout: 20000
 
 # Tap first moderation row
 - tapOn:
@@ -60,17 +72,24 @@ tags:
 - tapOn:
     id: "reason-input"
 - inputText: "Contenuto conforme policy"
+- hideKeyboard   # keyboard covers the TOTP field below — dismiss before tapping
 
 - tapOn:
     id: "totp-input"
 - inputText: "123456"   # dev fixture — identity-access mock accepts 123456
+- hideKeyboard
 
 - tapOn:
     id: "confirm-action"
 
 - extendedWaitUntil:
-    visible: "Approvata|approvata|Moderazioni"
+    visible: "Approvata|approvata|ADV approvata"
     timeout: 10000
 
-# Back in queue — count decremented
-- assertVisible: "Moderazioni"
+# Dismiss the success dialog, then confirm we are back in the queue (now
+# decremented — the approved ADV left the PENDING_HUMAN list).
+- tapOn: "OK"
+- extendedWaitUntil:
+    visible:
+      id: "moderation-row"
+    timeout: 10000

@@ -3,49 +3,84 @@ tags:
   - ble
   - p1
 ---
-# §9 P1 — Sales agent runs BLE health check at first onboarding.
-# In dev/stub mode (no ble-plx plugin), the screen renders the 4-beacon
-# fixture with ✅ pass — verifies the UX flow.
+# BCN-CFG-002 — Sales-agent first-config wizard (4 steps).
+# Real navigation: Beacon tab → beacon-config → "Avvia first-config wizard" →
+#   step-1 (select merchant) → step-2 (BLE scan) → step-3 (confirm) →
+#   step-4 (submit → "First-config registrata").
+# On this device there are no physical FDA50693 beacons, so the scan detects
+# nothing (rows → "missed"); the wizard still advances and submits the health
+# report. Asserts target stable wizard testIDs, tolerant of BLE results.
 
 - launchApp:
     stopApp: true
 
 - extendedWaitUntil:
-    visible: "Terrio|Home|Agente Commerciale"
+    visible: "Terrio|TERRIO Sales|Assistenza merchant|Home|Agente Commerciale|Accedi"
     timeout: 30000
 
 - runFlow:
-    when: { visible: "Agente Commerciale" }
+    # Login screen sentinel is "TERRIO Sales / Assistenza merchant / Accedi"
+    # (not "Agente Commerciale"). Gate on the real copy so login runs when
+    # logged out.
+    when: { visible: "TERRIO Sales|Assistenza merchant|Accedi" }
     commands:
       - tapOn: { id: "username-input" }
       - inputText: "dev-sales-agent"
+      - hideKeyboard
       - tapOn: { id: "password-input" }
       - inputText: "dev-pass"
+      - hideKeyboard
       - tapOn: { id: "login-btn" }
+      # Fresh-install biometric enrolment prompt appears POST-login → dismiss.
+      - runFlow:
+          when: { visible: "Accesso più rapido" }
+          commands: [ { tapOn: "Non chiedermelo più" } ]
       - extendedWaitUntil: { visible: "Home", timeout: 8000 }
 
-# Navigate to merchants → first → BLE test
-- tapOn: "Merchants|Attività|merchants"
-- extendedWaitUntil: { visible: "Test BLE|Ingresso|Cassa", timeout: 10000, optional: true }
-
-- tapOn:
-    text: "Test BLE|BLE|Ingresso"
-    optional: true
-
-- extendedWaitUntil: { visible: "Scansiona", timeout: 5000 }
-
-- tapOn:
-    id: "scan-btn"
-
-# Expect 4-beacon rows after scan completes
+# Beacon tab → beacon-config → launch the first-config wizard.
+- tapOn: { id: "tab-beacon" }
 - extendedWaitUntil:
-    visible: "H-01|H-02|H-03|H-04"
-    timeout: 20000
-
-# Confirm on-boarding
+    visible:
+      id: "start-first-config-wizard"
+    timeout: 15000
 - tapOn:
-    id: "confirm-btn"
+    id: "start-first-config-wizard"
 
-- assertVisible:
-    text: "confermato|On-boarding"
-    optional: true
+# Step 1 — select the (first) assigned merchant. Wait on the search field id
+# (the styled title text is not reliably matched by Maestro); tap a merchant ROW
+# (UUID-suffixed id, NOT the "wizard-merchant-search" field).
+- extendedWaitUntil:
+    visible:
+      id: "wizard-merchant-search"
+    timeout: 15000
+- tapOn:
+    id: "wizard-merchant-[0-9a-f-]{8,}"
+
+# Step 2 — BLE scan. Start it, then advance once the "Avanti" button is ready
+# (scan window can take up to ~60s; nothing is detected without real beacons).
+- extendedWaitUntil:
+    visible:
+      id: "wizard-scan-start"
+    timeout: 15000
+- tapOn:
+    id: "wizard-scan-start"
+- extendedWaitUntil:
+    visible:
+      id: "wizard-scan-next"
+    timeout: 90000
+- tapOn:
+    id: "wizard-scan-next"
+
+# Step 3 — confirm + submit.
+- extendedWaitUntil:
+    visible:
+      id: "wizard-confirm-next"
+    timeout: 10000
+- tapOn:
+    id: "wizard-confirm-next"
+
+# Step 4 — submission result (id assert; styled text is not reliably matched).
+- extendedWaitUntil:
+    visible:
+      id: "wizard-submit-ok"
+    timeout: 30000

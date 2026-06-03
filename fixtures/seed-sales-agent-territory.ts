@@ -40,11 +40,78 @@ async function salesAgentLogin(): Promise<string> {
 }
 
 async function fetchSalesAgentMe(token: string): Promise<SalesAgentMe> {
+  // /v1/* requires X-Tenant-Id; derive it from the JWT ble_tenant_id claim so
+  // the gateway TenantContextFilter doesn't 400.
+  const claims = JSON.parse(
+    Buffer.from(token.split('.')[1], 'base64url').toString('utf8'),
+  ) as { tenant_id?: string; ble_tenant_id?: string }
+  const tenantId = claims.tenant_id ?? claims.ble_tenant_id ?? ''
   const res = await fetch(`${BFF_URL}/api/v1/sales-agents/me`, {
-    headers: { Authorization: `Bearer ${token}` },
+    headers: { Authorization: `Bearer ${token}`, 'X-Tenant-Id': tenantId },
   })
   if (!res.ok) throw new Error(`/me failed: ${res.status} ${await res.text()}`)
   return res.json()
+}
+
+/** Decode a claim from a JWT (base64url payload). */
+function claim(token: string, key: string): string | undefined {
+  const payload = JSON.parse(
+    Buffer.from(token.split('.')[1], 'base64url').toString('utf8'),
+  ) as Record<string, unknown>
+  const v = payload[key]
+  return typeof v === 'string' ? v : undefined
+}
+
+/**
+ * Ensure dev-sales-agent has a SalesAgent profile row. The mobile app's
+ * /v1/sales-agents/me 404s (AGENT_NOT_FOUND) until one exists, blocking the
+ * merchant/beacon onboarding screens. Creates it via the SUPER_ADMIN-only
+ * POST /v1/sales-agents, keyed on the agent's Keycloak sub. Idempotent: if /me
+ * already resolves, returns that id.
+ */
+async function ensureSalesAgentProfile(
+  adminToken: string,
+  saToken: string,
+  tenantId: string,
+): Promise<string> {
+  try {
+    const me = await fetchSalesAgentMe(saToken)
+    console.log(`[seed] sales-agent profile present: id=${me.id} email=${me.email}`)
+    return me.id
+  } catch (e) {
+    if (!String((e as Error).message).includes('404')) throw e
+    // 404 AGENT_NOT_FOUND → create the profile.
+  }
+
+  // /v1/sales-agents/me looks the profile up by SecurityContext principal name,
+  // which (per the OIDC principal-claim config) is `preferred_username`, NOT the
+  // `sub` UUID — the 404 message "for user: dev-sales-agent" is the lookup key.
+  // Key the profile on preferred_username so /me resolves; fall back to sub.
+  const keycloakUserId = claim(saToken, 'preferred_username') ?? claim(saToken, 'sub')
+  const email = claim(saToken, 'email') ?? 'dev-sales-agent@ble.local'
+  if (!keycloakUserId) throw new Error('cannot resolve sales-agent principal from token')
+
+  const res = await fetch(`${BFF_URL}/api/v1/sales-agents`, {
+    method:  'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization:  `Bearer ${adminToken}`,
+      'X-Tenant-Id':  tenantId,
+    },
+    body: JSON.stringify({
+      keycloakUserId,
+      email,
+      firstName: claim(saToken, 'given_name') ?? 'Dev',
+      lastName:  claim(saToken, 'family_name') ?? 'SalesAgent',
+      fiscalType: 'INDIVIDUAL',
+    }),
+  })
+  if (!res.ok) {
+    throw new Error(`create sales-agent profile failed: ${res.status} ${await res.text()}`)
+  }
+  const created = (await res.json()) as { id: string }
+  console.log(`[seed] created sales-agent profile: id=${created.id} kc=${keycloakUserId}`)
+  return created.id
 }
 
 async function ensureAssignment(
@@ -53,9 +120,9 @@ async function ensureAssignment(
   tenantId: string,
   territoryId: string,
 ): Promise<boolean> {
-  // List existing
+  // List existing (via BFF /api/v1 — core-registry has no host port).
   const existingRes = await fetch(
-    `${CORE_URL}/v1/sales-agents/${agentId}/assignments`,
+    `${BFF_URL}/api/v1/sales-agents/${agentId}/assignments`,
     {
       headers: {
         Authorization: `Bearer ${adminToken}`,
@@ -80,7 +147,7 @@ async function ensureAssignment(
 
   // Create new
   const postRes = await fetch(
-    `${CORE_URL}/v1/sales-agents/${agentId}/assignments`,
+    `${BFF_URL}/api/v1/sales-agents/${agentId}/assignments`,
     {
       method:  'POST',
       headers: {
@@ -105,15 +172,16 @@ export async function ensureSalesAgentTerritory(): Promise<{
   created: boolean
 }> {
   const base = await ensureSeedData()
-  const { token: adminToken, tenantId, territoryId } = base
+  const { token: adminToken, territoryId } = base
 
-  // sales-agent /me to get the agent row id
+  // The assignment + profile must live on the sales-agent's OWN tenant (the
+  // gateway cross-checks X-Tenant-Id against the agent's claim for /me reads).
   const saToken = await salesAgentLogin()
-  const me = await fetchSalesAgentMe(saToken)
-  console.log(`[seed] sales-agent me.id=${me.id} email=${me.email}`)
+  const tenantId = claim(saToken, 'ble_tenant_id') ?? claim(saToken, 'tenant_id') ?? base.tenantId
 
-  const created = await ensureAssignment(adminToken, me.id, tenantId, territoryId)
-  return { agentId: me.id, tenantId, territoryId, created }
+  const agentId = await ensureSalesAgentProfile(adminToken, saToken, tenantId)
+  const created = await ensureAssignment(adminToken, agentId, tenantId, territoryId)
+  return { agentId, tenantId, territoryId, created }
 }
 
 // ── CLI entrypoint ────────────────────────────────────────────────────────

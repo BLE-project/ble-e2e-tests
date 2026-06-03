@@ -7,6 +7,7 @@
  * can access them via process.env.
  */
 import { ensureSeedData } from './fixtures/seed-data'
+import { ensureBeaconFirstConfig } from './fixtures/seed-beacon-first-config'
 
 const KC_URL = process.env.KC_URL ?? 'http://localhost:8180'
 
@@ -132,6 +133,18 @@ export default async function globalSetup() {
 
     // Sync Keycloak users so JWT contains the correct ble_tenant_id claim
     await syncKeycloakUsers(seed.tenantId)
+
+    // Seed the sales-agent first-config wizard data (SalesAgent profile +
+    // territory assignment + merchant→agent + store(merchantId) + beacon→store)
+    // so beacon-first-config.yaml has a merchant with a scannable beacon.
+    // Best-effort: must run after the Keycloak claim sync (it logs in as
+    // dev-sales-agent / dev-tenant-admin and needs the ble_tenant_id claim).
+    try {
+      const fc = await ensureBeaconFirstConfig()
+      console.log(`[global-setup] First-config seed: merchant=${fc.merchantId} store=${fc.storeId} beacon=${fc.beaconId}`)
+    } catch (e) {
+      console.warn('[global-setup] first-config seed skipped:', (e as Error).message)
+    }
 
     // Write to a temp file for cross-process sharing
     const fs = await import('fs')

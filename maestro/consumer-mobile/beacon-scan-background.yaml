@@ -18,6 +18,8 @@ appId: it.terrio.consumer
 - launchApp:
     stopApp: true
 
+- runFlow: _gates.yaml
+
 # FU-10: drain cold-launch OS permission dialogs + in-app BLE consent screen
 # BEFORE waiting on app content (same proven block as login.yaml).
 - repeat:
