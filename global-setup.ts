@@ -8,6 +8,7 @@
  */
 import { ensureSeedData } from './fixtures/seed-data'
 import { ensureBeaconFirstConfig } from './fixtures/seed-beacon-first-config'
+import { ensureTenantBeaconCrudSlotFree } from './fixtures/seed-tenant-beacon-crud'
 
 const KC_URL = process.env.KC_URL ?? 'http://localhost:8180'
 
@@ -144,6 +145,15 @@ export default async function globalSetup() {
       console.log(`[global-setup] First-config seed: merchant=${fc.merchantId} store=${fc.storeId} beacon=${fc.beaconId}`)
     } catch (e) {
       console.warn('[global-setup] first-config seed skipped:', (e as Error).message)
+    }
+
+    // Free the tenant beacons CRUD slot (FDA50693/999/1) so beacons.yaml's
+    // create runs fresh (the flow has no delete step → leftover would 409).
+    try {
+      const freed = await ensureTenantBeaconCrudSlotFree()
+      console.log(`[global-setup] Tenant beacon CRUD slot: freed ${freed}`)
+    } catch (e) {
+      console.warn('[global-setup] tenant beacon CRUD cleanup skipped:', (e as Error).message)
     }
 
     // Write to a temp file for cross-process sharing
