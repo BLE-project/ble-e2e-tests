@@ -9,28 +9,52 @@ tags:
 # login) — shared subflow, fixes the "Terrio|Home|Merchant" launch-sentinel timeout.
 - runFlow: _login.yaml
 
-# Navigate to ADV submit
-- tapOn: "ADV|Campagne|Nuova"
+# Navigate to the ADV screen (sidebar item, testID tab-adv)
+- tapOn: { id: "tab-adv" }
 
+# Open the collapsible "Nuova ADV" form (wait on the title field — the submit
+# button sits at the bottom of the form, off-viewport until scrolled).
+- tapOn: { id: "adv-new-toggle" }
 - extendedWaitUntil:
-    visible: "Nuova ADV|Invia per moderazione"
-    timeout: 5000
+    visible:
+      id: "adv-title"
+    timeout: 12000
 
 - tapOn: { id: "adv-title" }
 - inputText: "Sconto 10% prodotti selezionati"
+- hideKeyboard
 
-- tapOn: { id: "adv-description" }
-- inputText: "Valido fino al 30 aprile 2026 su una selezione di articoli del nostro store."
-
+# Discount type is an inline chip row; the percentage chip carries adv-discount-type
 - tapOn: { id: "adv-discount-type" }
-- tapOn: "Percentuale|percentage"
 
+# The form is taller than the (landscape) viewport — scroll each lower field
+# into view before interacting (Maestro's tapOn auto-scroll is unreliable here).
+- scrollUntilVisible:
+    element: { id: "adv-discount-value" }
+    direction: DOWN
+    visibilityPercentage: 10
+    centerElement: true
 - tapOn: { id: "adv-discount-value" }
 - inputText: "10"
+- hideKeyboard
 
+- scrollUntilVisible:
+    element: { id: "adv-description" }
+    direction: DOWN
+    visibilityPercentage: 10
+    centerElement: true
+- tapOn: { id: "adv-description" }
+- inputText: "Valido fino al 30 aprile 2026 su una selezione di articoli del nostro store."
+- hideKeyboard
+
+- scrollUntilVisible:
+    element: { id: "adv-submit-btn" }
+    direction: DOWN
+    visibilityPercentage: 10
+    centerElement: true
 - tapOn: { id: "adv-submit-btn" }
 
-# Expect landing on status page with PENDING_AI or APPROVED badge
+# The new ADV lands in the list with a PENDING_AI/APPROVED/PENDING_HUMAN badge.
 - extendedWaitUntil:
     visible: "In analisi AI|Approvata|Review umana"
     timeout: 15000

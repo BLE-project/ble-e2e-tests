@@ -11,6 +11,7 @@ import { ensureBeaconFirstConfig } from './fixtures/seed-beacon-first-config'
 import { ensureTenantBeaconCrudSlotFree } from './fixtures/seed-tenant-beacon-crud'
 import { ensureBudgetDegradedAdv } from './fixtures/seed-budget-degraded'
 import { ensureModerationQueue } from './fixtures/seed-moderation-queue'
+import { ensureMerchantAdvData } from './fixtures/seed-merchant-adv'
 
 const KC_URL = process.env.KC_URL ?? 'http://localhost:8180'
 
@@ -103,6 +104,85 @@ async function syncKeycloakUsers(tenantId: string) {
 }
 
 /**
+ * Give dev-merchant a `ble_merchant_id` JWT claim so the merchant ADV UI works:
+ * the notification-service resolves the owning merchant from this claim (GET
+ * /v1/adv → 403 NO_MERCHANT_LINK without it; submit → 400 MERCHANT_ID_REQUIRED).
+ * Mirrors the ble_tenant_id plumbing: profile-schema attribute + ble-identity
+ * protocol mapper + per-user attribute value. Idempotent.
+ */
+async function ensureMerchantClaim(merchantId: string) {
+  const tokenRes = await fetch(`${KC_URL}/realms/master/protocol/openid-connect/token`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: 'grant_type=password&client_id=admin-cli&username=admin&password=admin',
+  })
+  if (!tokenRes.ok) { console.warn('[global-setup] KC admin login failed (merchant claim)'); return }
+  const { access_token: kcToken } = await tokenRes.json() as { access_token: string }
+  const hdrs = { Authorization: `Bearer ${kcToken}`, 'Content-Type': 'application/json' }
+  const base = `${KC_URL}/admin/realms/ble`
+
+  // 1. profile-schema attribute
+  const profileRes = await fetch(`${base}/users/profile`, { headers: hdrs })
+  if (profileRes.ok) {
+    const profile = await profileRes.json() as { attributes: Array<{ name: string }> }
+    if (!profile.attributes.some(a => a.name === 'ble_merchant_id')) {
+      profile.attributes.push({
+        name: 'ble_merchant_id', displayName: 'BLE Merchant ID',
+        permissions: { view: ['admin', 'user'], edit: ['admin'] },
+        validations: {}, multivalued: false,
+      } as any)
+      await fetch(`${base}/users/profile`, { method: 'PUT', headers: hdrs, body: JSON.stringify(profile) })
+      console.log('[global-setup] Added ble_merchant_id to KC user profile schema')
+    }
+  }
+
+  // 2. ble-identity protocol mapper
+  const clientsRes = await fetch(`${base}/clients?clientId=ble-identity`, { headers: hdrs })
+  if (clientsRes.ok) {
+    const clients = await clientsRes.json() as Array<{ id: string }>
+    if (clients.length > 0) {
+      const clientUuid = clients[0].id
+      const mappersRes = await fetch(`${base}/clients/${clientUuid}/protocol-mappers/models`, { headers: hdrs })
+      const mappers = mappersRes.ok ? await mappersRes.json() as Array<{ name: string }> : []
+      if (!mappers.some(m => m.name === 'ble_merchant_id')) {
+        await fetch(`${base}/clients/${clientUuid}/protocol-mappers/models`, {
+          method: 'POST', headers: hdrs,
+          body: JSON.stringify({
+            name: 'ble_merchant_id', protocol: 'openid-connect',
+            protocolMapper: 'oidc-usermodel-attribute-mapper',
+            config: {
+              'user.attribute': 'ble_merchant_id', 'claim.name': 'ble_merchant_id',
+              'jsonType.label': 'String', 'id.token.claim': 'true',
+              'access.token.claim': 'true', 'userinfo.token.claim': 'true',
+              'multivalued': 'false', 'aggregate.attrs': 'false',
+            },
+          }),
+        })
+        console.log('[global-setup] Created ble_merchant_id protocol mapper on ble-identity')
+      }
+    }
+  }
+
+  // 3. set the attribute on dev-merchant (spread the full rep so email/name are
+  //    preserved; only the attributes map is augmented).
+  const searchRes = await fetch(`${base}/users?username=dev-merchant&exact=true`, { headers: hdrs })
+  if (searchRes.ok) {
+    const found = await searchRes.json() as Array<{ id: string; attributes?: Record<string, string[]> }>
+    if (found.length > 0) {
+      const u = found[0]
+      await fetch(`${base}/users/${u.id}`, {
+        method: 'PUT', headers: hdrs,
+        body: JSON.stringify({
+          ...u,
+          attributes: { ...(u.attributes ?? {}), ble_merchant_id: [merchantId] },
+        }),
+      })
+      console.log(`[global-setup] dev-merchant ble_merchant_id=${merchantId}`)
+    }
+  }
+}
+
+/**
  * GAP-QA-009 (v7.9.17): retry seed data with exponential backoff.
  * Common transient failures: stack just started, BFF not yet healthy,
  * Keycloak Liquibase still running, etc. 5 retries × ~2s,4s,8s,16s,32s
@@ -142,8 +222,10 @@ export default async function globalSetup() {
     // so beacon-first-config.yaml has a merchant with a scannable beacon.
     // Best-effort: must run after the Keycloak claim sync (it logs in as
     // dev-sales-agent / dev-tenant-admin and needs the ble_tenant_id claim).
+    let merchantId: string | undefined
     try {
       const fc = await ensureBeaconFirstConfig()
+      merchantId = fc.merchantId
       console.log(`[global-setup] First-config seed: merchant=${fc.merchantId} store=${fc.storeId} beacon=${fc.beaconId}`)
     } catch (e) {
       console.warn('[global-setup] first-config seed skipped:', (e as Error).message)
@@ -180,6 +262,20 @@ export default async function globalSetup() {
       console.log(`[global-setup] Moderation queue: ${mq.advs.length} actionable rows`)
     } catch (e) {
       console.warn('[global-setup] moderation queue seed skipped:', (e as Error).message)
+    }
+
+    // Merchant ADV UI (adv-submit / adv-list-filter / adv-takedown / adv-appeal):
+    // give dev-merchant a ble_merchant_id claim (the merchant from first-config)
+    // so the ADV screen can list/submit, then seed dev-merchant-owned ADVs in
+    // APPROVED + REJECTED so the takedown/appeal flows have a card to act on.
+    if (merchantId) {
+      try {
+        await ensureMerchantClaim(merchantId)
+        const ma = await ensureMerchantAdvData(merchantId)
+        console.log(`[global-setup] Merchant ADV data: approved=${ma.approved} rejected=${ma.rejected}`)
+      } catch (e) {
+        console.warn('[global-setup] merchant ADV seed skipped:', (e as Error).message)
+      }
     }
 
     // Write to a temp file for cross-process sharing

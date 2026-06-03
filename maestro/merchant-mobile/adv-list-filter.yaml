@@ -10,7 +10,7 @@ tags:
 # login) — shared subflow, fixes the "Terrio|Home|Merchant" launch-sentinel timeout.
 - runFlow: _login.yaml
 
-- tapOn: { id: "tab-campaigns" }
+- tapOn: { id: "tab-adv" }
 
 # Filter by each status, verify list updates
 - extendedWaitUntil: { visible: "Tutti|Bozza|Approvata", timeout: 5000 }
@@ -30,5 +30,7 @@ tags:
     text: "Rifiutata|REJECTED|Nessuna ADV"
     optional: true
 
-# New ADV button visible
-- assertVisible: "Nuova ADV|+ Nuova"
+# New-ADV toggle visible (asserted by id — "+ Nuova" is an invalid regex: the
+# leading "+" is a dangling quantifier).
+- assertVisible:
+    id: "adv-new-toggle"

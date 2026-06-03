@@ -9,7 +9,7 @@ tags:
 # login) — shared subflow, fixes the "Terrio|Home|Merchant" launch-sentinel timeout.
 - runFlow: _login.yaml
 
-- tapOn: { id: "tab-campaigns" }
+- tapOn: { id: "tab-adv" }
 
 # Filter to approved
 - extendedWaitUntil: { visible: "Approvata", timeout: 5000 }
@@ -33,6 +33,8 @@ tags:
 - tapOn:
     id: "totp-code"
 - inputText: "123456"
+# Dismiss the keyboard — it overlaps the confirm button at the bottom of the modal.
+- hideKeyboard
 
 - tapOn:
     id: "action-confirm"
