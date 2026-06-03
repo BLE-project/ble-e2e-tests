@@ -162,48 +162,117 @@ export async function ensureModerationQueue(): Promise<ModerationQueueResult> {
     throw new Error(`GET /v1/merchants failed: ${merchantsRes.status}`)
   }
 
-  // 2. List existing E2E-MOD ADVs (idempotent)
-  const advListRes = await fetch(`${BFF_URL}/api/v1/adv`, { headers })
-  const existingAdvs = advListRes.ok
-    ? ((await advListRes.json()) as Array<{ id: string; title: string }>)
-    : []
+  // 2. Top up the review queue by CURRENT QUEUE STATE — NOT by title.
+  //
+  //    Moderation flows CONSUME rows: approve→APPROVED, reject→REJECTED,
+  //    escalate→ESCALATED_TO_ADMIN, tenant-review→terminal. A title-keyed
+  //    idempotent seed finds the (now terminal) ADVs by title and skips them,
+  //    so the 2nd suite run onwards finds an EMPTY review queue and every
+  //    moderation flow fails on "moderation-row not visible". Instead we
+  //    reconcile toward a target number of ACTIONABLE rows, submitting fresh
+  //    uniquely-titled ADVs to cover only the shortfall (bounded growth).
+  //
+  //    Review-queue scope (ReviewTaskResource GET /v1/moderation/reviews):
+  //      SALES_AGENT  → PENDING_HUMAN only          (approve / reject / escalate)
+  //      TENANT_ADMIN → PENDING_HUMAN + ESCALATED   (tenant-review)
+  //    Per suite run the sales-agent flows consume 3 PENDING_HUMAN and the
+  //    tenant flow consumes 1 ESCALATED_TO_ADMIN; keep a buffer above that.
+  const TARGET_PENDING_HUMAN = 4
+  const TARGET_ESCALATED     = 2
 
-  const results: ModerationQueueResult['advs'] = []
+  const PENDING_TEMPLATE   = MODERATION_SEED_ADVS[0] // 10% → PENDING_HUMAN (with Claude verdict)
+  const ESCALATED_TEMPLATE = MODERATION_SEED_ADVS[3] // 50% → ESCALATED_TO_ADMIN
 
-  for (const seed of MODERATION_SEED_ADVS) {
-    const already = existingAdvs.find((a) => a.title === seed.title)
-    if (already) {
-      results.push({
-        title: seed.title,
-        id: already.id,
-        created: false,
-        expectedFinalStatus: seed.expectedFinalStatus,
-      })
-      continue
-    }
-    const createRes = await fetch(`${BFF_URL}/api/v1/adv`, {
-      method: 'POST',
-      headers,
+  // ReviewTaskResource exposes the campaign id as `advId` (not `id`).
+  type QueueRow = { advId: string; title: string; moderationStatus: string }
+  const reviewQueue = async (): Promise<QueueRow[]> => {
+    const r = await fetch(`${BFF_URL}/api/v1/moderation/reviews?size=100`, { headers })
+    return r.ok ? ((await r.json()) as QueueRow[]) : []
+  }
+  const countStatus = (q: QueueRow[], s: string) =>
+    q.filter((a) => a.moderationStatus === s).length
+
+  const submitFresh = async (
+    template: ModerationSeedAdv, title: string,
+  ): Promise<string> => {
+    const res = await fetch(`${BFF_URL}/api/v1/adv`, {
+      method: 'POST', headers,
       body: JSON.stringify({
-        title:          seed.title,
-        description:    seed.description,
-        discountType:   seed.discountType,
-        discountValue:  seed.discountValue,
+        title,
+        description:   template.description,
+        discountType:  template.discountType,
+        discountValue: template.discountValue,
         merchantId,
       }),
     })
-    if (!createRes.ok) {
-      const err = await createRes.text().catch(() => '(no body)')
-      throw new Error(`Create ADV "${seed.title}" failed: ${createRes.status} ${err}`)
+    if (!res.ok) {
+      const err = await res.text().catch(() => '(no body)')
+      throw new Error(`submit fresh ADV "${title}" failed: ${res.status} ${err}`)
     }
-    const body = (await createRes.json()) as { id: string }
-    results.push({
-      title: seed.title,
-      id: body.id,
-      created: true,
-      expectedFinalStatus: seed.expectedFinalStatus,
-    })
+    return ((await res.json()) as { id: string }).id
   }
+
+  const pollUntil = async (
+    predicate: () => Promise<boolean>, timeoutMs = 45_000, stepMs = 2_000,
+  ): Promise<boolean> => {
+    const deadline = Date.now() + timeoutMs
+    while (Date.now() < deadline) {
+      if (await predicate()) return true
+      await new Promise((r) => setTimeout(r, stepMs))
+    }
+    return predicate()
+  }
+
+  // Unique per-run token so fresh titles never collide with terminal leftovers.
+  const runToken = Date.now().toString(36)
+  let q = await reviewQueue()
+  const submittedTitles: string[] = []
+
+  for (let i = countStatus(q, 'PENDING_HUMAN'); i < TARGET_PENDING_HUMAN; i++) {
+    const title = `${PENDING_TEMPLATE.title} #${runToken}-${i}`
+    await submitFresh(PENDING_TEMPLATE, title)
+    submittedTitles.push(title)
+  }
+  for (let i = countStatus(q, 'ESCALATED_TO_ADMIN'); i < TARGET_ESCALATED; i++) {
+    const title = `${ESCALATED_TEMPLATE.title} #${runToken}-e${i}`
+    await submitFresh(ESCALATED_TEMPLATE, title)
+    submittedTitles.push(title)
+  }
+
+  // Wait for the Claude wiremock + workflow to settle the new ADVs into the
+  // queue so the suite finds actionable rows immediately. Best-effort: if the
+  // escalation path is slow we still proceed (PENDING_HUMAN target is the
+  // critical one for the sales-agent flows).
+  if (submittedTitles.length > 0) {
+    const settled = await pollUntil(async () => {
+      const cur = await reviewQueue()
+      return countStatus(cur, 'PENDING_HUMAN') >= TARGET_PENDING_HUMAN
+          && countStatus(cur, 'ESCALATED_TO_ADMIN') >= TARGET_ESCALATED
+    })
+    q = await reviewQueue()
+    if (!settled) {
+      console.warn(
+        `[seed-moderation-queue] queue not fully settled after poll: ` +
+        `pending_human=${countStatus(q, 'PENDING_HUMAN')}/${TARGET_PENDING_HUMAN} ` +
+        `escalated=${countStatus(q, 'ESCALATED_TO_ADMIN')}/${TARGET_ESCALATED}`,
+      )
+    }
+  }
+
+  const results: ModerationQueueResult['advs'] = q.map((a) => ({
+    title: a.title,
+    id: a.advId,
+    created: submittedTitles.includes(a.title),
+    expectedFinalStatus:
+      a.moderationStatus === 'ESCALATED_TO_ADMIN' ? 'ESCALATED_TO_ADMIN' : 'PENDING_HUMAN',
+  }))
+
+  console.log(
+    `[seed-moderation-queue] queue ready: ` +
+    `pending_human=${countStatus(q, 'PENDING_HUMAN')} ` +
+    `escalated=${countStatus(q, 'ESCALATED_TO_ADMIN')} ` +
+    `(submitted ${submittedTitles.length} fresh, token ${runToken})`,
+  )
 
   _cache = { token, tenantId, merchantId, advs: results }
   return _cache
