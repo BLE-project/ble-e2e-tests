@@ -32,20 +32,34 @@ tags:
     when: { visible: "Clipboard" }
     commands: [ { pressKey: Back } ]
 - tapOn: { id: "login-btn" }
+# Fresh-install biometric enrolment prompt appears POST-login → dismiss it.
+- runFlow:
+    when: { visible: "Accesso più rapido" }
+    commands: [ { tapOn: "Non chiedermelo più" } ]
 - extendedWaitUntil: { visible: "Home", timeout: 8000 }
 
 - tapOn: "Moderazioni"
-
+# Wait on the list row id (styled header copy isn't reliably matched).
 - extendedWaitUntil:
-    visible: "in attesa"
-    timeout: 10000
+    visible:
+      id: "moderation-row"
+    timeout: 20000
 
-# Tap first row — expect detail WITHOUT Claude verdict (skipped due to HUMAN_ONLY)
-- tapOn: { id: "moderation-row" }
+# Target the budget-degraded ADV specifically: seeded under HUMAN_ONLY (spend
+# forced to 100% via POST /v1/adv/budget) so it skipped Claude → no verdict.
+# It is the newest → last in the queue (ordered by salesReviewExpiresAt), so the
+# approve/reject flows (which tap the first row) hit a verdict ADV instead.
+- scrollUntilVisible:
+    element:
+      text: "E2E-BUDGET no-verdict ADV"
+    direction: DOWN
+    timeout: 15000
+- tapOn:
+    text: "E2E-BUDGET no-verdict ADV"
 
 - extendedWaitUntil:
     visible: "DESCRIZIONE"
     timeout: 5000
 
-# Claude verdict section should NOT be visible (tier=HUMAN_ONLY skipped AI)
+# Claude verdict section ("ANALISI AI") must NOT be visible — HUMAN_ONLY skipped AI.
 - assertNotVisible: "ANALISI AI"

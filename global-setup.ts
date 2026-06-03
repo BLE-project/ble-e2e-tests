@@ -9,6 +9,7 @@
 import { ensureSeedData } from './fixtures/seed-data'
 import { ensureBeaconFirstConfig } from './fixtures/seed-beacon-first-config'
 import { ensureTenantBeaconCrudSlotFree } from './fixtures/seed-tenant-beacon-crud'
+import { ensureBudgetDegradedAdv } from './fixtures/seed-budget-degraded'
 
 const KC_URL = process.env.KC_URL ?? 'http://localhost:8180'
 
@@ -154,6 +155,17 @@ export default async function globalSetup() {
       console.log(`[global-setup] Tenant beacon CRUD slot: freed ${freed}`)
     } catch (e) {
       console.warn('[global-setup] tenant beacon CRUD cleanup skipped:', (e as Error).message)
+    }
+
+    // Seed a no-Claude-verdict ADV for moderation-budget-degraded.yaml: forces
+    // the tenant to HUMAN_ONLY, submits one ADV (skips AI → no verdict), then
+    // resets the budget to NORMAL so approve/reject ADVs still get a verdict.
+    // Best-effort: a missing budget-degraded ADV only fails that single P2 flow.
+    try {
+      const bd = await ensureBudgetDegradedAdv()
+      console.log(`[global-setup] Budget-degraded ADV: ${bd.advId} (created=${bd.created})`)
+    } catch (e) {
+      console.warn('[global-setup] budget-degraded seed skipped:', (e as Error).message)
     }
 
     // Write to a temp file for cross-process sharing
