@@ -5,27 +5,9 @@ tags:
 ---
 # §9bis M8 P0 — Merchant submits new ADV (happy path, LOW risk → auto-approve).
 
-- launchApp:
-    stopApp: true
-
-- extendedWaitUntil:
-    visible: "Terrio|Home|Merchant"
-    timeout: 30000
-
-- runFlow:
-    when: { visible: "Home" }
-    commands:
-      - tapOn: { id: "tab-account" }
-      - extendedWaitUntil: { visible: "Esci|Logout", timeout: 5000 }
-      - tapOn: { id: "btn-logout" }
-      - extendedWaitUntil: { visible: "Merchant", timeout: 10000 }
-
-- tapOn: { id: "username-input" }
-- inputText: "dev-merchant"
-- tapOn: { id: "password-input" }
-- inputText: "dev-pass"
-- tapOn: { id: "login-btn" }
-- extendedWaitUntil: { visible: "Home", timeout: 8000 }
+# Robust login preamble (cold-install perm-drain + biometric dismiss + idempotent
+# login) — shared subflow, fixes the "Terrio|Home|Merchant" launch-sentinel timeout.
+- runFlow: _login.yaml
 
 # Navigate to ADV submit
 - tapOn: "ADV|Campagne|Nuova"

@@ -1,0 +1,55 @@
+appId: it.terrio.merchant
+---
+# Shared merchant login preamble (subflow — leading "_" excludes it from the
+# standalone runners). Robust cold-install handling extracted from login.yaml
+# (FIX-ITER5-001 / FIX-ITER6-001): drains the runtime permission dialogs
+# (location precision → BLE → notification) and the biometric enrolment prompt,
+# then logs in as dev-merchant idempotently (accepts an already-logged-in
+# session). The adv-* P0/P1 flows runFlow into this so they don't drift from the
+# proven preamble (which is why adv-submit/list-filter/takedown/appeal were
+# timing out on the "Terrio|Home|Merchant" launch sentinel).
+
+- launchApp:
+    stopApp: true
+
+# Drain runtime permission dialogs that appear on cold-install (unrooted device +
+# release-signed APK refuses `pm grant`).
+- repeat:
+    times: 3
+    commands:
+      - runFlow:
+          when: { visible: "Mentre usi l'app|While using the app" }
+          commands: [ { tapOn: "Mentre usi l'app|While using the app" } ]
+      - runFlow:
+          when: { visible: "Consenti|Allow" }
+          commands: [ { tapOn: "Consenti|Allow" } ]
+
+# Biometric enrolment prompt may linger from a previous run → dismiss.
+- runFlow:
+    when: { visible: "Accesso più rapido" }
+    commands: [ { pressKey: Back } ]
+
+# Idempotent — accept splash OR an already-logged-in session as a valid state.
+- extendedWaitUntil:
+    visible: ".*(TERRIO Merchant|Today revenue|Transactions|Dashboard|Storico).*"
+    timeout: 30000
+
+# Only enter credentials if actually on the login screen.
+- runFlow:
+    when: { notVisible: "Today revenue|Transactions|Dashboard|Storico" }
+    commands:
+      - assertVisible: ".*(Merchant portal|Gestisci il tuo negozio).*"
+      - tapOn: { id: "username-input" }
+      - inputText: "dev-merchant"
+      - hideKeyboard
+      - tapOn: { id: "password-input" }
+      - inputText: "dev-pass"
+      - hideKeyboard
+      - tapOn: { id: "login-btn" }
+      - runFlow:
+          when: { visible: "Accesso più rapido" }
+          commands: [ { pressKey: Back } ]
+
+- extendedWaitUntil:
+    visible: "Home|Dashboard|Today revenue|Transactions|Storico"
+    timeout: 15000
