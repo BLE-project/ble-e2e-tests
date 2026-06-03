@@ -59,29 +59,25 @@ tags:
       id: "moderation-row"
     timeout: 15000
 
+# The moderation cards are INLINE (ModerationCard) — no detail screen. Approve is
+# a per-card action (testID moderation-approve) that opens the TOTP step-up modal
+# (TotpPromptModal). Tap the first card's approve button.
 - tapOn:
-    id: "moderation-row"
+    id: "moderation-approve"
 
 - extendedWaitUntil:
-    visible: "ANALISI AI|Claude|DESCRIZIONE"
+    visible:
+      id: "totp-prompt-modal"
     timeout: 5000
 
-# Approve (tenant override)
-- tapOn:
-    id: "btn-approve"
-
-- extendedWaitUntil:
-    visible: "Approva ADV"
-    timeout: 3000
-
-- tapOn: { id: "reason-input" }
-- inputText: "Override: caso valutato OK dopo escalation"
-
-- tapOn: { id: "totp-input" }
+- tapOn: { id: "totp-prompt-input" }
 - inputText: "123456"
+- tapOn: { id: "totp-prompt-confirm" }
 
-- tapOn: { id: "confirm-action" }
-
+# On success the host closes the modal (pendingApproveId → null) and refetches
+# the queue. The modal disappearing is the deterministic success signal
+# (e2e disables the TOTP guard, so a valid path returns 200).
 - extendedWaitUntil:
-    visible: "Approvata|Moderation"
+    notVisible:
+      id: "totp-prompt-modal"
     timeout: 10000
