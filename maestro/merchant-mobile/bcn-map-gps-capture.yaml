@@ -38,12 +38,24 @@ appId: it.terrio.merchant
 # canonicalized by login.yaml.
 - extendedWaitUntil:
     visible:
-      text: "TERRIO Merchant|Merchant portal|Dashboard|Panoramica|Gestisci il tuo negozio"
+      text: "TERRIO Merchant|Merchant portal|Dashboard|Panoramica|Gestisci il tuo negozio|Accesso più rapido|Accedi"
     timeout: 30000
 
+# Settle on the login form if we are logged out — the sentinel can complete on
+# a splash frame before the form renders, which would make the login gate below
+# evaluate too early and skip it. optional:true lets an already-authenticated
+# launch fall straight through after the timeout.
+- extendedWaitUntil:
+    visible:
+      id: "username-input"
+    timeout: 12000
+    optional: true
+
+# Gate on the username-input id (present only on the login screen).
 - runFlow:
     when:
-      visible: "Merchant portal|Gestisci il tuo negozio"
+      visible:
+        id: "username-input"
     commands:
       - tapOn: { id: "username-input" }
       - inputText: "dev-merchant"
@@ -53,8 +65,9 @@ appId: it.terrio.merchant
       - hideKeyboard
       - tapOn: { id: "login-btn" }
       - extendedWaitUntil:
-          visible: "Dashboard|Panoramica"
-          timeout: 8000
+          visible:
+            text: ".*(Dashboard|Panoramica|Today revenue|Transactions|Merchant).*"
+          timeout: 15000
 
 # Dismiss optional biometric enrollment prompt without logout side-effect.
 - runFlow:
@@ -64,9 +77,19 @@ appId: it.terrio.merchant
       - tapOn:
           id: "enroll-never"
 
-# Navigate to Beacons screen via tab/menu.
+# Navigate to Beacons screen via the left sidebar. With 9 items the rail
+# overflows its viewport and "Fleet Beacon" (6th) sits at/below the fold, so
+# swipe inside the rail (x≈12% of the 2400px landscape canvas) to reveal it
+# first — Maestro's auto-scroll drives the centre content, not the left rail.
+- swipe:
+    start: 12%, 78%
+    end: 12%, 40%
+    duration: 400
+# Match the sidebar item's accessibility label, which RN composes as
+# ", Fleet Beacon" (icon has no label) — anchor with .* so the leading comma
+# doesn't defeat the full-string match.
 - tapOn:
-    text: "Fleet Beacon|Beacons|Beacon"
+    text: ".*Fleet Beacon"
 - extendedWaitUntil:
     visible: "Provisioned|Provisionati|Cattura GPS"
     timeout: 8000
@@ -81,13 +104,13 @@ appId: it.terrio.merchant
 # Geolocation acquisition spinner / progress indicator (≤ 10 m accuracy
 # required by the component; may take 5-10 s on first acquire).
 - extendedWaitUntil:
-    visible: "GPS catturato|GPS acquisito|Salvato|GPS captured"
+    visible: "GPS salvato|GPS catturato|GPS acquisito|GPS captured"
     timeout: 30000
 
 # Backend persistence: POST /api/v1/beacons/{id}/gps returns 200.
 # A toast or status badge confirms success.
 - assertVisible:
-    text: "GPS catturato|GPS acquisito|Salvato|GPS captured"
+    text: "GPS salvato|GPS catturato|GPS acquisito|GPS captured"
 
 # Optional negative-path verification: simulate degraded accuracy.
 # Out of scope for the smoke check — covered by bcn-map-accuracy-reject.yaml

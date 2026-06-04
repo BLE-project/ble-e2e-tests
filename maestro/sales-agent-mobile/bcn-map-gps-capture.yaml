@@ -68,8 +68,8 @@ appId: it.terrio.salesagent
     text: "Cattura GPS"
 
 - extendedWaitUntil:
-    visible: "GPS catturato|GPS acquisito|Salvato|GPS captured"
+    visible: "GPS salvato|GPS catturato|GPS acquisito|GPS captured"
     timeout: 30000
 
 - assertVisible:
-    text: "GPS catturato|GPS acquisito|Salvato|GPS captured"
+    text: "GPS salvato|GPS catturato|GPS acquisito|GPS captured"
