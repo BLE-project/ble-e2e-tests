@@ -13,12 +13,29 @@ tags:
 - runFlow: _gates.yaml
 
 - extendedWaitUntil:
-    visible: "Home|Discover|Terrio"
+    visible: "Home|Discover|Terrio|Nearby|Accedi|Sign in"
     timeout: 30000
 
-# Navigate to Discover / Search (tab location may vary by branding)
-- tapOn: "Discover|Esplora|Cerca"
-- extendedWaitUntil: { visible: "Cerca|Search|merchant", timeout: 5000 }
+# Log in if on the login screen (_gates handles perms/enrolment, not login).
+- runFlow:
+    when: { visible: "Sign in|Accedi" }
+    commands:
+      - tapOn: { id: "username-input" }
+      - inputText: "dev-consumer"
+      - hideKeyboard
+      - tapOn: { id: "password-input" }
+      - inputText: "dev-pass"
+      - hideKeyboard
+      - tapOn: { id: "login-btn" }
+      # The biometric enrolment prompt ("Accesso più rapido") appears post-login.
+      - runFlow:
+          when: { visible: "Accesso più rapido" }
+          commands: [ { tapOn: "Non chiedermelo più" } ]
+      - extendedWaitUntil: { visible: "Home|Discover|Nearby", timeout: 8000 }
+
+# Navigate to the Cerca / Discover tab (testID tab-cerca; label "Cerca").
+- tapOn: { id: "tab-cerca" }
+- extendedWaitUntil: { visible: "Cerca|Search|merchant", timeout: 8000 }
 
 # Search for the seeded merchant
 - tapOn:
@@ -27,12 +44,18 @@ tags:
 - inputText:
     text: "Bar Centrale"
     optional: true
+- hideKeyboard
 
-# Tap the first merchant card — landing should open
+# Tap the merchant row — landing opens. Match the FULL seeded name ("E2E Bar
+# Centrale"): a bare "Bar Centrale" also matches the search box value above.
 - tapOn:
-    text: "Bar Centrale"
-    optional: true
+    text: "E2E Bar Centrale"
 
-- extendedWaitUntil:
-    visible: "Indicazioni|Chiama|Descrizione"
-    timeout: 10000
+# Landing opened — the CTA buttons ("🗺 Indicazioni" / "📞 Chiama") sit below the
+# cover/description, off the landscape viewport → scroll them into view.
+- scrollUntilVisible:
+    element:
+      text: ".*(Indicazioni|Chiama).*"
+    direction: DOWN
+    timeout: 12000
+    visibilityPercentage: 10
