@@ -10,7 +10,7 @@ appId: it.terrio.territory
 
 - extendedWaitUntil:
     visible:
-      text: ".*(Terrio|Territory Manager|Territori|TERRIO Territory|Accesso più rapido).*"
+      text: ".*(Terrio|Territory Manager|Territori|TERRIO Territory|Accesso più rapido|Esci).*"
     timeout: 30000
 
 # Iter29 (2026-05-06): biometric dismiss via enroll-never testID instead
@@ -27,21 +27,28 @@ appId: it.terrio.territory
           id: "enroll-never"
 
 # Login as TENANT_ADMIN so we can see the "+" FAB (create path).
-# If we came in authenticated as a different user, logout first.
+# The app persists its session across pm-clear (launches straight to the
+# territory list). Log out via the visible "Esci" text — btn-logout renders with
+# zero bounds and can't be tapped — then dismiss any post-logout biometric.
 - runFlow:
     when:
       visible: "Esci"
     commands:
-      - tapOn: { id: "btn-logout" }
+      - tapOn: "Esci"
+      - runFlow:
+          when: { visible: "Accesso più rapido" }
+          commands: [ { tapOn: { id: "enroll-never" } } ]
       - extendedWaitUntil:
           visible:
-            text: ".*(Territory Manager|TERRIO Territory|Gestisci i tuoi territori).*"
+            id: "username-input"
           timeout: 10000
 
+# Gate on the username-input id so login only fires on the login screen (the
+# "TERRIO Territory" header text also appears on the logged-in home).
 - runFlow:
     when:
       visible:
-        text: ".*(Territory Manager|TERRIO Territory|Gestisci i tuoi territori).*"
+        id: "username-input"
     commands:
       - tapOn:
           id: "username-input"
@@ -65,8 +72,11 @@ appId: it.terrio.territory
           commands:
             - tapOn:
                 id: "enroll-never"
+      # Assert btn-logout (brand-independent home marker) — the Stack title is
+      # theme.appName ?? 'Territori' and the white-label fixture overrides it.
       - extendedWaitUntil:
-          visible: "Territori"
+          visible:
+            id: "btn-logout"
           timeout: 15000
 
 # ── Stack navigation: list → new → back to list ───────────────────────────
@@ -82,8 +92,10 @@ appId: it.terrio.territory
 - tapOn:
     id: "territory-form-cancel"
 
+# Back on the home list — btn-logout marks it (header text is white-labelled).
 - extendedWaitUntil:
-    visible: "Territori"
+    visible:
+      id: "btn-logout"
     timeout: 5000
 
 # ── Pull-to-refresh: verify the list reloads cleanly ──────────────────────
@@ -91,9 +103,10 @@ appId: it.terrio.territory
 # RefreshControl handles the gesture the same way.
 - scroll
 
+# Still on the home list after the refresh gesture — btn-logout marks it.
 - extendedWaitUntil:
     visible:
-      text: "Territori|Nessun territorio"
+      id: "btn-logout"
     timeout: 5000
 
 # ── List → detail (only if there is at least one territory row) ───────────
@@ -111,6 +124,8 @@ appId: it.terrio.territory
           timeout: 8000
       # Back out of the detail screen via the stack navigator
       - back
+      # Back on the home list — btn-logout marks it (header is white-labelled).
       - extendedWaitUntil:
-          visible: "Territori"
+          visible:
+            id: "btn-logout"
           timeout: 5000
