@@ -94,7 +94,9 @@ appId: it.terrio.consumer
     commands:
       - pressKey: Back
 
-- tapOn: { id: "tab-mappa" }
+# The BLE scanner lives on the Home tab (title "Nearby"), not the Map tab —
+# tab-mappa was a drift (it leaves the Nearby screen).
+- tapOn: { id: "tab-home" }
 - extendedWaitUntil:
     visible: "Nearby"
     timeout: 5000
@@ -117,10 +119,12 @@ appId: it.terrio.consumer
       - tapOn: "Precise"
       - tapOn: "While using the app"
 
-# Confirm the scanner is running in the foreground before backgrounding.
+# Confirm the scanner is running in the foreground before backgrounding. Assert
+# the scan-status testID (the status copy carries an emoji + "(RSSI …)" suffix and
+# can sit below the fold, so the plain-text match is unreliable).
 - extendedWaitUntil:
     visible:
-      text: "Scanning for nearby beacons|Waiting for beacons|Grant permission"
+      id: "scan-status-granted"
     timeout: 15000
 
 # ── Background handoff ────────────────────────────────────────────────────
@@ -145,13 +149,19 @@ appId: it.terrio.consumer
 # existing process back to foreground.
 - launchApp
 
+# Resume re-shows the biometric enrolment prompt ("Accesso più rapido") on top of
+# the Nearby screen → dismiss it before asserting the scanner status.
+- runFlow:
+    when: { visible: "Accesso più rapido" }
+    commands: [ { tapOn: "Non chiedermelo più" } ]
+
 # Back on the Nearby screen: the banner must still be reachable. The
 # screen is still mounted, so the banner text should render as soon as
 # the AppState listener processes "active" and bleScanner.start() is
 # invoked again.
 - extendedWaitUntil:
     visible:
-      text: "Scanning for nearby beacons|Waiting for beacons|Grant permission|Nearby"
+      id: "scan-status-granted"
     timeout: 15000
 
 - assertVisible: "Nearby"
