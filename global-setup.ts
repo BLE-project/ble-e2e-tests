@@ -12,6 +12,7 @@ import { ensureTenantBeaconCrudSlotFree } from './fixtures/seed-tenant-beacon-cr
 import { ensureBudgetDegradedAdv } from './fixtures/seed-budget-degraded'
 import { ensureModerationQueue } from './fixtures/seed-moderation-queue'
 import { ensureMerchantAdvData } from './fixtures/seed-merchant-adv'
+import { ensureCustomBrandingFixtures } from './fixtures/seed-custom-branding-fixtures'
 
 const KC_URL = process.env.KC_URL ?? 'http://localhost:8180'
 
@@ -276,6 +277,16 @@ export default async function globalSetup() {
       } catch (e) {
         console.warn('[global-setup] merchant ADV seed skipped:', (e as Error).message)
       }
+    }
+
+    // Custom-branding (custom-branding.yaml): set a distinctive tenant branding
+    // (appNameOverride "E2E Brand") so the consumer Home renders the brand-tag.
+    // Best-effort; uses a fresh tenant-admin token (avoids the long-run 401).
+    try {
+      const cb = await ensureCustomBrandingFixtures()
+      console.log(`[global-setup] Custom branding: appName=${cb.branding.appNameOverride}`)
+    } catch (e) {
+      console.warn('[global-setup] custom-branding seed skipped:', (e as Error).message)
     }
 
     // Write to a temp file for cross-process sharing

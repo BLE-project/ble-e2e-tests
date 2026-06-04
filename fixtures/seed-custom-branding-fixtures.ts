@@ -44,6 +44,26 @@ import { ensureSeedData } from './seed-data'
 
 const BFF_URL = process.env.BFF_URL ?? 'http://localhost:8080'
 
+/**
+ * Mint a FRESH tenant-admin token for the branding write. ensureSeedData's token
+ * is minted once at the start of a long global-setup run and may have expired by
+ * the time this seed runs late in the chain → PUT branding then 401. A fresh
+ * login (tenant-admin is allowed on PUT /v1/tenants/{id}/branding) avoids that.
+ */
+async function freshTenantAdminToken(): Promise<{ token: string; tenantId: string }> {
+  const res = await fetch(`${BFF_URL}/api/v1/auth/login`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username: 'dev-tenant-admin', password: 'dev-pass' }),
+  })
+  if (!res.ok) throw new Error(`tenant-admin login failed: ${res.status}`)
+  const { token } = await res.json() as { token: string }
+  const c = JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString('utf8')) as
+    { ble_tenant_id?: string; tenant_id?: string }
+  const tenantId = c.ble_tenant_id ?? c.tenant_id ?? ''
+  if (!tenantId || tenantId === '*') throw new Error(`no concrete tenant_id (${tenantId})`)
+  return { token, tenantId }
+}
+
 // ── Canonical custom-branding payload ──────────────────────────────────────
 //
 // These colors are intentionally chosen to be obviously different from
@@ -85,8 +105,9 @@ let _cache: CustomBrandingFixtures | null = null
 export async function ensureCustomBrandingFixtures(): Promise<CustomBrandingFixtures> {
   if (_cache) return _cache
 
-  const base = await ensureSeedData()
-  const { token, tenantId } = base
+  // Ensure the tenant exists, but use a FRESH token for the write (see above).
+  await ensureSeedData()
+  const { token, tenantId } = await freshTenantAdminToken()
 
   const headers = {
     Authorization: `Bearer ${token}`,
