@@ -34,28 +34,27 @@ appId: it.terrio.merchant
           commands:
             - tapOn: "Consenti|Allow"
 
-# Login if not already authenticated. Reuses the testID-based login pattern
-# canonicalized by login.yaml.
+# Preamble mirrors the proven cashback-config.yaml (which passes reliably in the
+# full tally). A long settle wait here previously pushed the flow past the short
+# merchant access-token TTL → a mid-flow 401 dropped back to the login screen and
+# the sidebar nav failed. Keep it lean: sentinel → biometric dismiss → text-gated
+# login.
 - extendedWaitUntil:
     visible:
-      text: "TERRIO Merchant|Merchant portal|Dashboard|Panoramica|Gestisci il tuo negozio|Accesso più rapido|Accedi"
+      text: ".*(TERRIO Merchant|Merchant portal|Dashboard|Panoramica|Gestisci il tuo negozio|Today revenue|Transactions|Accesso più rapido).*"
     timeout: 30000
 
-# Settle on the login form if we are logged out — the sentinel can complete on
-# a splash frame before the form renders, which would make the login gate below
-# evaluate too early and skip it. optional:true lets an already-authenticated
-# launch fall straight through after the timeout.
-- extendedWaitUntil:
-    visible:
-      id: "username-input"
-    timeout: 12000
-    optional: true
-
-# Gate on the username-input id (present only on the login screen).
+# Dismiss biometric enrollment modal if it surfaced on launch.
 - runFlow:
     when:
-      visible:
-        id: "username-input"
+      visible: "Accesso più rapido"
+    commands:
+      - tapOn: { id: "enroll-never" }
+
+# Login only if the login screen is showing.
+- runFlow:
+    when:
+      visible: "Merchant portal|Gestisci il tuo negozio|Accedi"
     commands:
       - tapOn: { id: "username-input" }
       - inputText: "dev-merchant"
@@ -64,18 +63,13 @@ appId: it.terrio.merchant
       - inputText: "dev-pass"
       - hideKeyboard
       - tapOn: { id: "login-btn" }
+      - runFlow:
+          when: { visible: "Accesso più rapido" }
+          commands: [ { tapOn: { id: "enroll-never" } } ]
       - extendedWaitUntil:
           visible:
             text: ".*(Dashboard|Panoramica|Today revenue|Transactions|Merchant).*"
           timeout: 15000
-
-# Dismiss optional biometric enrollment prompt without logout side-effect.
-- runFlow:
-    when:
-      visible: "Accesso più rapido"
-    commands:
-      - tapOn:
-          id: "enroll-never"
 
 # Navigate to Beacons screen via the left sidebar. With 9 items the rail
 # overflows its viewport and "Fleet Beacon" (6th) sits at/below the fold, so
@@ -83,7 +77,7 @@ appId: it.terrio.merchant
 # first — Maestro's auto-scroll drives the centre content, not the left rail.
 - swipe:
     start: 12%, 78%
-    end: 12%, 40%
+    end: 12%, 30%
     duration: 400
 # Match the sidebar item's accessibility label, which RN composes as
 # ", Fleet Beacon" (icon has no label) — anchor with .* so the leading comma
