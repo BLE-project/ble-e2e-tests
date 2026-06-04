@@ -26,7 +26,8 @@ tags:
       - inputText: "dev-pass"
       - hideKeyboard
       - tapOn: { id: "login-btn" }
-      - extendedWaitUntil: { visible: "Home|Discover", timeout: 8000 }
+      # Post-login the consumer lands on the Home tab whose title is "Nearby".
+      - extendedWaitUntil: { visible: "Home|Discover|Nearby", timeout: 8000 }
 
 # Navigate to Profilo tab → Notifications (tabBarTestID from #78).
 - tapOn: { id: "tab-profilo" }
@@ -35,20 +36,23 @@ tags:
 - tapOn: "Notifiche|Notifications|Preferenze notifiche"
 - extendedWaitUntil: { visible: "Preferenze notifiche|Notification Preferences", timeout: 5000 }
 
-# Always-on badge visible on beacon-proximity
-- assertVisible: "Sempre attivo"
+# Always-on badge on beacon-proximity — rendered inline as
+# "Beacon in prossimità • Sempre attivo"; scroll it into view (the channel list
+# exceeds the landscape viewport). beacon-proximity is mandatory → its Switch is
+# DISABLED (not a tappable element that fires an alert). Assert it + the badge
+# WHILE the row is on-screen, before tapping cashback-credit (which scrolls away).
+- scrollUntilVisible:
+    element:
+      text: ".*Sempre attivo.*"
+    direction: DOWN
+    visibilityPercentage: 10
+- assertVisible:
+    id: "toggle-beacon-proximity"
+- assertVisible: ".*Sempre attivo.*"
 
-# Toggle cashback-credit OFF
+# Toggle cashback-credit OFF (tapOn auto-scrolls back to it)
 - tapOn:
     id: "toggle-cashback-credit"
 
 # Wait for API save (no error alert)
 - assertNotVisible: "Errore"
-
-# Attempt to toggle beacon-proximity — should show info alert
-- tapOn:
-    id: "toggle-beacon-proximity"
-
-- assertVisible:
-    text: "Sempre attivo|cannot be disabled"
-    optional: true
