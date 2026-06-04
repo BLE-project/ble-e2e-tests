@@ -14,6 +14,7 @@ import { ensureModerationQueue } from './fixtures/seed-moderation-queue'
 import { ensureMerchantAdvData } from './fixtures/seed-merchant-adv'
 import { ensureCustomBrandingFixtures } from './fixtures/seed-custom-branding-fixtures'
 import { ensureConsumerEnrollment } from './fixtures/seed-consumer-enrollment'
+import { ensureMerchantLanding } from './fixtures/seed-merchant-landing'
 
 const KC_URL = process.env.KC_URL ?? 'http://localhost:8180'
 
@@ -297,6 +298,15 @@ export default async function globalSetup() {
       console.log(`[global-setup] Consumer enrollment: tenant=${ce.tenantId} card=${ce.cardId}`)
     } catch (e) {
       console.warn('[global-setup] consumer enrollment skipped:', (e as Error).message)
+    }
+
+    // Publish a merchant "E2E Bar Centrale" so the merchant-landing flow can
+    // discover it (GET /v1/merchants/discover) and open its landing page.
+    try {
+      const ml = await ensureMerchantLanding()
+      console.log(`[global-setup] Merchant landing: ${ml.name} id=${ml.id} published=${ml.published}`)
+    } catch (e) {
+      console.warn('[global-setup] merchant-landing seed skipped:', (e as Error).message)
     }
 
     // Write to a temp file for cross-process sharing
