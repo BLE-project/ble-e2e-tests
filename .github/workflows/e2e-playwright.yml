@@ -39,13 +39,15 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Checkout terrio-e2e-compose
-        # GH_PAT is required for private repos; falls back to github.token for public ones.
-        # Set GH_PAT secret (repo-scoped PAT) in GitHub repo settings to enable this.
+        # Cross-org private checkout: github.token cannot read other private repos
+        # (→ 404, the chronic e2e-check failure). Reuse GH_PAT_MOBILE_READ — the
+        # org-read PAT already used by mobile-build.yml to check out the 5
+        # ble-*-mobile repos — falling back to GH_PAT then github.token.
         uses: actions/checkout@v4
         with:
           repository: BLE-project/ble-e2e-compose
           path: e2e-compose
-          token: ${{ secrets.GH_PAT || github.token }}
+          token: ${{ secrets.GH_PAT_MOBILE_READ || secrets.GH_PAT || github.token }}
 
       - name: Set up Node
         uses: actions/setup-node@v4
