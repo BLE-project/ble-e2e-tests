@@ -13,6 +13,7 @@ import { ensureBudgetDegradedAdv } from './fixtures/seed-budget-degraded'
 import { ensureModerationQueue } from './fixtures/seed-moderation-queue'
 import { ensureMerchantAdvData } from './fixtures/seed-merchant-adv'
 import { ensureCustomBrandingFixtures } from './fixtures/seed-custom-branding-fixtures'
+import { ensureConsumerEnrollment } from './fixtures/seed-consumer-enrollment'
 
 const KC_URL = process.env.KC_URL ?? 'http://localhost:8180'
 
@@ -287,6 +288,15 @@ export default async function globalSetup() {
       console.log(`[global-setup] Custom branding: appName=${cb.branding.appNameOverride}`)
     } catch (e) {
       console.warn('[global-setup] custom-branding seed skipped:', (e as Error).message)
+    }
+
+    // Enroll dev-consumer in the tenant (loyalty card + active context) so the
+    // consumer brand resolves the tenant → custom-branding brand-tag renders.
+    try {
+      const ce = await ensureConsumerEnrollment()
+      console.log(`[global-setup] Consumer enrollment: tenant=${ce.tenantId} card=${ce.cardId}`)
+    } catch (e) {
+      console.warn('[global-setup] consumer enrollment skipped:', (e as Error).message)
     }
 
     // Write to a temp file for cross-process sharing
