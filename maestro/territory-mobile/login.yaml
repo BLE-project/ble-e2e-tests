@@ -24,20 +24,38 @@ appId: it.terrio.territory
           commands:
             - tapOn: "Consenti|Allow"
 
+# Sentinel INCLUDES "Accesso più rapido" — on a cold launch the biometric
+# enrollment modal covers the screen first; its own text mentions "TERRIO
+# Territory", so we must treat the modal as a valid "reached" state too.
 - extendedWaitUntil:
     visible:
-      text: ".*(Terrio|Territory Manager|Territori|TERRIO Territory).*"
+      text: ".*(Terrio|Territory Manager|Territori|TERRIO Territory|Accesso più rapido|Esci).*"
     timeout: 30000
 
-# If a previous flow left the app authenticated, logout first so we land
-# on the login screen for this smoke test.
+# Dismiss the launch biometric modal FIRST so the home (with its "Esci" button)
+# is revealed before the logout block runs — otherwise "Esci" stays covered and
+# the logout silently skips, leaving us authenticated on a flow that needs the
+# login screen.
+- runFlow:
+    when:
+      visible: "Accesso più rapido"
+    commands:
+      - tapOn: { id: "enroll-never" }
+
+# pm clear is denied on this unrooted device, so the app always launches
+# authenticated. Log out via the "Esci" button (the FlatList now has flex:1 so
+# the button is on-screen and tappable) and dismiss any post-logout biometric.
 - runFlow:
     when:
       visible: "Esci"
     commands:
-      - tapOn: { id: "btn-logout" }
+      - tapOn: "Esci"
+      - runFlow:
+          when: { visible: "Accesso più rapido" }
+          commands: [ { tapOn: { id: "enroll-never" } } ]
       - extendedWaitUntil:
-          visible: "Territory Manager"
+          visible:
+            id: "username-input"
           timeout: 10000
 
 - assertVisible: ".*(Territory Manager|TERRIO Territory|Gestisci i tuoi territori).*"
@@ -80,8 +98,12 @@ appId: it.terrio.territory
     commands:
       - pressKey: Back
 
-# After login the territory-list screen renders; the header reads "Territori"
-# via the Stack screenOptions. 15s allows for Keycloak token exchange latency.
+# After login the territory-list screen renders. Assert on the btn-logout
+# testID (always present on the home) rather than the header text: the Stack
+# title is theme.appName ?? 'Territori', and the tenant white-label fixture
+# overrides it to the brand name ("E2E Brand"), so "Territori" never matches.
+# 15s allows for Keycloak token exchange latency.
 - extendedWaitUntil:
-    visible: ".*(Territori|Errore nel caricamento).*"
+    visible:
+      id: "btn-logout"
     timeout: 15000

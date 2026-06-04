@@ -28,7 +28,7 @@ appId: it.terrio.territory
 # Wrapped in .*(...).* so substring matches the full element text.
 - extendedWaitUntil:
     visible:
-      text: ".*(Terrio|Territory Manager|Territori|TERRIO Territory|Accesso più rapido).*"
+      text: ".*(Terrio|Territory Manager|Territori|TERRIO Territory|Accesso più rapido|Esci).*"
     timeout: 30000
 
 # Dismiss biometric enrollment via the enroll-never testID — NOT pressKey:Back,
@@ -41,19 +41,29 @@ appId: it.terrio.territory
 
 # If a previous flow left the app authenticated as a different user, logout
 # first so the assertion below runs against dev-territory-admin (no "+" FAB).
+# The app persists its session across pm-clear (launches straight to the
+# territory list). Log out via the visible "Esci" text — btn-logout renders with
+# zero bounds and can't be tapped — then dismiss any post-logout biometric.
 - runFlow:
     when:
       visible: "Esci"
     commands:
-      - tapOn: { id: "btn-logout" }
+      - tapOn: "Esci"
+      - runFlow:
+          when: { visible: "Accesso più rapido" }
+          commands: [ { tapOn: { id: "enroll-never" } } ]
       - extendedWaitUntil:
-          visible: ".*(Territory Manager|TERRIO Territory).*"
+          visible:
+            id: "username-input"
           timeout: 10000
 
-# Login as dev-territory-admin (restricted role, no create permission).
+# Login as dev-territory-admin (restricted role, no create permission). Gate on
+# the username-input id so it only fires on the login screen (the "TERRIO
+# Territory" header text also appears on the logged-in home).
 - runFlow:
     when:
-      visible: "Territory Manager|TERRIO Territory|Accedi"
+      visible:
+        id: "username-input"
     commands:
       - tapOn:
           id: "username-input"
@@ -76,7 +86,8 @@ appId: it.terrio.territory
           commands:
             - pressKey: Back
       - extendedWaitUntil:
-          visible: ".*(Territori|Errore nel caricamento).*"
+          visible:
+            id: "btn-logout"
           timeout: 15000
 
 # Clipboard suggestion panel hiding the list — dismiss if present.
@@ -87,11 +98,12 @@ appId: it.terrio.territory
       - pressKey: Back
 
 # The list is populated by the seed data in terrio-e2e-compose: the
-# acceptance criterion is that we reach the screen with at least the empty
-# state rendered. The FAB is only rendered when the caller is
-# TENANT_ADMIN / SUPER_ADMIN — dev-territory-admin does NOT see it.
+# acceptance criterion is that we reach the home (btn-logout present — a
+# brand-independent marker; the header text is white-labelled). The FAB is
+# only rendered when the caller is TENANT_ADMIN / SUPER_ADMIN —
+# dev-territory-admin does NOT see it.
 - assertVisible:
-    text: "Territori|Nessun territorio"
+    id: "btn-logout"
 
 - assertNotVisible:
     id: "territory-list-new"
