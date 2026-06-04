@@ -53,6 +53,12 @@ appId: it.terrio.tenant
     timeout: 5000
 
 # ── CREATE phase ─────────────────────────────────────────────────────────────
+# Randomise the beacon identity per run. The V36 partial-unique index rejects a
+# duplicate (uuid, major, minor); the flow used to hard-code minor=1, so the
+# create 400'd ('Failed to create beacon') on every run after the first. A random
+# minor (BLE uint16 range) keeps each run's identity — and its label — unique.
+- evalScript: ${output.minor = Math.floor(Math.random() * 60000 + 1001)}
+
 # Open create modal. testID convention: `btn-add-beacon`.
 - tapOn:
     text: "\\+ Add|Aggiungi|\\+ Aggiungi"
@@ -78,14 +84,14 @@ appId: it.terrio.tenant
 - tapOn:
     id: "beacon-form-minor"
 - eraseText: 6
-- inputText: "1"
+- inputText: ${output.minor}
 - hideKeyboard
 
 # The create form has no 'name' field — the optional 'Label' input is the
 # closest (testID beacon-form-label). The beacon's display name = label.
 - tapOn:
     id: "beacon-form-label"
-- inputText: "Maestro-CRUD-test-beacon"
+- inputText: "Maestro-CRUD-${output.minor}"
 - hideKeyboard
 
 # territoryId is required (FK) — empty string → BFF 400. Fill with the E2E Dev
@@ -109,7 +115,7 @@ appId: it.terrio.tenant
     timeout: 10000
 - scrollUntilVisible:
     element:
-      text: "Maestro-CRUD-test-beacon"
+      text: "Maestro-CRUD-${output.minor}"
     direction: DOWN
     timeout: 15000
 
