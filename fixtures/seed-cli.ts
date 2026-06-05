@@ -18,6 +18,8 @@ import { ensureBudgetDegradedAdv } from './seed-budget-degraded'
 import { ensureModerationQueue } from './seed-moderation-queue'
 import { ensureMerchantAdvData } from './seed-merchant-adv'
 import { ensureTenantBeaconCrudSlotFree } from './seed-tenant-beacon-crud'
+import { ensureConsumerEnrollment } from './seed-consumer-enrollment'
+import { ensureCustomBrandingFixtures } from './seed-custom-branding-fixtures'
 
 const GROUPS: Record<string, () => Promise<void>> = {
   moderation: async () => {
@@ -34,6 +36,15 @@ const GROUPS: Record<string, () => Promise<void>> = {
   'tenant-beacon': async () => {
     const freed = await ensureTenantBeaconCrudSlotFree()
     console.log(`[seed-cli] tenant beacon slot freed: ${freed}`)
+  },
+  // custom-branding renders the brand-tag only when the consumer has an active
+  // tenant context (loyalty card + PUT /context) AND the tenant has a custom
+  // appNameOverride. Both are mutable shared state, so refresh them before the
+  // flow runs.
+  'consumer-branding': async () => {
+    await ensureConsumerEnrollment()
+    const cb = await ensureCustomBrandingFixtures()
+    console.log(`[seed-cli] consumer enrolled + branding: appName=${cb.branding.appNameOverride}`)
   },
 }
 
