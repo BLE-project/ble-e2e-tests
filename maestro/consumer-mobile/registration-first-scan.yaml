@@ -69,6 +69,27 @@ appId: it.terrio.consumer
           commands:
             - pressKey: Back
 
+# Sequential-suite isolation: pm clear is DENIED on this unrooted device
+# (CLEAR_APP_USER_DATA SecurityException), so a prior flow in the same batch may
+# have left the consumer authenticated — there would be no login screen and the
+# login-btn wait below would time out. If we're not already on the login screen,
+# log out via the Home tab "Sign out" button (the consumer logout path) to reach
+# it. On a genuine cold/logged-out launch login-btn is present → this is a no-op.
+- runFlow:
+    when:
+      notVisible:
+        id: "login-btn"
+    commands:
+      - runFlow:
+          when: { visible: { id: "tab-home" } }
+          commands: [ { tapOn: { id: "tab-home" } } ]
+      - runFlow:
+          when: { visible: "Sign out" }
+          commands: [ { tapOn: "Sign out" } ]
+      - runFlow:
+          when: { visible: "Accesso più rapido" }
+          commands: [ { tapOn: { id: "enroll-never" } } ]
+
 # 1. Login screen — wait for the stable login testIDs to be visible.
 # FU-52 (2026-05-18): anchor on `login-btn` + `signup-link` testIDs instead
 # of the "Accedi|Sign in" / "Discover nearby offers" literals (FU-38 brand

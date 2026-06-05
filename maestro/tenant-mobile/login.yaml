@@ -22,6 +22,31 @@ appId: it.terrio.tenant
           commands:
             - tapOn: "Consenti|Allow"
 
+# Sequential-suite isolation: pm clear is DENIED on this unrooted device
+# (CLEAR_APP_USER_DATA SecurityException), so a prior flow may have left the
+# tenant authenticated — the app would boot straight to Home and the
+# username-input tap below would fail. Dismiss any launch biometric, then if
+# we're not on the login screen log out via Settings → "Sign out" to reach it.
+- runFlow:
+    when:
+      visible: "Accesso più rapido"
+    commands: [ { pressKey: Back } ]
+- runFlow:
+    when:
+      notVisible:
+        id: "username-input"
+    commands:
+      - runFlow:
+          when: { visible: ".*, Impostazioni" }
+          commands: [ { tapOn: { text: ".*, Impostazioni" } } ]
+      - runFlow:
+          when: { visible: "Sign out" }
+          commands: [ { tapOn: "Sign out" } ]
+      - extendedWaitUntil:
+          visible:
+            id: "username-input"
+          timeout: 10000
+
 # Wait for the login screen — accept the i18n header ("TERRIO Tenant") and the
 # legacy/subtitle variants so the flow does not rot on copy changes.
 - extendedWaitUntil:
