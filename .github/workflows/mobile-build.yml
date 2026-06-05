@@ -89,40 +89,97 @@ jobs:
           path: app/android/app/build/outputs/apk/debug/app-debug.apk
           retention-days: 30
 
+  # Deterministic Maestro suite (the _retally_full / FU-TI-1..4 logic):
+  #   FU-TI-1   realm-ble.json token TTL is baked into the compose stack
+  #   FU-TI-2/4 per-flow re-seed via fixtures/seed-cli.ts (run-maestro-suite.sh)
+  #   FU-TI-3   per-flow `pm clear` isolation (emulator shell holds the perm)
+  # Needs the e2e-compose backend stack, so it mirrors e2e-playwright's PAT-gated
+  # checkout: with no ble-e2e-compose read access the suite is skipped (notice,
+  # not failure) instead of running blind against no backend.
   maestro:
     needs: build
     runs-on: ubuntu-latest
     if: github.event_name == 'push'
+    env:
+      BFF_URL: http://localhost:8080
+      KC_URL:  http://localhost:8180
     steps:
       - uses: actions/checkout@v4
 
+      - name: Checkout terrio-e2e-compose
+        id: compose
+        continue-on-error: true
+        uses: actions/checkout@v4
+        with:
+          repository: BLE-project/ble-e2e-compose
+          path: e2e-compose
+          token: ${{ secrets.GH_PAT }}
+
+      - name: Skip notice (no compose access)
+        if: steps.compose.outcome != 'success'
+        run: echo "::notice title=maestro skipped::ble-e2e-compose checkout failed (no PAT with read access). The Maestro suite needs the backend stack; skipping. Set a GH_PAT with ble-e2e-compose read access to enable it."
+
+      - name: Set up Node
+        if: steps.compose.outcome == 'success'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+
+      - name: Install deps (seed-cli / tsx)
+        if: steps.compose.outcome == 'success'
+        run: npm ci
+
       - name: Download all APK artifacts
+        if: steps.compose.outcome == 'success'
         uses: actions/download-artifact@v4
         with:
           path: apks
 
       - name: Install Maestro
+        if: steps.compose.outcome == 'success'
         run: |
           curl -Ls "https://get.maestro.mobile.dev" | bash
           echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
 
+      - name: Bring up E2E stack (docker compose)
+        if: steps.compose.outcome == 'success'
+        working-directory: e2e-compose
+        run: |
+          docker compose up -d --wait --wait-timeout 300
+          docker compose ps
+
+      - name: Base seed (tenant + territory + KC claims + fixtures)
+        if: steps.compose.outcome == 'success'
+        run: npx tsx fixtures/seed-all.ts
+
       - name: Enable KVM
+        if: steps.compose.outcome == 'success'
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
-      - name: Run Maestro smoke
+      - name: Run Maestro suite (deterministic, FU-TI-1..4)
+        if: steps.compose.outcome == 'success'
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 34
           target: google_apis
           arch: x86_64
           script: |
+            # APKs talk to the gateway on localhost:8080 / KC :8180 — map those
+            # emulator ports back to the host compose stack.
+            adb reverse tcp:8080 tcp:8080
+            adb reverse tcp:8180 tcp:8180
             for app in consumer merchant tenant sales-agent territory; do
               apk=$(find apks -name "ble-${app}-dev.apk" | head -1)
-              if [ -f "$apk" ]; then
-                adb install -r "$apk"
-                maestro test maestro/${app}-mobile/ --flatten-debug-output || true
-              fi
+              [ -f "$apk" ] && adb install -r "$apk"
             done
+            DEVICE=emulator-5554 BFF_URL=http://localhost:8080 bash scripts/run-maestro-suite.sh
+
+      - name: Tear down stack
+        if: always() && steps.compose.outcome == 'success'
+        working-directory: e2e-compose
+        run: docker compose down --volumes --remove-orphans
