@@ -31,19 +31,10 @@ export function loadSeedDataSync(): SeedData | null {
 }
 
 /**
- * Get or create seed tenant + territory. Results are cached for the process lifetime.
+ * Mint a fresh SUPER_ADMIN access token. Kept separate so the file-cache path
+ * can refresh a stale token without re-resolving the tenant/territory.
  */
-export async function ensureSeedData(): Promise<SeedData> {
-  if (_cache) return _cache
-
-  // Try to load from file first (written by global-setup)
-  const fromFile = loadSeedDataSync()
-  if (fromFile) {
-    _cache = fromFile
-    return _cache
-  }
-
-  // 1. Login as SUPER_ADMIN
+async function mintAdminToken(): Promise<string> {
   const loginRes = await fetch(`${BFF_URL}/api/v1/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -61,7 +52,28 @@ export async function ensureSeedData(): Promise<SeedData> {
       + `user=${ADMIN_USER}\n  body=${body.substring(0, 300)}${hint}`,
     )
   }
-  const { token } = await loginRes.json() as { token: string }
+  return (await loginRes.json() as { token: string }).token
+}
+
+/**
+ * Get or create seed tenant + territory. Results are cached for the process lifetime.
+ */
+export async function ensureSeedData(): Promise<SeedData> {
+  if (_cache) return _cache
+
+  // Try to load from file first (written by global-setup). The file persists
+  // across `docker compose down -v`, so its token is from a prior process and
+  // may have expired — re-mint a fresh one while reusing the (deterministic)
+  // tenant/territory ids, or every super-admin seed op 401s on a fresh DB.
+  const fromFile = loadSeedDataSync()
+  if (fromFile) {
+    fromFile.token = await mintAdminToken()
+    _cache = fromFile
+    return _cache
+  }
+
+  // 1. Login as SUPER_ADMIN
+  const token = await mintAdminToken()
 
   const headers = {
     'Authorization': `Bearer ${token}`,
