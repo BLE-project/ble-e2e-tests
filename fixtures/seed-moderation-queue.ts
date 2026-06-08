@@ -48,6 +48,18 @@ async function loginTenantAdmin(): Promise<{ token: string; tenantId: string }> 
   return { token, tenantId }
 }
 
+// The escalate action is @RolesAllowed(SALES_AGENT) — tenant-admin can't call it,
+// so mint a sales-agent token for the explicit escalation step.
+async function loginSalesAgent(): Promise<string> {
+  const res = await fetch(`${BFF_URL}/api/v1/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username: 'dev-sales-agent', password: TENANT_ADMIN_PASS }),
+  })
+  if (!res.ok) throw new Error(`sales-agent login failed: ${res.status} ${await res.text()}`)
+  return ((await res.json()) as { token: string }).token
+}
+
 export interface ModerationSeedAdv {
   title: string
   description: string
@@ -233,31 +245,43 @@ export async function ensureModerationQueue(): Promise<ModerationQueueResult> {
     await submitFresh(PENDING_TEMPLATE, title)
     submittedTitles.push(title)
   }
+  const escalateAdvIds: string[] = []
   for (let i = countStatus(q, 'ESCALATED_TO_ADMIN'); i < TARGET_ESCALATED; i++) {
     const title = `${ESCALATED_TEMPLATE.title} #${runToken}-e${i}`
-    await submitFresh(ESCALATED_TEMPLATE, title)
+    escalateAdvIds.push(await submitFresh(ESCALATED_TEMPLATE, title))
     submittedTitles.push(title)
   }
 
-  // Wait for the Claude wiremock + workflow to settle the new ADVs into the
-  // queue so the suite finds actionable rows immediately. Best-effort: if the
-  // escalation path is slow we still proceed (PENDING_HUMAN target is the
-  // critical one for the sales-agent flows).
+  // Wait for the Claude wiremock + workflow to settle the new ADVs into
+  // PENDING_HUMAN so they are actionable.
   if (submittedTitles.length > 0) {
-    const settled = await pollUntil(async () => {
-      const cur = await reviewQueue()
-      return countStatus(cur, 'PENDING_HUMAN') >= TARGET_PENDING_HUMAN
-          && countStatus(cur, 'ESCALATED_TO_ADMIN') >= TARGET_ESCALATED
-    })
-    q = await reviewQueue()
+    const settled = await pollUntil(async () =>
+      countStatus(await reviewQueue(), 'PENDING_HUMAN') >= TARGET_PENDING_HUMAN)
     if (!settled) {
-      console.warn(
-        `[seed-moderation-queue] queue not fully settled after poll: ` +
-        `pending_human=${countStatus(q, 'PENDING_HUMAN')}/${TARGET_PENDING_HUMAN} ` +
-        `escalated=${countStatus(q, 'ESCALATED_TO_ADMIN')}/${TARGET_ESCALATED}`,
-      )
+      console.warn('[seed-moderation-queue] pending_human did not reach target after poll')
     }
   }
+
+  // The Claude wiremock returns MEDIUM for every ADV, so nothing auto-escalates.
+  // Drive the escalate-template ADVs to ESCALATED_TO_ADMIN explicitly via the
+  // SALES_AGENT escalate action so the tenant-review flow always has rows.
+  if (escalateAdvIds.length > 0) {
+    const saToken = await loginSalesAgent()
+    const saHeaders = {
+      Authorization: `Bearer ${saToken}`, 'Content-Type': 'application/json', 'X-Tenant-Id': tenantId,
+    }
+    for (const advId of escalateAdvIds) {
+      await pollUntil(async () =>
+        (await reviewQueue()).some((r) => r.advId === advId && r.moderationStatus === 'PENDING_HUMAN'),
+        20_000)
+      const esc = await fetch(`${BFF_URL}/api/v1/moderation/reviews/${advId}/escalate`, {
+        method: 'POST', headers: saHeaders,
+        body: JSON.stringify({ reason: 'e2e-seed: ensure ESCALATED_TO_ADMIN rows for tenant-review' }),
+      })
+      if (!esc.ok) console.warn(`[seed-moderation-queue] escalate ${advId}: ${esc.status} ${await esc.text()}`)
+    }
+  }
+  q = await reviewQueue()
 
   const results: ModerationQueueResult['advs'] = q.map((a) => ({
     title: a.title,
