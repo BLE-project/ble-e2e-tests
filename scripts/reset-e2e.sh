@@ -21,7 +21,27 @@ rm -f "$ROOT/test-results/.seed-data.json"
 
 echo "==> docker compose up -d --wait"
 ( cd "$COMPOSE_DIR" && docker compose up -d --wait --wait-timeout 300 ) || \
-  echo "::warning:: compose --wait timed out on a non-critical service; continuing (the seed verifies BFF/KC/core-registry)."
+  echo "::warning:: compose --wait timed out on a service; gating on critical-service readiness before seed."
+
+# Gate the seed on the CRITICAL services being actually ready before running it.
+# The base seed's merchant chain (ensureBeaconFirstConfig → budget-degraded →
+# moderation → merchant-adv → branding → landing) runs ONCE and silently no-ops
+# against a half-ready stack. Regression 2026-06-08: `up --wait` timed out, the
+# seed ran cold, no merchant was created → every merchant-dependent Maestro flow
+# failed (20/39 false-negative). Re-running on a warm stack gave 39/39. Poll BFF
+# + Keycloak until UP so the seed never runs against a cold stack again.
+KC_URL="${KC_URL:-http://localhost:8180}"
+echo "==> wait for critical services (BFF + Keycloak) ready"
+ready=0
+for i in $(seq 1 60); do
+  bff_ok=$(curl -fsS -o /dev/null -w '%{http_code}' "$BFF_URL/q/health/ready" 2>/dev/null || echo 000)
+  kc_ok=$(curl -fsS -o /dev/null -w '%{http_code}' "$KC_URL/realms/master/.well-known/openid-configuration" 2>/dev/null || echo 000)
+  if [ "$bff_ok" = "200" ] && [ "$kc_ok" = "200" ]; then
+    ready=1; echo "    ready after ${i} check(s) (BFF=$bff_ok KC=$kc_ok)"; break
+  fi
+  sleep 5
+done
+[ "$ready" = "1" ] || { echo "::error:: critical services not ready after 300s (BFF=${bff_ok:-?} KC=${kc_ok:-?}) — aborting to avoid a partial seed"; exit 1; }
 
 echo "==> base seed (fixtures/seed-all.ts)"
 ( cd "$ROOT" && BFF_URL="$BFF_URL" npx tsx fixtures/seed-all.ts )
