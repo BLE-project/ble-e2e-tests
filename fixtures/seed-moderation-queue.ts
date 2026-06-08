@@ -240,6 +240,23 @@ export async function ensureModerationQueue(): Promise<ModerationQueueResult> {
   let q = await reviewQueue()
   const submittedTitles: string[] = []
 
+  // FU-TI-2: cap the SHARED review queue. Top-up never drains, so repeated
+  // re-seeds within a long session bloat it (dozens of rows) until the
+  // budget-degraded ADV is buried beyond the flow's scroll budget. Reject the
+  // excess PENDING_HUMAN beyond a buffer — but never the budget-degraded
+  // no-verdict ADV (a sibling flow scrolls to it by title).
+  const PENDING_CAP = TARGET_PENDING_HUMAN * 3
+  const drainable = q.filter((r) => r.moderationStatus === 'PENDING_HUMAN'
+    && r.title !== 'E2E-BUDGET no-verdict ADV')
+  for (const row of drainable.slice(0, Math.max(0, drainable.length - PENDING_CAP))) {
+    const r = await fetch(`${BFF_URL}/api/v1/moderation/reviews/${row.advId}/reject`, {
+      method: 'POST', headers,
+      body: JSON.stringify({ reason: 'e2e-seed: drain excess queue rows to cap bloat' }),
+    })
+    if (!r.ok) console.warn(`[seed-moderation-queue] drain reject ${row.advId}: ${r.status}`)
+  }
+  q = await reviewQueue()
+
   for (let i = countStatus(q, 'PENDING_HUMAN'); i < TARGET_PENDING_HUMAN; i++) {
     const title = `${PENDING_TEMPLATE.title} #${runToken}-${i}`
     await submitFresh(PENDING_TEMPLATE, title)
