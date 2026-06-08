@@ -67,9 +67,32 @@ appId: it.terrio.salesagent
 - tapOn:
     text: "Cattura GPS"
 
+# A clean-install APK has no location permission, so the first capture triggers
+# the Android location dialog. On this OnePlus (OxygenOS) tablet-landscape build
+# the dialog shows the precise/approx accuracy radios but renders the grant
+# buttons BELOW the fold — swipe the dialog up to reveal "Mentre usi l'app",
+# then grant. On a device that already holds the permission this whole block is
+# a no-op (the dialog gate is false).
+# The dialog appears ASYNC after the tap — wait for it (optional, so a
+# pre-granted device falls straight through) before the gate evaluates.
+- extendedWaitUntil:
+    visible: ".*(accedere alla posizione|Consentire all'app|location).*"
+    timeout: 12000
+    optional: true
+- runFlow:
+    when: { visible: ".*(accedere alla posizione|Consentire all'app|location).*" }
+    commands:
+      - runFlow:
+          when: { visible: "Esatta|Precise|Precisa" }
+          commands: [ { tapOn: "Esatta|Precise|Precisa" } ]
+      - swipe: { start: "52%, 88%", end: "52%, 38%", duration: 300 }
+      - runFlow:
+          when: { visible: "Mentre usi l'app|While using the app|Solo questa volta|Only this time|Consenti|Allow" }
+          commands: [ { tapOn: "Mentre usi l'app|While using the app|Solo questa volta|Only this time|Consenti|Allow" } ]
+
 - extendedWaitUntil:
     visible: "GPS salvato|GPS catturato|GPS acquisito|GPS captured"
-    timeout: 30000
+    timeout: 60000
 
 - assertVisible:
     text: "GPS salvato|GPS catturato|GPS acquisito|GPS captured"
