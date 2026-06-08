@@ -49,11 +49,14 @@ tags:
 # forced to 100% via POST /v1/adv/budget) so it skipped Claude → no verdict.
 # It is the newest → last in the queue (ordered by salesReviewExpiresAt), so the
 # approve/reject flows (which tap the first row) hit a verdict ADV instead.
+# 30 s scroll budget: the shared review queue can hold dozens of rows after a
+# full suite's worth of top-ups, and the budget-degraded ADV sits at the very
+# bottom (newest by salesReviewExpiresAt).
 - scrollUntilVisible:
     element:
       text: "E2E-BUDGET no-verdict ADV"
     direction: DOWN
-    timeout: 15000
+    timeout: 30000
 - tapOn:
     text: "E2E-BUDGET no-verdict ADV"
 
