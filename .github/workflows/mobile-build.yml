@@ -22,6 +22,9 @@ on:
           - sales-agent
           - territory
 
+permissions:
+  contents: read
+
 jobs:
   build:
     strategy:
