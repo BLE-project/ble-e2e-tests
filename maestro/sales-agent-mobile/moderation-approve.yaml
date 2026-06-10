@@ -53,9 +53,18 @@ tags:
       id: "moderation-row"
     timeout: 20000
 
-# Tap first moderation row
+# Tap a VERDICT-bearing row by seed title (E2E-MOD-01 template — submitted with
+# budget NORMAL, so it carries a Claude verdict and the detail shows ANALISI AI).
+# A blind first-row tap is order-dependent: when the base seed creates the
+# budget-degraded no-verdict ADV BEFORE the queue top-up, that ADV has the
+# soonest salesReviewExpiresAt and sorts FIRST — its detail has no ANALISI AI.
+- scrollUntilVisible:
+    element:
+      text: "E2E-MOD-01.*"
+    direction: DOWN
+    timeout: 30000
 - tapOn:
-    id: "moderation-row"
+    text: "E2E-MOD-01.*"
 
 - extendedWaitUntil:
     visible: "ANALISI AI"
