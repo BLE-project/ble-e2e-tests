@@ -65,8 +65,14 @@ export async function loginViaApi(
   const token: string = body.token
 
   await page.goto(baseUrl)
+  // Write BOTH storages: admin-web hardened its token store to sessionStorage
+  // (SEC-004) while other SPAs still read localStorage — seed both so the fixture
+  // works regardless of the app's storage strategy.
   await page.evaluate(
-    ([key, tkn]) => localStorage.setItem(key, tkn),
+    ([key, tkn]) => {
+      localStorage.setItem(key, tkn)
+      sessionStorage.setItem(key, tkn)
+    },
     [storageKey, token],
   )
 
