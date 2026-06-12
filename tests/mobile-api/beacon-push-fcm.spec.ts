@@ -376,6 +376,43 @@ test.describe.serial('Beacon → FCM push pipeline (WireMock stub)', () => {
     expect(payload.message.android?.priority).toBe('HIGH')
   })
 
+  test('Step 2b: GAP-025 — the delivered push persists to the consumer inbox + mark-read round-trip', async ({ request }) => {
+    // Step 2 delivered a PUSH for (tenantA, consumerId); DispatchOrchestrator.persistInbox
+    // writes one inbox row per delivered PUSH. This is the second half of GAP-025 that
+    // used to be uncovered: persist → GET (via BFF → notification-service) → mark-read → GET.
+    // Tolerates both payload shapes ({ notifications } envelope or a bare [] legacy body).
+    const rowsOf = (b: unknown): Array<Record<string, unknown>> =>
+      Array.isArray(b) ? b : ((b as { notifications?: unknown[] })?.notifications as never) ?? []
+
+    const listRes = await request.get(`${BFF}/bff/v1/consumer/notifications`, {
+      headers: hdrs(consumerToken, tenantA),
+    })
+    expect(listRes.status(), `inbox GET failed: ${listRes.status()}`).toBe(200)
+    const rows = rowsOf(await listRes.json())
+    expect(rows.length, 'a delivered PUSH must persist an inbox row (GAP-025)').toBeGreaterThan(0)
+
+    const row = rows[0]
+    const id = String(row.id)
+    expect(id, 'inbox row must carry an id').toBeTruthy()
+    expect(String(row.title ?? '').length, 'inbox row must carry a title').toBeGreaterThan(0)
+    expect(row.readAt ?? null, 'a fresh inbox row must be unread').toBeNull()
+
+    // mark it read — the BFF exposes PUT and translates it to the backend POST .../read
+    const markRes = await request.put(`${BFF}/bff/v1/consumer/notifications/${id}/read`, {
+      headers: hdrs(consumerToken, tenantA),
+    })
+    expect([200, 204], `mark-read failed: ${markRes.status()}`).toContain(markRes.status())
+
+    // GET again → the same row now reports a non-null readAt
+    const afterRes = await request.get(`${BFF}/bff/v1/consumer/notifications`, {
+      headers: hdrs(consumerToken, tenantA),
+    })
+    expect(afterRes.status()).toBe(200)
+    const marked = rowsOf(await afterRes.json()).find((n) => String(n.id) === id)
+    expect(marked, 'the row must still be present after mark-read').toBeTruthy()
+    expect(marked?.readAt ?? null, 'readAt must be set after mark-read').not.toBeNull()
+  })
+
   test('Step 3: cross-tenant — event under tenant B must NOT push tenant-A token', async ({ request }) => {
     // Utente CONSUMER con claim tenant_id = TENANT_B (ingestion risolve il
     // tenant SOLO dal claim): stesso consumerId nel body, tenant diverso.
