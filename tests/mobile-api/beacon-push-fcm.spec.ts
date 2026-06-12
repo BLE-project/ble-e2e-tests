@@ -19,6 +19,10 @@
  *     FCM_PROJECT_ID=terrio-e2e, FCM_API_BASE_URL=http://wiremock:8091,
  *     FCM_SERVICE_ACCOUNT_JSON=/run/secrets/fake-fcm-sa.json (make fcm-sa)
  *   - event-ingestion / stream-processing con TERRIO_CONSUMER_ID_MASTER_SALT
+ *   - ble-notification-service#93: CONSENT_CHECK_ENABLED=true (fail-closed
+ *     SEC-011) + CONSENT_S2S_CLIENT_SECRET — il gate consenso MARKETING è
+ *     ATTIVO: lo spec concede il consenso in setup (obbligatorio per l'happy
+ *     path) e lo Step 4 esercita revoca → nessun push → ri-concessione → push.
  *
  * NOTA consumerId: il device token è registrato dal BFF con il principal name
  * del JWT (preferred_username, es. "dev-consumer"); l'EnrichedEvent porta il
@@ -112,6 +116,51 @@ async function waitForFcmSend(
     if (Date.now() > deadline) return []
     await new Promise(r => setTimeout(r, 3000))
   }
+}
+
+/**
+ * ble-notification-service#93 — consenso MARKETING del consumer.
+ *
+ * Il BFF proxa /api/v1/consents* su identity-access (TransparentProxyResource).
+ * L'upsert è idempotente sulla chiave (consumerId, tenant, type, version):
+ * ri-concedere dopo una revoca riattiva lo stesso record (revokedAt → null).
+ * DispatchOrchestrator interroga GET /v1/consents/{consumerId} via il service
+ * account S2S CONSENT_READ con X-Tenant-Id = tenant dell'evento, quindi il
+ * record va scritto per (consumerId del payload evento, tenantA).
+ */
+const CONSENT_VERSION = 'v1.0'
+
+async function upsertMarketingConsent(
+  request: APIRequestContext, token: string, tenant: string,
+  consumer: string, granted: boolean,
+): Promise<void> {
+  const res = await request.post(`${BFF}/api/v1/consents`, {
+    headers: hdrs(token, tenant),
+    data: {
+      consumerId: consumer,
+      consentType: 'MARKETING',
+      granted,
+      version: CONSENT_VERSION,
+    },
+  })
+  expect(res.status(), `consent upsert (granted=${granted}) failed: ${res.status()}`).toBe(200)
+  const body = await res.json() as { consentType: string; granted: boolean }
+  expect(body.consentType).toBe('MARKETING')
+  expect(body.granted).toBe(granted)
+}
+
+async function revokeMarketingConsent(
+  request: APIRequestContext, token: string, tenant: string, consumer: string,
+): Promise<void> {
+  const res = await request.post(
+    `${BFF}/api/v1/consents/${encodeURIComponent(consumer)}/revoke`,
+    {
+      headers: hdrs(token, tenant),
+      data: { consentType: 'MARKETING' },
+    },
+  )
+  // 204 anche quando non c'è nulla da revocare (revoke idempotente, SEC-FIX-003)
+  expect(res.status(), `consent revoke failed: ${res.status()}`).toBe(204)
 }
 
 /** Evento BLE conforme a EventIngestRequest (event-ingestion). */
@@ -275,6 +324,13 @@ test.describe.serial('Beacon → FCM push pipeline (WireMock stub)', () => {
     }
   })
 
+  test('Setup: grant MARKETING consent for consumer A', async ({ request }) => {
+    // ble-notification-service#93: con CONSENT_CHECK_ENABLED=true (fail-closed
+    // SEC-011) il dispatch verifica il consenso MARKETING su identity-access.
+    // Senza questo record l'happy path (Step 2) verrebbe soppresso.
+    await upsertMarketingConsent(request, consumerToken, tenantA, consumerId, true)
+  })
+
   test('Step 1: register device push token via BFF', async ({ request }) => {
     const res = await request.post(`${BFF}/bff/v1/consumer/push-token`, {
       headers: hdrs(consumerToken, tenantA),
@@ -346,19 +402,61 @@ test.describe.serial('Beacon → FCM push pipeline (WireMock stub)', () => {
     expect(after, 'cross-tenant event must not produce a push for the tenant-A token').toBe(before)
   })
 
-  test('Step 4: consent revoked — no push', async () => {
-    // SKIP documentato: nello stack e2e il consent-check del notification-service
-    // è disabilitato (CONSENT_CHECK_ENABLED=false in terrio-e2e-compose) perché
-    // il default %prod punta a http://ble-identity-access:8080 (alias inesistente
-    // qui) e soprattutto DefaultConsentChecker chiama
-    //   GET /v1/consents?consumerId=…&consentType=MARKETING   (senza Authorization)
-    // mentre identity-access espone
-    //   GET /v1/consents/{consumerId}                          (role-gated TENANT_ADMIN/SUPER_ADMIN)
-    // → contratto disallineato: con il check attivo OGNI push verrebbe soppressa
-    // (fail-closed SEC-011), quindi il caso "consent revocato → nessun push" non è
-    // esercitabile e2e via API. Il gate consenso è coperto dagli unit test del
-    // notification-service (DispatchOrchestrator + DefaultConsentChecker).
-    test.skip(true, 'consent-check disabilitato in e2e: contratto DefaultConsentChecker ↔ identity-access disallineato (vedi commento)')
+  test('Step 4: consent revoked — no push; re-granted — push resumes', async ({ request }) => {
+    // ble-notification-service#93 CHIUSA: DefaultConsentChecker ora parla il
+    // contratto reale di identity-access (GET /v1/consents/{consumerId} +
+    // bearer S2S CONSENT_READ) e il check è ATTIVO in questo stack
+    // (CONSENT_CHECK_ENABLED=true, fail-closed SEC-011) — il caso è
+    // finalmente esercitabile e2e via API.
+
+    // ── 4a. revoca il consenso MARKETING del consumer A ─────────────────────
+    await revokeMarketingConsent(request, consumerToken, tenantA, consumerId)
+
+    const before = (await fcmSendRequests(request, PUSH_TOKEN)).length
+    expect(before, 'expected previous sends in the journal').toBeGreaterThan(0)
+
+    // ── 4b. evento beacon con consenso revocato → NESSUN messages:send ──────
+    const revokedRes = await request.post(`${BFF}/api/v1/events`, {
+      headers: {
+        ...hdrs(consumerToken, tenantA),
+        'X-Consent-State': 'granted',   // gate ingestion: l'evento DEVE entrare
+      },                                 // — il blocco atteso è a valle, al dispatch
+      data: beaconEvent(consumerId, 'e2e-fcm-device-consent-revoked'),
+    })
+    expect(revokedRes.status(), `event ingest (revoked) failed: ${revokedRes.status()}`).toBe(202)
+
+    // Finestra negativa: stessa ampiezza dello Step 3 (pipeline ~10s nel caso
+    // positivo; 30s bastano per escludere un push tardivo).
+    await new Promise(r => setTimeout(r, 30_000))
+    const afterRevoked = (await fcmSendRequests(request, PUSH_TOKEN)).length
+    expect(afterRevoked,
+      'consent revoked: the event must NOT produce a messages:send (fail-closed gate)')
+      .toBe(before)
+
+    // ── 4c. ri-concedi il consenso → il push riprende ────────────────────────
+    // Ripristina anche lo stato di baseline (consenso concesso) per idempotenza
+    // fra run — l'upsert riattiva lo stesso record (stessa version).
+    await upsertMarketingConsent(request, consumerToken, tenantA, consumerId, true)
+
+    const regrantRes = await request.post(`${BFF}/api/v1/events`, {
+      headers: {
+        ...hdrs(consumerToken, tenantA),
+        'X-Consent-State': 'granted',
+      },
+      data: beaconEvent(consumerId, 'e2e-fcm-device-consent-regranted'),
+    })
+    expect(regrantRes.status(), `event ingest (re-granted) failed: ${regrantRes.status()}`).toBe(202)
+
+    const deadline = Date.now() + 90_000
+    let afterRegrant = afterRevoked
+    while (Date.now() < deadline) {
+      afterRegrant = (await fcmSendRequests(request, PUSH_TOKEN)).length
+      if (afterRegrant > afterRevoked) break
+      await new Promise(r => setTimeout(r, 3000))
+    }
+    expect(afterRegrant,
+      'consent re-granted: the event must produce a new messages:send within 90s')
+      .toBeGreaterThan(afterRevoked)
   })
 
   test('Cleanup: unregister device token', async ({ request }) => {
