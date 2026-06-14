@@ -1,8 +1,18 @@
 name: Mobile APK Build (5 apps, parallel)
 
-# §16 master plan — CI pipeline for all 5 mobile apps.
-# Triggered by tags `mobile-v*` or manual dispatch.
-# Each app builds its debug APK as an artifact (release signing in S59).
+# §16 master plan — CI pipeline for all 5 mobile apps + DS-MOB-004 emulator Maestro.
+# Builds each app's debug APK, then runs the full Maestro suite on an Android
+# emulator (reactivecircus/android-emulator-runner) against the e2e-compose stack.
+#
+# Triggers:
+#   - tag `mobile-v*` push (release candidate)
+#   - manual workflow_dispatch
+#   - nightly schedule (the emulator pass is heavy → never on PRs)
+#
+# PAT gating: building the APKs needs read access to the per-app repos
+# (GH_PAT_MOBILE_READ); the Maestro stack needs ble-e2e-compose read access.
+# Both fall back to GH_PAT_BACKEND_READ. When no usable PAT is configured the
+# affected steps skip with a ::notice:: instead of failing the run.
 
 on:
   push:
@@ -21,6 +31,9 @@ on:
           - tenant
           - sales-agent
           - territory
+  schedule:
+    # Nightly emulator Maestro run at 04:00 UTC (heavy; not on every PR).
+    - cron: '0 4 * * *'
 
 permissions:
   contents: read
@@ -39,13 +52,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout app repo
+        id: appco
+        continue-on-error: true
         uses: actions/checkout@v4
         with:
           repository: BLE-project/ble-${{ matrix.app }}-mobile
           path: app
-          token: ${{ secrets.GH_PAT_MOBILE_READ }}
+          token: ${{ secrets.GH_PAT_MOBILE_READ || secrets.GH_PAT_BACKEND_READ }}
+
+      - name: Skip notice (no mobile-read PAT)
+        if: steps.appco.outcome != 'success'
+        run: echo "::notice title=build skipped::ble-${{ matrix.app }}-mobile checkout failed (no PAT with read access). Set GH_PAT_MOBILE_READ to build the APK + run the emulator Maestro suite."
 
       - name: Set up Node
+        if: steps.appco.outcome == 'success'
         uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -53,26 +73,31 @@ jobs:
           cache-dependency-path: app/package-lock.json
 
       - name: Set up JDK 17
+        if: steps.appco.outcome == 'success'
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
 
       - name: Set up Android SDK
+        if: steps.appco.outcome == 'success'
         uses: android-actions/setup-android@v3
         with:
           api-level: 34
           build-tools: 34.0.0
 
       - name: Install dependencies
+        if: steps.appco.outcome == 'success'
         working-directory: app
         run: npm ci --legacy-peer-deps
 
       - name: Expo prebuild (Android)
+        if: steps.appco.outcome == 'success'
         working-directory: app
         run: npx expo prebuild --platform android --clean --no-install
 
       - name: Embed JS bundle
+        if: steps.appco.outcome == 'success'
         working-directory: app
         run: |
           mkdir -p android/app/src/main/assets android/app/src/main/res/raw
@@ -82,27 +107,29 @@ jobs:
             --assets-dest android/app/src/main/res
 
       - name: Gradle assembleDebug
+        if: steps.appco.outcome == 'success'
         working-directory: app/android
         run: ./gradlew assembleDebug --no-daemon
 
       - name: Upload APK artifact
+        if: steps.appco.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: ble-${{ matrix.app }}-dev.apk
           path: app/android/app/build/outputs/apk/debug/app-debug.apk
           retention-days: 30
 
-  # Deterministic Maestro suite (the _retally_full / FU-TI-1..4 logic):
+  # DS-MOB-004 — deterministic Maestro suite on an Android emulator.
   #   FU-TI-1   realm-ble.json token TTL is baked into the compose stack
   #   FU-TI-2/4 per-flow re-seed via fixtures/seed-cli.ts (run-maestro-suite.sh)
   #   FU-TI-3   per-flow `pm clear` isolation (emulator shell holds the perm)
-  # Needs the e2e-compose backend stack, so it mirrors e2e-playwright's PAT-gated
-  # checkout: with no ble-e2e-compose read access the suite is skipped (notice,
-  # not failure) instead of running blind against no backend.
+  # Needs the e2e-compose backend stack: with no read PAT the suite skips
+  # (notice, not failure) instead of running blind against no backend.
+  # Runs on tag push / manual dispatch / nightly — never on PRs (too heavy).
   maestro:
     needs: build
     runs-on: ubuntu-latest
-    if: github.event_name == 'push'
+    if: github.event_name != 'pull_request'
     env:
       BFF_URL: http://localhost:8080
       KC_URL:  http://localhost:8180
@@ -116,11 +143,11 @@ jobs:
         with:
           repository: BLE-project/ble-e2e-compose
           path: e2e-compose
-          token: ${{ secrets.GH_PAT }}
+          token: ${{ secrets.GH_PAT || secrets.GH_PAT_BACKEND_READ }}
 
       - name: Skip notice (no compose access)
         if: steps.compose.outcome != 'success'
-        run: echo "::notice title=maestro skipped::ble-e2e-compose checkout failed (no PAT with read access). The Maestro suite needs the backend stack; skipping. Set a GH_PAT with ble-e2e-compose read access to enable it."
+        run: echo "::notice title=maestro skipped::ble-e2e-compose checkout failed (no PAT with read access). The Maestro suite needs the backend stack; skipping. Set a PAT with ble-e2e-compose read access to enable it."
 
       - name: Set up Node
         if: steps.compose.outcome == 'success'
@@ -152,6 +179,15 @@ jobs:
         run: |
           docker compose up -d --wait --wait-timeout 300
           docker compose ps
+
+      - name: Wait for BFF readiness
+        if: steps.compose.outcome == 'success'
+        run: |
+          for i in $(seq 1 60); do
+            curl -fsS http://localhost:8080/q/health/ready >/dev/null 2>&1 && { echo "BFF ready after ${i}s"; exit 0; }
+            sleep 2
+          done
+          echo "BFF never became ready"; exit 1
 
       - name: Base seed (tenant + territory + KC claims + fixtures)
         if: steps.compose.outcome == 'success'
