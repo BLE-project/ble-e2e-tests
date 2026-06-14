@@ -186,7 +186,10 @@ jobs:
       # e2e-playwright's stack step.
       - name: Log in to GHCR
         if: steps.compose.outcome == 'success'
-        run: echo "${{ secrets.GH_PAT_BACKEND_READ || secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+        # The ghcr.io/ble-project/terrio-*:e2e packages are org-internal, so the
+        # job's GITHUB_TOKEN (permissions: packages: read) can pull them — no PAT
+        # needed (GH_PAT_BACKEND_READ lacks read:packages, verified 2026-06-14).
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
 
       - name: Bring up E2E stack (GHCR images)
         id: stack
