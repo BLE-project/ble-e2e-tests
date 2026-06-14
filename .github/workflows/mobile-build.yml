@@ -37,6 +37,7 @@ on:
 
 permissions:
   contents: read
+  packages: read
 
 jobs:
   build:
@@ -129,7 +130,9 @@ jobs:
   maestro:
     needs: build
     runs-on: ubuntu-latest
-    if: github.event_name != 'pull_request'
+    # Run after the build job even if some APK legs failed (the install loop only
+    # installs the APKs that exist) — just not on PRs and not when cancelled.
+    if: ${{ always() && github.event_name != 'pull_request' }}
     env:
       BFF_URL: http://localhost:8080
       KC_URL:  http://localhost:8180
@@ -181,14 +184,20 @@ jobs:
       # continue-on-error and the emulator run skips with a clear notice rather
       # than failing the whole workflow red. Same backend-image gap that blocks
       # e2e-playwright's stack step.
-      - name: Bring up E2E stack (docker compose)
+      - name: Log in to GHCR
+        if: steps.compose.outcome == 'success'
+        run: echo "${{ secrets.GH_PAT_BACKEND_READ || secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      - name: Bring up E2E stack (GHCR images)
         id: stack
         if: steps.compose.outcome == 'success'
         continue-on-error: true
         working-directory: e2e-compose
         run: |
-          docker compose up -d --wait --wait-timeout 300
-          docker compose ps
+          COMPOSE="-f docker-compose.yml -f docker-compose.override.yml -f docker-compose.ci.yml"
+          docker compose $COMPOSE pull
+          docker compose $COMPOSE up -d --no-build --wait --wait-timeout 300
+          docker compose $COMPOSE ps
 
       - name: Skip notice (backend stack unavailable)
         if: steps.compose.outcome == 'success' && steps.stack.outcome != 'success'
@@ -235,4 +244,4 @@ jobs:
       - name: Tear down stack
         if: always() && steps.compose.outcome == 'success'
         working-directory: e2e-compose
-        run: docker compose down --volumes --remove-orphans
+        run: docker compose -f docker-compose.yml -f docker-compose.override.yml -f docker-compose.ci.yml down --volumes --remove-orphans
