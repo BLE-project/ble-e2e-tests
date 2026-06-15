@@ -250,6 +250,13 @@ jobs:
           # Reliability: headless emulator with swiftshader GPU + no snapshot/boot-anim
           # avoids the "Timeout waiting for emulator to boot" flakiness on GitHub
           # KVM runners (observed 2026-06-15). Generous boot timeout + cold AVD.
+          # Use a real phone profile (Pixel 6, 1080x2400) instead of the default
+          # tiny AVD skin (~320px tall). The Maestro flows were authored on a
+          # physical phone, so on the small default skin gate buttons like
+          # "Continua" sat below the fold and tapOn failed (Element not found),
+          # blocking every flow at the onboarding gate (run #10). A tall phone
+          # profile matches the device geometry the flows assume.
+          profile: pixel_6
           force-avd-creation: true
           emulator-boot-timeout: 600
           disable-animations: true
