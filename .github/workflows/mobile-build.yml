@@ -197,6 +197,11 @@ jobs:
         continue-on-error: true
         working-directory: e2e-compose
         run: |
+          # The compose reads POSTGRES_USER/PASSWORD/DB/TZ etc. from .env, which is
+          # gitignored. Without it Postgres starts with an empty password and exits
+          # 1 ("Database is uninitialized and superuser password is not specified"),
+          # taking the whole stack down. .env.example carries working dev defaults.
+          cp .env.example .env
           COMPOSE="-f docker-compose.yml -f docker-compose.override.yml -f docker-compose.ci.yml"
           docker compose $COMPOSE pull
           docker compose $COMPOSE up -d --no-build --wait --wait-timeout 300
