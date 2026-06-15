@@ -51,6 +51,13 @@ jobs:
           - sales-agent
           - territory
     runs-on: ubuntu-latest
+    # @sentry/react-native's gradle integration runs a source-map / native-symbol
+    # upload on RELEASE builds (createBundleReleaseJsAndAssets_SentryUpload_*),
+    # which needs a SENTRY_AUTH_TOKEN and otherwise fails the build with
+    # "Auth token is required". E2E APKs don't need Sentry artifacts, so disable
+    # the auto-upload. (Debug builds never ran this task — only release does.)
+    env:
+      SENTRY_DISABLE_AUTO_UPLOAD: 'true'
     steps:
       - name: Checkout app repo
         id: appco
