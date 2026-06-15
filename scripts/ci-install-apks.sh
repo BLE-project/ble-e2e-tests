@@ -12,7 +12,11 @@
 set -u
 DEVICE="${DEVICE:-emulator-5554}"
 for app in consumer merchant tenant sales-agent territory; do
-  apk=$(find "apks/ble-${app}-dev.apk" -name "*.apk" 2>/dev/null | head -1)
+  # NB: -type f is required. The artifact dir itself is named ble-<app>-dev.apk,
+  # so without it `find` matches that directory first and `head -1` returns the
+  # dir (the `-f` test below then fails → "no APK found"). The real APK is the
+  # app-debug.apk file inside it.
+  apk=$(find "apks/ble-${app}-dev.apk" -type f -name "*.apk" 2>/dev/null | head -1)
   if [ -n "$apk" ] && [ -f "$apk" ]; then
     echo "Installing ${app} from ${apk}"
     adb -s "$DEVICE" install -r "$apk" || echo "::warning::adb install failed for ${app}"
