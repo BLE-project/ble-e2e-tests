@@ -1,0 +1,36 @@
+appId: it.terrio.consumer
+---
+# #106 / GAP-025 — consumer inbox UI round-trip: an unread notification is
+# visible in the inbox, tapping it marks it read, and the read state sticks.
+#
+# Precondition: the suite seeds exactly one unread row for dev-consumer just
+# before this flow (run-maestro-suite.sh reseed → seed-cli consumer-notification
+# → INSERT into consumer_notification). The API-level persistence path is covered
+# separately by tests/mobile-api/beacon-push-fcm.spec.ts Step 2b (#87); this flow
+# is the mobile UI half.
+#
+# The inbox screen (app/(app)/inbox.tsx, testID notification-inbox) is href:null
+# in the tab bar; its in-app entry point is the header notification bell
+# (testID open-inbox, added in consumer-mobile #116 work) which router.push('/inbox').
+
+# Authenticate + land on home (drains the cold-install onboarding/consent gates).
+- runFlow: login.yaml
+
+# Open the inbox via the header bell.
+- tapOn:
+    id: "open-inbox"
+
+# The seeded unread notification is present in the inbox.
+- assertVisible:
+    id: "notification-inbox"
+- assertVisible: "Offerta vicino a te"
+# "Segna tutte come lette" renders only while there is at least one unread row.
+- assertVisible: "Segna tutte come lette"
+
+# Tap the row → marks it read (inbox.tsx row onPress → markRead.mutate).
+- tapOn: "Offerta vicino a te"
+
+# Read state sticks: with no unread rows left the mark-all affordance disappears.
+- extendedWaitUntil:
+    notVisible: "Segna tutte come lette"
+    timeout: 10000
