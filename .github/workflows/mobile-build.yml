@@ -238,6 +238,13 @@ jobs:
           api-level: 34
           target: google_apis
           arch: x86_64
+          # Reliability: headless emulator with swiftshader GPU + no snapshot/boot-anim
+          # avoids the "Timeout waiting for emulator to boot" flakiness on GitHub
+          # KVM runners (observed 2026-06-15). Generous boot timeout + cold AVD.
+          force-avd-creation: true
+          emulator-boot-timeout: 600
+          disable-animations: true
+          emulator-options: -no-snapshot -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -camera-front none
           script: |
             # APKs talk to the gateway on localhost:8080 / KC :8180 — map those
             # emulator ports back to the host compose stack.
