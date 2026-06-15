@@ -20,6 +20,7 @@ import { ensureMerchantAdvData } from './seed-merchant-adv'
 import { ensureTenantBeaconCrudSlotFree } from './seed-tenant-beacon-crud'
 import { ensureConsumerEnrollment } from './seed-consumer-enrollment'
 import { ensureCustomBrandingFixtures } from './seed-custom-branding-fixtures'
+import { ensureConsumerNotification } from './seed-consumer-notification'
 
 const GROUPS: Record<string, () => Promise<void>> = {
   moderation: async () => {
@@ -45,6 +46,11 @@ const GROUPS: Record<string, () => Promise<void>> = {
     await ensureConsumerEnrollment()
     const cb = await ensureCustomBrandingFixtures()
     console.log(`[seed-cli] consumer enrolled + branding: appName=${cb.branding.appNameOverride}`)
+  },
+  // #106 / GAP-025: one unread inbox row for dev-consumer so the
+  // inbox-persist-mark-read.yaml flow has a deterministic unread to view + mark.
+  'consumer-notification': async () => {
+    await ensureConsumerNotification()
   },
 }
 

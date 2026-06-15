@@ -34,10 +34,11 @@ APPS=("$@")
 # FU-TI-2 / FU-TI-4: refresh the data a flow consumes, just before it runs.
 reseed_for() {
   case "$1" in
-    sales-agent-mobile/moderation-*)      seed moderation ;;
-    merchant-mobile/adv-*)                seed merchant-adv ;;
-    tenant-mobile/beacons.yaml)           seed tenant-beacon ;;
-    consumer-mobile/custom-branding.yaml) seed consumer-branding ;;
+    sales-agent-mobile/moderation-*)            seed moderation ;;
+    merchant-mobile/adv-*)                      seed merchant-adv ;;
+    tenant-mobile/beacons.yaml)                 seed tenant-beacon ;;
+    consumer-mobile/custom-branding.yaml)       seed consumer-branding ;;
+    consumer-mobile/inbox-persist-mark-read.yaml) seed consumer-notification ;;
   esac
 }
 seed() { BFF_URL="$BFF_URL" npx tsx fixtures/seed-cli.ts "$1" >/dev/null 2>&1 || echo "::warning::seed $1 failed"; }
