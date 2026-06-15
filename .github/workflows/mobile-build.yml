@@ -249,7 +249,21 @@ jobs:
             adb reverse tcp:8080 tcp:8080
             adb reverse tcp:8180 tcp:8180
             DEVICE=emulator-5554 bash scripts/ci-install-apks.sh
+            DEVICE=emulator-5554 bash scripts/ci-probe-bff.sh
             DEVICE=emulator-5554 BFF_URL=http://localhost:8080 bash scripts/run-maestro-suite.sh
+
+      # Diagnostic evidence: Maestro writes a screenshot + view hierarchy +
+      # commands.json per flow under maestro-debug/<app>__<flow>/. Upload on
+      # every outcome so a failing run (apps not reaching home/login) can be
+      # diagnosed from the actual stuck screen instead of blind.
+      - name: Upload Maestro debug artifacts
+        if: always() && steps.stack.outcome == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: maestro-debug
+          path: maestro-debug/
+          retention-days: 14
+          if-no-files-found: warn
 
       - name: Tear down stack
         if: always() && steps.compose.outcome == 'success'
