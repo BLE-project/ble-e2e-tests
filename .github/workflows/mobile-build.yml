@@ -97,27 +97,29 @@ jobs:
         working-directory: app
         run: npx expo prebuild --platform android --clean --no-install
 
-      - name: Embed JS bundle
-        if: steps.appco.outcome == 'success'
-        working-directory: app
-        run: |
-          mkdir -p android/app/src/main/assets android/app/src/main/res/raw
-          npx expo export:embed --platform android --dev false \
-            --entry-file node_modules/expo-router/entry.js \
-            --bundle-output android/app/src/main/assets/index.android.bundle \
-            --assets-dest android/app/src/main/res
-
-      - name: Gradle assembleDebug
+      # Build the RELEASE variant, not debug. The apps depend on expo-dev-client,
+      # whose debug build boots into the dev-launcher ("Start a local development
+      # server … Connect") and waits for Metro on :8081 instead of loading the
+      # embedded JS bundle. On a physical device that worked because Metro ran on
+      # the host (adb reverse :8081); CI has no Metro, so every debug APK sat on
+      # the launcher and all 39 flows failed (run #7/#8, confirmed via the
+      # uploaded Maestro screenshot). The release variant is standalone: it
+      # auto-embeds the JS bundle (bundleReleaseJsAndAssets), excludes the
+      # dev-launcher, and the Expo template signs release with the debug keystore
+      # (no custom keystore) with minify off (testIDs preserved) — verified in
+      # app/build.gradle (signingConfig signingConfigs.debug,
+      # enableMinifyInReleaseBuilds=false).
+      - name: Gradle assembleRelease
         if: steps.appco.outcome == 'success'
         working-directory: app/android
-        run: ./gradlew assembleDebug --no-daemon
+        run: ./gradlew assembleRelease --no-daemon
 
       - name: Upload APK artifact
         if: steps.appco.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: ble-${{ matrix.app }}-dev.apk
-          path: app/android/app/build/outputs/apk/debug/app-debug.apk
+          path: app/android/app/build/outputs/apk/release/app-release.apk
           retention-days: 30
 
   # DS-MOB-004 — deterministic Maestro suite on an Android emulator.
