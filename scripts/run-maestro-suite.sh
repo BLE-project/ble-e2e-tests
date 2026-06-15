@@ -52,7 +52,11 @@ for app in "${APPS[@]}"; do
     # FU-TI-3 equivalent: cold per-flow isolation (emulator allows pm clear).
     adb -s "$DEVICE" shell pm clear "$pkg" >/dev/null 2>&1 || adb -s "$DEVICE" shell am force-stop "$pkg" >/dev/null 2>&1
     reseed_for "$app/$base"
-    if maestro --device "$DEVICE" test "$f" --flatten-debug-output; then
+    # Per-flow debug output (screenshot + view hierarchy + commands.json) into a
+    # workspace dir so a CI step can upload it as an artifact — without it the
+    # emulator failures are diagnosed blind (no way to see the stuck screen).
+    dbg="maestro-debug/${app}__${base%.yaml}"
+    if maestro --device "$DEVICE" test "$f" --debug-output "$dbg" --flatten-debug-output; then
       echo "PASS  $app/$base"; pass=$((pass+1))
     else
       echo "FAIL  $app/$base"; fail=$((fail+1)); failed+=("$app/$base")
