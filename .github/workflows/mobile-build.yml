@@ -161,6 +161,25 @@ jobs:
         if: steps.compose.outcome != 'success'
         run: echo "::notice title=maestro skipped::ble-e2e-compose checkout failed (no PAT with read access). The Maestro suite needs the backend stack; skipping. Set a PAT with ble-e2e-compose read access to enable it."
 
+      # The compose Keycloak service bind-mounts the realm from a SIBLING repo:
+      #   ../terrio-identity-access/keycloak/realm-ble.json
+      # That file holds the `ble` realm + the dev users (dev-consumer/dev-pass …)
+      # + the ble-identity ROPC client. Without it KC starts with no `ble` realm,
+      # so identity-access's password-grant login fails and the app shows
+      # "AUTH_SERVICE_ERROR" — every Maestro flow dies right after login-btn
+      # (ble-e2e-tests#101, CI run 27566697512). Check the repo out at the sibling
+      # path the compose `..` mount resolves to ($WORKSPACE/terrio-identity-access,
+      # since the compose runs from $WORKSPACE/e2e-compose).
+      - name: Checkout terrio-identity-access (Keycloak realm for the stack)
+        id: identity
+        if: steps.compose.outcome == 'success'
+        continue-on-error: true
+        uses: actions/checkout@v4
+        with:
+          repository: BLE-project/ble-identity-access
+          path: terrio-identity-access
+          token: ${{ secrets.GH_PAT || secrets.GH_PAT_BACKEND_READ }}
+
       - name: Set up Node
         if: steps.compose.outcome == 'success'
         uses: actions/setup-node@v4
