@@ -246,23 +246,9 @@ jobs:
           disable-animations: true
           emulator-options: -no-snapshot -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -camera-front none
           script: |
-            # APKs talk to the gateway on localhost:8080 / KC :8180 — map those
-            # emulator ports back to the host compose stack.
             adb reverse tcp:8080 tcp:8080
             adb reverse tcp:8180 tcp:8180
-            # download-artifact@v4 extracts each artifact into a directory named
-            # after the artifact (apks/ble-<app>-dev.apk/app-debug.apk), so the
-            # .apk is INSIDE that dir — the previous `find -name ble-<app>-dev.apk`
-            # matched the directory, [ -f ] was false, nothing installed, every
-            # flow then failed to launch the app.
-            for app in consumer merchant tenant sales-agent territory; do
-              apk=$(find "apks/ble-${app}-dev.apk" -name "*.apk" 2>/dev/null | head -1)
-              if [ -n "$apk" ] && [ -f "$apk" ]; then
-                echo "Installing $app: $apk"; adb install -r "$apk"
-              else
-                echo "::warning::no APK found for $app under apks/ble-${app}-dev.apk"
-              fi
-            done
+            DEVICE=emulator-5554 bash scripts/ci-install-apks.sh
             DEVICE=emulator-5554 BFF_URL=http://localhost:8080 bash scripts/run-maestro-suite.sh
 
       - name: Tear down stack
