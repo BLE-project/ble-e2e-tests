@@ -116,10 +116,19 @@ jobs:
       # (no custom keystore) with minify off (testIDs preserved) — verified in
       # app/build.gradle (signingConfig signingConfigs.debug,
       # enableMinifyInReleaseBuilds=false).
+      # Retry once on a transient corrupted-cache failure. Observed
+      # "java.util.zip.ZipException: Archive is not a ZIP archive" on a single
+      # app while the other four built fine in the same run (#102) — a corrupted
+      # gradle/transform cache entry on that runner. Purge the caches and retry.
       - name: Gradle assembleRelease
         if: steps.appco.outcome == 'success'
         working-directory: app/android
-        run: ./gradlew assembleRelease --no-daemon
+        run: |
+          ./gradlew assembleRelease --no-daemon && exit 0
+          echo "::warning::assembleRelease failed; purging gradle caches and retrying once"
+          rm -rf "$HOME/.gradle/caches/transforms-"* "$HOME/.gradle/caches/modules-2/files-2.1/.tmp" 2>/dev/null || true
+          ./gradlew --stop || true
+          ./gradlew clean assembleRelease --no-daemon
 
       - name: Upload APK artifact
         if: steps.appco.outcome == 'success'
