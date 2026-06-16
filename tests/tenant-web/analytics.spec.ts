@@ -12,14 +12,17 @@ test.describe('Tenant Web - Analytics', () => {
   })
 
   test('tenant analytics page loads', async ({ page }) => {
-    await page.goto('/analytics')
+    // Real route is /analytics/tenant; the bare /analytics redirected to / and the
+    // generic `main` fallback below made the assertion pass anyway (false-positive, #292).
+    await page.goto('/analytics/tenant')
     await page.waitForLoadState('networkidle')
 
+    // Assert something analytics-specific (heading or a chart) — NOT a generic
+    // `main`, which any page (incl. a redirect to /) would satisfy.
     const heading = page.getByRole('heading', { name: /analytics|analytic|statistiche/i })
     const charts = page.locator('canvas, svg, [data-testid*="chart"], [class*="chart"]')
-    const content = page.locator('main, [role="main"]')
 
-    await expect(heading.or(charts.first()).or(content).first()).toBeVisible({ timeout: 10_000 })
+    await expect(heading.or(charts.first()).first()).toBeVisible({ timeout: 10_000 })
 
     // No error boundary
     const errorBoundary = page.locator(
@@ -29,7 +32,7 @@ test.describe('Tenant Web - Analytics', () => {
   })
 
   test('period selector changes displayed data', async ({ page }) => {
-    await page.goto('/analytics')
+    await page.goto('/analytics/tenant')
     await page.waitForLoadState('networkidle')
 
     // Look for a period selector (dropdown, date picker, or tab-like buttons)
