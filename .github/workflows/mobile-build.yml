@@ -99,43 +99,31 @@ jobs:
         working-directory: app
         run: npm ci --legacy-peer-deps
 
-      - name: Expo prebuild (Android)
+      # #109: build the APK via EAS (expo.dev), not local gradle. EAS owns the
+      # prebuild + signing/keystore + env injection, which the local gradle path
+      # got wrong (Sentry auth-token upload, sdkmanager flake, debug-keystore
+      # INSTALL_FAILED_UPDATE_INCOMPATIBLE). The `previewLocal` profile is the
+      # canonical E2E build (127.0.0.1:8080 via adb reverse + cleartext net config).
+      # `--local` runs the build on this runner (uses the JDK/Android SDK above) —
+      # no Expo cloud queue/minutes — authenticated by the org EXPO_TOKEN secret.
+      - name: EAS build — previewLocal APK (local)
         if: steps.appco.outcome == 'success'
         working-directory: app
-        run: npx expo prebuild --platform android --clean --no-install
-
-      # Build the RELEASE variant, not debug. The apps depend on expo-dev-client,
-      # whose debug build boots into the dev-launcher ("Start a local development
-      # server … Connect") and waits for Metro on :8081 instead of loading the
-      # embedded JS bundle. On a physical device that worked because Metro ran on
-      # the host (adb reverse :8081); CI has no Metro, so every debug APK sat on
-      # the launcher and all 39 flows failed (run #7/#8, confirmed via the
-      # uploaded Maestro screenshot). The release variant is standalone: it
-      # auto-embeds the JS bundle (bundleReleaseJsAndAssets), excludes the
-      # dev-launcher, and the Expo template signs release with the debug keystore
-      # (no custom keystore) with minify off (testIDs preserved) — verified in
-      # app/build.gradle (signingConfig signingConfigs.debug,
-      # enableMinifyInReleaseBuilds=false).
-      # Retry once on a transient corrupted-cache failure. Observed
-      # "java.util.zip.ZipException: Archive is not a ZIP archive" on a single
-      # app while the other four built fine in the same run (#102) — a corrupted
-      # gradle/transform cache entry on that runner. Purge the caches and retry.
-      - name: Gradle assembleRelease
-        if: steps.appco.outcome == 'success'
-        working-directory: app/android
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
-          ./gradlew assembleRelease --no-daemon && exit 0
-          echo "::warning::assembleRelease failed; purging gradle caches and retrying once"
-          rm -rf "$HOME/.gradle/caches/transforms-"* "$HOME/.gradle/caches/modules-2/files-2.1/.tmp" 2>/dev/null || true
-          ./gradlew --stop || true
-          ./gradlew clean assembleRelease --no-daemon
+          npm i -g eas-cli@latest
+          mkdir -p "$GITHUB_WORKSPACE/eas-out"
+          eas build --platform android --profile previewLocal --local \
+            --non-interactive \
+            --output "$GITHUB_WORKSPACE/eas-out/ble-${{ matrix.app }}.apk"
 
       - name: Upload APK artifact
         if: steps.appco.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: ble-${{ matrix.app }}-dev.apk
-          path: app/android/app/build/outputs/apk/release/app-release.apk
+          path: eas-out/ble-${{ matrix.app }}.apk
           retention-days: 30
 
   # DS-MOB-004 — deterministic Maestro suite on an Android emulator.
