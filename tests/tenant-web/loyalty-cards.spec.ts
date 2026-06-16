@@ -1,14 +1,13 @@
 import { test, expect } from '@playwright/test'
-import { loginViaApi } from '../../fixtures/auth'
+import { loginViaOidcSession } from '../../fixtures/auth'
 
 const TENANT_USER = process.env.TENANT_USER ?? 'dev-tenant-admin'
 const TENANT_PASS = process.env.TENANT_PASS ?? 'dev-pass'
 const BASE_URL = process.env.TENANT_URL ?? 'http://localhost:5173'
-const STORAGE_KEY = 'ble_tenant_token'
 
 test.describe('Tenant Web - Loyalty Cards', () => {
   test.beforeEach(async ({ page }) => {
-    await loginViaApi(page, BASE_URL, TENANT_USER, TENANT_PASS, STORAGE_KEY)
+    await loginViaOidcSession(page, BASE_URL, TENANT_USER, TENANT_PASS)
     await page.goto('/loyalty-cards')
     await page.waitForLoadState('networkidle')
   })

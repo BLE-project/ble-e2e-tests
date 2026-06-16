@@ -1,12 +1,11 @@
 import { test, expect } from '@playwright/test'
-import { loginViaApi, DEV_TENANT_ID } from '../../fixtures/auth'
+import { loginViaOidcSession, DEV_TENANT_ID } from '../../fixtures/auth'
 import { ApiClient } from '../../helpers/api-client'
 
 const TENANT_USER = process.env.TENANT_USER ?? 'dev-tenant-admin'
 const TENANT_PASS = process.env.TENANT_PASS ?? 'dev-pass'
 const BASE_URL = process.env.TENANT_URL ?? 'http://localhost:5173'
 const BFF_URL = process.env.BFF_URL ?? 'http://localhost:8080'
-const STORAGE_KEY = 'ble_tenant_token'
 
 let territoryId: string | null = null
 
@@ -44,7 +43,7 @@ test.describe('Tenant Web - Campaigns', () => {
   })
 
   test.beforeEach(async ({ page }) => {
-    await loginViaApi(page, BASE_URL, TENANT_USER, TENANT_PASS, STORAGE_KEY)
+    await loginViaOidcSession(page, BASE_URL, TENANT_USER, TENANT_PASS)
     await page.goto('/campaigns')
     await page.waitForLoadState('networkidle')
   })

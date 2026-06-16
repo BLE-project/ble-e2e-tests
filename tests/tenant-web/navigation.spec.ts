@@ -1,10 +1,9 @@
 import { test, expect } from '@playwright/test'
-import { loginViaApi } from '../../fixtures/auth'
+import { loginViaOidcSession } from '../../fixtures/auth'
 
 const TENANT_USER = process.env.TENANT_USER ?? 'dev-tenant-admin'
 const TENANT_PASS = process.env.TENANT_PASS ?? 'dev-pass'
 const BASE_URL = process.env.TENANT_URL ?? 'http://localhost:5173'
-const STORAGE_KEY = 'ble_tenant_token'
 
 const TENANT_PAGES = [
   { path: '/stores', label: /store|negozio|punto.*vendita/i },
@@ -17,7 +16,7 @@ const TENANT_PAGES = [
 
 test.describe('Tenant Web - Navigation', () => {
   test.beforeEach(async ({ page }) => {
-    await loginViaApi(page, BASE_URL, TENANT_USER, TENANT_PASS, STORAGE_KEY)
+    await loginViaOidcSession(page, BASE_URL, TENANT_USER, TENANT_PASS)
   })
 
   for (const { path, label } of TENANT_PAGES) {
