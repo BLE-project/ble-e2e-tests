@@ -8,8 +8,9 @@ import { test, expect } from '@playwright/test'
  * an unauthenticated visit triggers ProtectedRoute.signinRedirect() → the
  * Keycloak authorize endpoint (.../realms/<realm>/protocol/openid-connect/auth).
  *
- * Authenticated journeys use the loginViaApi token-injection fixture (see the
- * other tenant-web specs); this file only covers the unauthenticated gate.
+ * Authenticated journeys use the loginViaOidcSession fixture (seeds the
+ * oidc-client-ts session so ProtectedRoute does not redirect to Keycloak — see
+ * the other tenant-web specs); this file only covers the unauthenticated gate.
  */
 const BASE_URL = process.env.TENANT_URL ?? 'http://localhost:5173'
 
