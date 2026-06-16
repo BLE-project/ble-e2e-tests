@@ -44,10 +44,12 @@ appId: it.terrio.tenant
             text: ".*(Welcome back|Bentornato|Home).*"
           timeout: 15000
 
-# Navigate to Beacons tab. testID convention: `tab-beacons` once app-side
-# adds it (tracked in ble-e2e-tests#24). Fall back to text + IT alias.
+# Navigate to Beacons via the stable bottom-tab testID (tenant-mobile
+# _layout.tsx tabBarButtonTestID 'tab-beacon'). The previous text regex
+# "Beacons|..." matched the overview TILE (overview-tile-Beacons) before the
+# tab and landed on the wrong screen → assert timeout (#51).
 - tapOn:
-    text: "Beacons|Beacon Registry|Registro Beacon"
+    id: "tab-beacon"
 - extendedWaitUntil:
     visible: "Beacon Registry|Registro Beacon"
     timeout: 5000
