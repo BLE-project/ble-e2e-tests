@@ -1,54 +1,43 @@
 import { test, expect } from '@playwright/test'
-import { loginViaForm } from '../../fixtures/auth'
 
-const TENANT_USER = process.env.TENANT_USER ?? 'dev-tenant-admin'
-const TENANT_PASS = process.env.TENANT_PASS ?? 'dev-pass'
+/**
+ * Tenant Web auth is OIDC PKCE (oidc-client-ts + Keycloak) — there is NO in-app
+ * /login form or /login route. The previous specs filled a username/password
+ * form and asserted /login URLs, which never existed: they passed for the wrong
+ * reasons (false-positive coverage, #292). These assert the REAL behaviour:
+ * an unauthenticated visit triggers ProtectedRoute.signinRedirect() → the
+ * Keycloak authorize endpoint (.../realms/<realm>/protocol/openid-connect/auth).
+ *
+ * Authenticated journeys use the loginViaApi token-injection fixture (see the
+ * other tenant-web specs); this file only covers the unauthenticated gate.
+ */
+const BASE_URL = process.env.TENANT_URL ?? 'http://localhost:5173'
 
-test.describe('Tenant Web - Login', () => {
-  test('login with valid credentials redirects away from /login', async ({ page }) => {
-    await loginViaForm(page, TENANT_USER, TENANT_PASS)
-    await expect(page).not.toHaveURL(/\/login/)
+// Keycloak's OpenID authorize endpoint, regardless of host/realm.
+const KC_AUTHORIZE = /\/protocol\/openid-connect\/auth/
+
+test.describe('Tenant Web - OIDC auth gate', () => {
+  // Each test runs in a fresh Playwright context (no stored OIDC session), so an
+  // unauthenticated gate is the natural starting state — no explicit clear needed
+  // (and clearing post-redirect would run on the Keycloak origin, cross-origin).
+
+  test('unauthenticated access to a protected route redirects to Keycloak', async ({ page }) => {
+    // The SPA fires signinRedirect (full-page nav) which aborts the initial goto;
+    // that abort IS the redirect, so swallow it and assert the landing URL.
+    await page.goto(`${BASE_URL}/stores`).catch(() => {})
+    await page.waitForURL(KC_AUTHORIZE, { timeout: 15_000 })
+    await expect(page).toHaveURL(KC_AUTHORIZE)
   })
 
-  test('login with invalid credentials shows error message', async ({ page }) => {
-    await page.goto('/login')
-    await page.getByLabel(/username|email/i).fill('wrong-tenant-user')
-    await page.getByLabel(/password/i).fill('wrong-pass')
-    await page.getByRole('button', { name: /sign in|login|accedi/i }).click()
-
-    const errorMessage = page.getByText(/invalid credentials|credenziali non valide|authentication failed/i)
-    await expect(errorMessage).toBeVisible({ timeout: 10_000 })
+  test('unauthenticated access to the root redirects to Keycloak', async ({ page }) => {
+    await page.goto(BASE_URL).catch(() => {})
+    await page.waitForURL(KC_AUTHORIZE, { timeout: 15_000 })
+    await expect(page).toHaveURL(KC_AUTHORIZE)
   })
 
-  test('empty form submission is blocked by browser validation', async ({ page }) => {
-    await page.goto('/login')
-    await page.getByRole('button', { name: /sign in|login|accedi/i }).click()
-    await expect(page).toHaveURL(/\/login/)
-  })
-
-  test('logout redirects to /login', async ({ page }) => {
-    await loginViaForm(page, TENANT_USER, TENANT_PASS)
-    await expect(page).not.toHaveURL(/\/login/)
-
-    const signOutBtn = page.getByRole('button', { name: /sign out|logout|esci/i })
-    if (await signOutBtn.isVisible()) {
-      await signOutBtn.click()
-    } else {
-      const userMenu = page.getByRole('button', { name: /user|menu|account/i })
-      if (await userMenu.isVisible()) {
-        await userMenu.click()
-        await page.getByRole('menuitem', { name: /sign out|logout|esci/i }).click()
-      }
-    }
-
-    await expect(page).toHaveURL(/\/login/, { timeout: 10_000 })
-  })
-
-  test('accessing protected page without token redirects to /login', async ({ page }) => {
-    await page.goto('/')
-    await page.evaluate(() => localStorage.clear())
-
-    await page.goto('/stores')
-    await expect(page).toHaveURL(/\/login/, { timeout: 10_000 })
-  })
+  // NB: asserting the Keycloak login FORM (#username) would additionally depend
+  // on the realm client having this run's redirect_uri registered; that is an
+  // env/realm-config concern (known localhost-vs-LAN mismatch), not app
+  // behaviour. The two redirects above already prove auth is delegated to
+  // Keycloak (no in-app /login form), which is the #292 false-positive fix.
 })
