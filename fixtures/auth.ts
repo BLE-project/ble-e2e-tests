@@ -101,6 +101,74 @@ export async function loginViaApi(
 }
 
 /**
+ * Authenticate an OIDC SPA (tenant-web: oidc-client-ts + Keycloak) WITHOUT the
+ * interactive redirect. tenant-web's ProtectedRoute gate reads
+ * userManager.getUser() (oidc-client-ts store: localStorage key
+ * `oidc.user:{authority}:{client_id}`), while its API client reads the bearer
+ * from sessionStorage `ble_tenant_token`. loginViaApi only set the latter, so the
+ * route guard still redirected to Keycloak (#292 finding). This seeds BOTH —
+ * before the SPA boots (addInitScript) — so the guard sees a logged-in user.
+ *
+ * The access_token is the BFF login token (a real JWT); the stored OIDC profile
+ * is its decoded claims, expires_at its exp. No KC round-trip / browser redirect.
+ */
+export async function loginViaOidcSession(
+  page: Page,
+  baseUrl: string,
+  username: string,
+  password: string,
+  opts: { authority?: string; clientId?: string; storageKey?: string } = {},
+) {
+  const bffUrl = process.env.BFF_URL ?? 'http://localhost:8080'
+  const response = await page.request.post(`${bffUrl}/api/v1/auth/login`, {
+    data: { username, password },
+  })
+  expect(response.ok()).toBeTruthy()
+  const token: string = (await response.json()).token
+
+  const claims = JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString('utf8'))
+  const authority = opts.authority
+    ?? process.env.TENANT_OIDC_AUTHORITY ?? 'http://localhost:8180/realms/ble'
+  const clientId = opts.clientId
+    ?? process.env.TENANT_OIDC_CLIENT_ID ?? 'ble-backoffice-tenant-web'
+  const storageKey = opts.storageKey ?? 'ble_tenant_token'
+
+  // oidc-client-ts User.fromStorageString shape — enough for getUser() to return
+  // a non-expired user with a profile.
+  const oidcUser = JSON.stringify({
+    access_token: token,
+    token_type: 'Bearer',
+    scope: 'openid profile email',
+    profile: claims,
+    expires_at: typeof claims.exp === 'number' ? claims.exp : Math.floor(Date.now() / 1000) + 3600,
+  })
+  const oidcKey = `oidc.user:${authority}:${clientId}`
+
+  // Seed storage BEFORE any page script runs, on every navigation in this context.
+  await page.addInitScript(
+    ([k, u, sk, tkn]) => {
+      try {
+        localStorage.setItem(k, u)
+        localStorage.setItem(sk, tkn)
+        sessionStorage.setItem(sk, tkn)
+      } catch { /* storage unavailable */ }
+    },
+    [oidcKey, oidcUser, storageKey, token],
+  )
+
+  // X-Tenant-Id on BFF + Vite-proxied API calls (BFF TenantRoutingFilter).
+  const tenantId = getDevTenantId()
+  for (const pattern of [`${bffUrl}/api/**`, '**/api/**']) {
+    await page.route(pattern, async (route) => {
+      await route.continue({ headers: { ...route.request().headers(), 'x-tenant-id': tenantId } })
+    })
+  }
+
+  await page.goto(baseUrl)
+  return token
+}
+
+/**
  * Login via Keycloak OIDC redirect flow used by the merchant-portal.
  * 1. Navigate to the merchant-portal
  * 2. Click "Sign in with Keycloak" button (initiates PKCE redirect)
