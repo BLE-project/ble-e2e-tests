@@ -1,0 +1,83 @@
+appId: it.terrio.tenant
+tags:
+  - security
+  - settings
+---
+# #291 — TENANT_ADMIN reaches the Security screen via Settings tab.
+# This is the one #291 detail screen with a real in-app nav entry (Settings →
+# "link-security" → security-screen). The other #291 screens (moderation/[id],
+# beacon/[id], kpi/[id], footfall, heatmap) are deep-link-only and need on-device
+# `openLink` validation — they are NOT covered here.
+# testIDs verified in terrio-tenant-mobile: app/(app)/_layout.tsx (tab-impostazioni),
+# app/(app)/settings.tsx (link-security), app/(app)/security.tsx (security-screen,
+# biometric-status).
+
+- launchApp:
+    stopApp: true
+
+# Cold-install runtime permission drains (location → BLE → notification).
+# Unrooted device + release-signed APK refuses `pm grant`, so dialogs must be
+# tapped through. Mirrors login.yaml.
+- repeat:
+    times: 3
+    commands:
+      - runFlow:
+          when:
+            visible: "Mentre usi l'app|While using the app"
+          commands:
+            - tapOn: "Mentre usi l'app|While using the app"
+      - runFlow:
+          when:
+            visible: "Consenti|Allow"
+          commands:
+            - tapOn: "Consenti|Allow"
+
+# Fresh-install biometric enrolment prompt ("Accesso più rapido") appears at
+# LAUNCH before login on the tenant app — dismiss it.
+- runFlow:
+    when: { visible: "Accesso più rapido" }
+    commands: [ { pressKey: Back } ]
+
+# Login only if not already authenticated (sequential-suite: pm clear is DENIED
+# on this unrooted device, so a prior flow may leave the tenant logged in).
+- runFlow:
+    when: { visible: "Accedi|Sign in" }
+    commands:
+      - tapOn: { id: "username-input" }
+      - inputText: "dev-tenant-admin"
+      - hideKeyboard
+      - tapOn: { id: "password-input" }
+      - inputText: "dev-pass"
+      - hideKeyboard
+      - tapOn: { id: "login-btn" }
+      - runFlow:
+          when: { visible: "Accesso più rapido" }
+          commands: [ { pressKey: Back } ]
+      - extendedWaitUntil:
+          visible: "Welcome back|Bentornato|Home|Amministra il tuo programma"
+          timeout: 8000
+
+# Navigate to Settings tab. The installed APK exposes the tab via the
+# tabBarButtonTestID (tab-impostazioni). Wait on it first (post-login settle).
+- extendedWaitUntil:
+    visible:
+      id: "tab-impostazioni"
+    timeout: 15000
+- tapOn:
+    id: "tab-impostazioni"
+
+# Settings → Security row.
+- extendedWaitUntil:
+    visible:
+      id: "link-security"
+    timeout: 10000
+- tapOn:
+    id: "link-security"
+
+# Security screen renders with the biometric status field.
+- extendedWaitUntil:
+    visible:
+      id: "security-screen"
+    timeout: 10000
+- assertVisible:
+    id: "biometric-status"
