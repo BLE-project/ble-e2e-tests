@@ -47,6 +47,15 @@ export default defineConfig({
       },
     },
     {
+      // #86 — marketing-site (Astro, public). Default Astro preview port 4321.
+      name: 'marketing-site',
+      testDir: './tests/marketing-site',
+      use: {
+        ...devices['Desktop Chrome'],
+        baseURL: process.env.MARKETING_URL ?? 'http://localhost:4321',
+      },
+    },
+    {
       name: 'api',
       testDir: './tests/api',
       use: {
