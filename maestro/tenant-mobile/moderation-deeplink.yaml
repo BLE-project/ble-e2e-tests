@@ -1,0 +1,21 @@
+appId: it.terrio.tenant
+tags:
+  - deep-links
+  - "291"
+---
+# #291 — tenant moderation/[id] per-review DETAIL route, validated on-device via
+# openLink. Distinct from moderation-tenant-review.yaml (which exercises the
+# INLINE queue + approve/TOTP). This detail route has no in-app nav entry — it is
+# reached only by tapping a moderation notification → terrio-tenant://moderation/<id>
+# (resolveDeepLinkRoute.ts:21). Asserts the screen CONTAINER testID
+# (moderation-detail, rendered in loading/data/error alike) so the check validates
+# route-resolution + screen mount independently of seed data.
+
+- runFlow: login.yaml
+
+- openLink: terrio-tenant://moderation/e2e-adv-1
+- extendedWaitUntil:
+    visible:
+      id: "moderation-detail"
+    timeout: 10000
+- back
