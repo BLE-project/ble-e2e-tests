@@ -1,0 +1,61 @@
+appId: it.terrio.territory
+tags:
+  - deep-links
+  - "291"
+---
+# #291 / #313 / #44 — territory deep-link-only detail screens, validated on-device
+# via openLink. These screens have NO in-app nav entry (they are reached only by
+# tapping a notification), so an openLink intent is the only way to exercise the
+# Expo Router linking + screen mount on-device.
+#
+# Asserts the screen CONTAINER testID (rendered in loading/data/error alike), so
+# the check validates route-resolution + screen mount independently of seed data.
+#
+# IMPORTANT — openLink uses Expo Router's default file-route linking, NOT the
+# notification resolver. _layout.tsx only runs resolveDeepLinkRoute inside the
+# notification-tap listener (addNotificationResponseReceivedListener), so a raw
+# OS deep link must use the LITERAL route path. The resolver's alias
+# (beacon-health -> beacon) is therefore NOT exercised here — it is unit-covered
+# in resolveDeepLinkRoute.test.ts. On-device this validates route + native screen
+# mount (notably heatmap's react-native-maps, which cannot render in jest/CI).
+#
+# testIDs verified in terrio-territory-mobile: beacon/[id] (beacon-detail),
+# kpi/[id] (territory-kpi), footfall/[id] (footfall-density),
+# heatmap/[id] (footfall-heatmap).
+
+# Authenticate first — openLink into an (app)-group route requires a session,
+# otherwise the deep link lands on the login screen.
+- runFlow: login.yaml
+
+# beacon/[id] ← terrio-territory://beacon/<id> (literal route; the notification
+# alias beacon-health→beacon is resolver-only, unit-covered separately)
+- openLink: terrio-territory://beacon/e2e-beacon-1
+- extendedWaitUntil:
+    visible:
+      id: "beacon-detail"
+    timeout: 10000
+- back
+
+# kpi/[id] ← terrio-territory://kpi/<territoryId>
+- openLink: terrio-territory://kpi/e2e-territory-1
+- extendedWaitUntil:
+    visible:
+      id: "territory-kpi"
+    timeout: 10000
+- back
+
+# footfall/[id] ← terrio-territory://footfall/<territoryId>
+- openLink: terrio-territory://footfall/e2e-territory-1
+- extendedWaitUntil:
+    visible:
+      id: "footfall-density"
+    timeout: 10000
+- back
+
+# heatmap/[id] ← terrio-territory://heatmap/<territoryId> (Expo Router default)
+- openLink: terrio-territory://heatmap/e2e-territory-1
+- extendedWaitUntil:
+    visible:
+      id: "footfall-heatmap"
+    timeout: 10000
+- back
