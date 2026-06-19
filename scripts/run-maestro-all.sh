@@ -5,8 +5,8 @@
 set -u
 ADB="$ANDROID_HOME/platform-tools/adb"
 MAESTRO="$HOME/.maestro/bin/maestro"
-APK_DIR="C:/Users/giand/Claude/apk-output"
-E2E_DIR="C:/Users/giand/Claude/terrio-e2e-tests"
+APK_DIR="/home/nucjd/dev/apk-output"
+E2E_DIR="/home/nucjd/dev/terrio-e2e-tests"
 
 declare -A PACKAGE_MAP=(
   [consumer]=com.terrio.consumer
