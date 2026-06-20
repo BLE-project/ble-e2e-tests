@@ -48,6 +48,7 @@ reseed_for() {
     merchant-mobile/adv-*)             BFF_URL="$BFF" npx tsx fixtures/seed-cli.ts merchant-adv      >/dev/null 2>&1 ;;
     tenant-mobile/beacons.yaml)        BFF_URL="$BFF" npx tsx fixtures/seed-cli.ts tenant-beacon     >/dev/null 2>&1 ;;
     consumer-mobile/custom-branding.yaml) BFF_URL="$BFF" npx tsx fixtures/seed-cli.ts consumer-branding >/dev/null 2>&1 ;;
+    consumer-mobile/inbox-persist-mark-read.yaml) BFF_URL="$BFF" npx tsx fixtures/seed-cli.ts consumer-notification >/dev/null 2>&1 ;;
   esac
 }
 
