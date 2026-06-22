@@ -108,6 +108,7 @@ jobs:
       - name: Upload scan SARIF
         uses: github/codeql-action/upload-sarif@v3
         if: always()
+        continue-on-error: true   # advisory — Code Scanning (GHAS) may not be enabled on this repo
         with:
           sarif_file: trivy-${{ matrix.service }}.sarif
           category: trivy-${{ matrix.service }}
