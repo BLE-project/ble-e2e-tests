@@ -53,18 +53,16 @@ tags:
       id: "moderation-row"
     timeout: 20000
 
-# Tap a VERDICT-bearing row by seed title (E2E-MOD-01 template — submitted with
-# budget NORMAL, so it carries a Claude verdict and the detail shows ANALISI AI).
-# A blind first-row tap is order-dependent: when the base seed creates the
-# budget-degraded no-verdict ADV BEFORE the queue top-up, that ADV has the
-# soonest salesReviewExpiresAt and sorts FIRST — its detail has no ANALISI AI.
+# Tap a VERDICT-bearing row by the title rendered by the mobile app. The seed
+# source title is prefixed E2E-MOD-01, but the review API/mobile card exposes the
+# normalized campaign title ("Sconto 10% prodotti selezionati").
 - scrollUntilVisible:
     element:
-      text: "E2E-MOD-01.*"
+      text: "Sconto 10% prodotti selezionati.*"
     direction: DOWN
     timeout: 30000
 - tapOn:
-    text: "E2E-MOD-01.*"
+    text: "Sconto 10% prodotti selezionati.*"
 
 - extendedWaitUntil:
     visible: "ANALISI AI"

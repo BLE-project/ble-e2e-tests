@@ -49,21 +49,24 @@ appId: it.terrio.salesagent
 - tapOn:
     id: "username-input"
 - inputText: "dev-sales-agent"
+- hideKeyboard
 
 - tapOn:
     id: "password-input"
 - inputText: "dev-pass"
+- hideKeyboard
 
 - tapOn:
     id: "login-btn"
 
-# FIX-ITER5-001 (2026-05-02): biometric enrollment prompt may appear post-login.
-# "Non ora" button was removed — use pressKey:Back to dismiss the modal cleanly.
+# Biometric enrollment prompt may appear post-login. Use the explicit opt-out
+# testID so Expo Router does not treat a Back press as stack navigation.
 - runFlow:
     when:
       visible: "Accesso più rapido"
     commands:
-      - pressKey: Back
+      - tapOn:
+          id: "enroll-never"
 
 # BUG-003: navigation within 8s
 - extendedWaitUntil:

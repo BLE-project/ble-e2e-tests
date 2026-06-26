@@ -9,3 +9,4 @@ coverage/
 
 # Maestro artifacts (captured screenshots in repo root)
 beacon-notif-shade.png
+maestro-debug/

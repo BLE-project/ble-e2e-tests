@@ -77,14 +77,19 @@ export async function ensureConsumerNotification(): Promise<void> {
 
   const { container, user } = resolvePostgres()
 
-  // Idempotent: drop prior seed rows then insert exactly one fresh unread row, so
-  // the flow always starts from a known "one unread notification" state. The only
-  // interpolated value is the regex-validated UUID tenantId; title/body/kind are
-  // constants. Executed via execFileSync (no shell).
+  // Idempotent: mark any existing unread rows read, drop prior seed rows, then
+  // insert exactly one fresh unread row. The UI flow asserts that the mark-all
+  // affordance disappears after tapping the seeded row, so unrelated unread
+  // notifications from previous e2e flows must not leak into this precondition.
+  // The only interpolated value is the regex-validated UUID tenantId; title/body/
+  // kind are constants. Executed via execFileSync (no shell).
   const title = 'Offerta vicino a te'
   const body  = 'Un punto vendita aderente ha una promo attiva. Tocca per scoprirla.'
   const sql =
-    `DELETE FROM consumer_notification WHERE consumer_id = ${sqlLit(CONSUMER)} AND kind = 'e2e-inbox-seed'; ` +
+    `UPDATE consumer_notification SET read_at = COALESCE(read_at, now()) ` +
+    `WHERE tenant_id = ${sqlLit(tenantId)} AND consumer_id = ${sqlLit(CONSUMER)} AND read_at IS NULL; ` +
+    `DELETE FROM consumer_notification ` +
+    `WHERE tenant_id = ${sqlLit(tenantId)} AND consumer_id = ${sqlLit(CONSUMER)} AND kind = 'e2e-inbox-seed'; ` +
     `INSERT INTO consumer_notification (tenant_id, consumer_id, title, body, deep_link, kind, channel, read_at) ` +
     `VALUES (${sqlLit(tenantId)}, ${sqlLit(CONSUMER)}, ${sqlLit(title)}, ${sqlLit(body)}, 'terrio://inbox', 'e2e-inbox-seed', 'beacon-context', NULL);`
 
