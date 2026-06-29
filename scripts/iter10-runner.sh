@@ -76,7 +76,7 @@ run_flow() {
 
 "$ADB" -s "$DEVICE" shell input keyevent KEYCODE_WAKEUP >/dev/null 2>&1 || true
 "$ADB" -s "$DEVICE" shell svc power stayon usb >/dev/null 2>&1 || true
-"$ADB" -s "$DEVICE" reverse tcp:8080 tcp:8080 >/dev/null 2>&1 || true
+"$ADB" -s "$DEVICE" reverse tcp:8080 tcp:8082 >/dev/null 2>&1 || true
 "$ADB" -s "$DEVICE" reverse tcp:8180 tcp:8180 >/dev/null 2>&1 || true
 
 cleanup() { "$ADB" -s "$DEVICE" shell svc power stayon false >/dev/null 2>&1 || true; }

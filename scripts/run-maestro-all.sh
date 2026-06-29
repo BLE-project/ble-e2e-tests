@@ -30,7 +30,7 @@ for pkg in com.ble.consumer com.ble.merchant com.ble.tenant com.ble.salesagent; 
 done
 
 # ADB port forwards for localhost access from device
-"$ADB" reverse tcp:8080 tcp:8080 >/dev/null
+"$ADB" reverse tcp:8080 tcp:8082 >/dev/null
 "$ADB" reverse tcp:8180 tcp:8180 >/dev/null
 
 PASSED_APPS=()

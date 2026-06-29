@@ -19,7 +19,7 @@ export default defineConfig({
       name: 'smoke',
       testDir: './tests/smoke',
       use: {
-        baseURL: process.env.BFF_URL ?? 'http://localhost:8080',
+        baseURL: process.env.BFF_URL ?? 'http://localhost:8082',
       },
     },
     {
@@ -59,42 +59,42 @@ export default defineConfig({
       name: 'api',
       testDir: './tests/api',
       use: {
-        baseURL: process.env.BFF_URL ?? 'http://localhost:8080',
+        baseURL: process.env.BFF_URL ?? 'http://localhost:8082',
       },
     },
     {
       name: 'mobile-api',
       testDir: './tests/mobile-api',
       use: {
-        baseURL: process.env.BFF_URL ?? 'http://localhost:8080',
+        baseURL: process.env.BFF_URL ?? 'http://localhost:8082',
       },
     },
     {
       name: 'security',
       testDir: './tests/security',
       use: {
-        baseURL: process.env.BFF_URL ?? 'http://localhost:8080',
+        baseURL: process.env.BFF_URL ?? 'http://localhost:8082',
       },
     },
     {
       name: 'beacon-real',
       testDir: './tests/beacon-real',
       use: {
-        baseURL: process.env.BFF_URL ?? 'http://localhost:8080',
+        baseURL: process.env.BFF_URL ?? 'http://localhost:8082',
       },
     },
     {
       name: 'beacon-management',
       testDir: './tests/beacon-management',
       use: {
-        baseURL: process.env.BFF_URL ?? 'http://localhost:8080',
+        baseURL: process.env.BFF_URL ?? 'http://localhost:8082',
       },
     },
     {
       name: 'territory-isolation',
       testDir: './tests/territory-isolation',
       use: {
-        baseURL: process.env.BFF_URL ?? 'http://localhost:8080',
+        baseURL: process.env.BFF_URL ?? 'http://localhost:8082',
       },
     },
   ],
