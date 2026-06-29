@@ -121,7 +121,7 @@ maestro test maestro/
 ## Backend Requirements
 
 The BFF gateway must be running at `http://localhost:8080` (or the Android emulator
-equivalent `http://10.0.2.2:8080`) with all backing services available. Run the
+equivalent `http://10.0.2.2:8082`) with all backing services available. Run the
 seed data setup before testing:
 
 ```bash

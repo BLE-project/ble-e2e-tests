@@ -10,7 +10,7 @@ End-to-end test suite for the BLE (Bluetooth Low Energy) loyalty platform. Tests
   - Admin Web on `http://localhost:5174`
   - Tenant Web on `http://localhost:5173`
   - Merchant Portal on `http://localhost:5175`
-- **BFF** running on `http://localhost:8080`
+- **BFF** running on `http://localhost:8082`
 - **Keycloak** running on `http://localhost:8180` with the `ble` realm imported
 
 ## Setup
@@ -130,7 +130,7 @@ All URLs and credentials are configurable via environment variables. Copy `.env.
 | ADMIN_URL         | http://localhost:5174      | Admin Web base URL           |
 | TENANT_URL        | http://localhost:5173      | Tenant Web base URL          |
 | MERCHANT_URL      | http://localhost:5175      | Merchant Portal base URL     |
-| BFF_URL           | http://localhost:8080      | BFF gateway base URL         |
+| BFF_URL           | http://localhost:8082      | BFF gateway base URL         |
 | KC_URL            | http://localhost:8180      | Keycloak base URL            |
 | KC_REALM          | ble                        | Keycloak realm name          |
 

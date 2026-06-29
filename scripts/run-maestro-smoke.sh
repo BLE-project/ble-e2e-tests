@@ -4,7 +4,7 @@
 # Lancia login + navigation flow per ogni mobile app (5 app × 2 flow = 10).
 # Precondizioni:
 #   - Docker stack up (docker compose up -d in terrio-e2e-compose)
-#   - BFF Quarkus dev mode up su :8080 (via ./mvnw quarkus:dev in terrio-api-gateway-bff)
+#   - BFF raggiungibile sull'host alla porta 8082
 #   - Device con 5 com.terrio.* APK installati
 #   - adb reverse configurato
 #
@@ -28,7 +28,7 @@ echo "" >> "$REPORT"
 # ── Warm BFF ────────────────────────────────────────────────────────────────
 echo "▸ Warming BFF + identity-access..."
 for i in 1 2 3; do
-  curl -s -X POST http://localhost:8080/api/v1/auth/login \
+  curl -s -X POST http://localhost:8082/api/v1/auth/login \
     -H "Content-Type: application/json" \
     -d '{"username":"dev-tenant-admin","password":"dev-pass"}' \
     --max-time 30 -o /dev/null -w "  warmup-$i: %{http_code} %{time_total}s\n"
@@ -36,7 +36,7 @@ done
 
 # ── adb reverse ────────────────────────────────────────────────────────────
 echo "▸ Configuring adb reverse..."
-"$ADB" reverse tcp:8080 tcp:8080
+"$ADB" reverse tcp:8080 tcp:8082
 "$ADB" reverse tcp:8180 tcp:8180
 "$ADB" reverse tcp:8087 tcp:8087
 

@@ -12,11 +12,11 @@
 #     realm-ble.json, so nothing to do here.
 #
 # Usage:
-#   DEVICE=emulator-5554 BFF_URL=http://localhost:8080 scripts/run-maestro-suite.sh [app ...]
+#   DEVICE=emulator-5554 BFF_URL=http://localhost:8082 scripts/run-maestro-suite.sh [app ...]
 # With no app args it runs all five. Exits non-zero if any flow fails.
 set -u
 DEVICE="${DEVICE:-emulator-5554}"
-BFF_URL="${BFF_URL:-http://localhost:8080}"
+BFF_URL="${BFF_URL:-http://localhost:8082}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
