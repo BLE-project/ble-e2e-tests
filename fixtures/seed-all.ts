@@ -7,7 +7,7 @@
  * lays down every fixture (moderation queue, merchant ADVs, branding, …). The
  * per-flow seed-cli re-seeds refresh the consumable subset on top.
  *
- *   BFF_URL=http://localhost:8082 npx tsx fixtures/seed-all.ts
+ *   BFF_URL=http://localhost:8082 npm run seed
  */
 import globalSetup from '../global-setup'
 

@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "npx playwright test",
+    "seed": "tsx fixtures/seed-all.ts",
     "test:smoke": "npx playwright test --project=smoke",
     "test:admin": "npx playwright test --project=admin-web",
     "test:tenant": "npx playwright test --project=tenant-web",
@@ -25,6 +26,7 @@
   "devDependencies": {
     "@playwright/test": "^1.59.1",
     "@types/node": "^25.5.2",
+    "tsx": "4.22.4",
     "typescript": "^6.0.2"
   }
 }
