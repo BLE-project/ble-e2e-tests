@@ -1,0 +1,133 @@
+name: E2E full reset (Playwright + Maestro)
+
+# ble-e2e-tests#124 — invoke scripts/reset-e2e.sh (clean volumes, gated
+# readiness, canonical seed) as an actual CI job, then run the Playwright
+# suite against the freshly-reset stack. Maestro runs as a non-blocking
+# syntax-check (same pattern as terrio-consumer-mobile/.github/workflows/e2e.yml)
+# since a real on-device/emulator run needs signed APKs per app and is out of
+# scope for this shared test-fixtures repo — see ble-e2e-tests#124 for the
+# on-device follow-up.
+#
+# Cost note: this rebuilds all 9 Java backend services from source (Maven,
+# via GitHub Packages for terrio-platform-commons) plus the full Docker
+# Compose stack. That is too expensive to run on every push/PR, so this is
+# scheduled nightly + manually dispatchable, NOT wired into pull_request.
+
+on:
+  workflow_dispatch: {}
+  schedule:
+    # Nightly 03:00 UTC — after the security.yml Monday scan, off peak hours.
+    - cron: '0 3 * * *'
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  full-reset:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - name: Checkout ble-e2e-tests
+        uses: actions/checkout@v4
+        with:
+          path: terrio-e2e-tests
+
+      - name: Checkout ble-e2e-compose (sibling)
+        env:
+          GH_PAT: ${{ secrets.GH_PAT_BACKEND_READ }}
+        run: |
+          set -euo pipefail
+          git clone --depth 1 \
+            "https://x-access-token:${GH_PAT}@github.com/BLE-project/ble-e2e-compose.git" \
+            terrio-e2e-compose
+
+      - name: Checkout backend service repos (siblings, private)
+        # docker-compose.yml build contexts reference ../terrio-<service> —
+        # these need to exist as siblings of terrio-e2e-compose. All 9
+        # services + terrio-platform-commons are private repos in the same
+        # org, so the default GITHUB_TOKEN (scoped to this repo only) can't
+        # check them out. GH_PAT_BACKEND_READ already exists as a repo secret
+        # (created 2026-04-27) for exactly this; it was unused until now.
+        env:
+          GH_PAT: ${{ secrets.GH_PAT_BACKEND_READ }}
+        run: |
+          set -euo pipefail
+          repos="platform-commons identity-access core-registry event-ingestion cashback-ledger stream-processing notification-service reporting-pa gamification api-gateway-bff"
+          for svc in $repos; do
+            git clone --depth 1 \
+              "https://x-access-token:${GH_PAT}@github.com/BLE-project/ble-${svc}.git" \
+              "terrio-${svc}"
+          done
+
+      - name: Generate Maven settings for GitHub Packages (terrio-platform-commons)
+        # Same auth pattern already used successfully in CI by
+        # terrio-cashback-ledger/.github/workflows/ci.yml and siblings:
+        # a token with read:packages, not the interactive `gh auth` OAuth
+        # token the Makefile comment warns about (that warning is about local
+        # dev machines, not CI). GH_PAT_BACKEND_READ covers packages:read too.
+        working-directory: terrio-e2e-compose
+        env:
+          GITHUB_PACKAGES_TOKEN: ${{ secrets.GH_PAT_BACKEND_READ }}
+          GITHUB_ACTOR: ${{ github.actor }}
+        run: make maven-settings
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: terrio-e2e-tests/package-lock.json
+
+      - name: Install e2e-tests dependencies
+        working-directory: terrio-e2e-tests
+        run: npm ci
+
+      - name: Install Playwright browsers
+        working-directory: terrio-e2e-tests
+        run: npx playwright install --with-deps chromium
+
+      - name: Reset stack from a clean state (scripts/reset-e2e.sh)
+        working-directory: terrio-e2e-tests
+        env:
+          COMPOSE_DIR: ${{ github.workspace }}/terrio-e2e-compose
+          # Fresh runner has no local terrio/*:local images yet — first
+          # `docker compose up --wait` triggers the Maven-backed image builds
+          # using the maven-settings.xml generated above.
+          STACK_WAIT_TIMEOUT: '900'
+        run: ./scripts/reset-e2e.sh
+
+      - name: Run Playwright suite
+        working-directory: terrio-e2e-tests
+        run: npx playwright test
+
+      - name: Install Maestro CLI
+        if: always()
+        run: |
+          curl -Ls "https://get.maestro.mobile.dev" | bash
+          echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
+
+      - name: Maestro flow syntax check — all 5 apps, Android + iOS
+        # Non-blocking (|| true): this validates flow YAML only, it does not
+        # exercise app behavior. Real release-critical Maestro runs happen
+        # on-device (see memory: emulator CI is non-fatal smoke, on-device is
+        # canonical) — signed per-app APKs/IPAs are out of scope here.
+        if: always()
+        working-directory: terrio-e2e-tests
+        run: maestro test --format junit maestro/ || true
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: terrio-e2e-tests/playwright-report/
+          retention-days: 14
+
+      - name: Upload test-results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: terrio-e2e-tests/test-results/
+          retention-days: 14
