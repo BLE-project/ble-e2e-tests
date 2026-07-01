@@ -10,8 +10,16 @@ name: E2E full reset (Playwright + Maestro)
 #
 # Cost note: this rebuilds all 9 Java backend services from source (Maven,
 # via GitHub Packages for terrio-platform-commons) plus the full Docker
-# Compose stack. That is too expensive to run on every push/PR, so this is
-# scheduled nightly + manually dispatchable, NOT wired into pull_request.
+# Compose stack, plus 3 frontend dev servers (admin-web/tenant-web/
+# merchant-portal — see scripts/start-frontends.sh). That is too expensive
+# to run on every push/PR, so this is scheduled nightly + manually
+# dispatchable, NOT wired into pull_request.
+#
+# marketing-site (Astro, :4321) is NOT covered: it requires Node >=22.12,
+# incompatible with the Node 20 pin the 3 Vite apps and this job share —
+# see scripts/start-frontends.sh header for the full explanation. Its
+# Playwright project will still fail with a clear ECONNREFUSED rather than
+# a false pass.
 
 on:
   workflow_dispatch: {}
@@ -26,7 +34,7 @@ permissions:
 jobs:
   full-reset:
     runs-on: ubuntu-latest
-    timeout-minutes: 75
+    timeout-minutes: 90
     steps:
       - name: Checkout ble-e2e-tests
         uses: actions/checkout@v4
@@ -54,6 +62,20 @@ jobs:
         run: |
           set -euo pipefail
           repos="platform-commons identity-access core-registry event-ingestion cashback-ledger stream-processing notification-service reporting-pa gamification api-gateway-bff"
+          for svc in $repos; do
+            git clone --depth 1 \
+              "https://x-access-token:${GH_PAT}@github.com/BLE-project/ble-${svc}.git" \
+              "terrio-${svc}"
+          done
+
+      - name: Checkout frontend repos (siblings, private)
+        # Needed by scripts/start-frontends.sh — see its header for why
+        # marketing-site is intentionally excluded (Node version conflict).
+        env:
+          GH_PAT: ${{ secrets.GH_PAT_BACKEND_READ }}
+        run: |
+          set -euo pipefail
+          repos="backoffice-admin-web backoffice-tenant-web merchant-portal"
           for svc in $repos; do
             git clone --depth 1 \
               "https://x-access-token:${GH_PAT}@github.com/BLE-project/ble-${svc}.git" \
@@ -113,6 +135,13 @@ jobs:
         # git (100644, not 100755 — see run 28515500726), and `chmod +x` in a
         # prior step would be lost/racy across checkout re-clones anyway.
         run: bash ./scripts/reset-e2e.sh
+
+      - name: Start frontend dev servers (admin-web, tenant-web, merchant-portal)
+        working-directory: terrio-e2e-tests
+        # Started as background processes (nohup + disown) that persist for
+        # the rest of the job — see scripts/start-frontends.sh header for
+        # why marketing-site is excluded (Node version conflict).
+        run: bash ./scripts/start-frontends.sh
 
       - name: Run Playwright suite
         working-directory: terrio-e2e-tests
