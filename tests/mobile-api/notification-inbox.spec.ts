@@ -63,7 +63,9 @@ test.describe('Consumer notification inbox — end-to-end (#86)', () => {
     const id = unread!.id
 
     // 3. mark-read (idempotent, ownership-scoped)
-    const mark = await request.post(`${BFF}/bff/v1/consumer/notifications/${id}/read`, { headers })
+    // BFF exposes PUT here (see ConsumerNotificationBffResource.markRead) —
+    // POST returns 405, diagnosed 2026-07-01.
+    const mark = await request.put(`${BFF}/bff/v1/consumer/notifications/${id}/read`, { headers })
     expect(mark.ok(), `mark-read failed: ${mark.status()}`).toBeTruthy()
 
     // 4. inbox now reflects the read state for that row
@@ -77,7 +79,8 @@ test.describe('Consumer notification inbox — end-to-end (#86)', () => {
 
   test('mark-read on a foreign / non-existent id is 404 (not 403 — no existence oracle)', async ({ request }) => {
     const headers = { Authorization: `Bearer ${token}`, 'X-Tenant-Id': tenantId }
-    const res = await request.post(
+    // BFF exposes PUT here — POST returns 405, diagnosed 2026-07-01.
+    const res = await request.put(
       `${BFF}/bff/v1/consumer/notifications/00000000-0000-0000-0000-0000000000ff/read`,
       { headers },
     )
