@@ -158,6 +158,21 @@ jobs:
           KC_URL: http://localhost:8180
         run: npx playwright test
 
+      - name: Dump commission_rates (diagnose #124 commission-territory 500)
+        # Diagnosed 2026-07-01: CommissionRateResource.resolve() throws 500
+        # if findGlobal() finds no active GLOBAL row for CURRENT_DATE.
+        # Verified locally the migration seeds one and RLS doesn't hide it —
+        # dumping here to catch whatever is actually different in THIS run's
+        # ephemeral DB (missing row, wrong validFrom/validTo, etc.) instead
+        # of guessing again after the DB is torn down.
+        if: always()
+        working-directory: terrio-e2e-compose
+        run: |
+          echo "==> commission_rates (all rows)"
+          docker compose exec -T postgres psql -U "${POSTGRES_USER:-ble}" -d ble_core \
+            -c "SELECT scope, tenant_id, rate, valid_from, valid_to, now() AS db_now FROM commission_rates ORDER BY scope, valid_from;" \
+            || echo "::warning:: dump failed (postgres not reachable or query error)"
+
       - name: Install Maestro CLI
         if: always()
         run: |
