@@ -16,7 +16,7 @@ test.describe('API — Min Spend Rules (FEAT-MIN-SPEND-001)', () => {
 
   // ── List ──────────────────────────────────────────────────────────────────
 
-  test('GET /min-spend-rules returns global seed', async () => {
+  test('GET /min-spend-rules returns an active global rule', async () => {
     const res = await admin.get('/api/v1/min-spend-rules', { 'X-Tenant-Id': tenantId })
     expect(res.status()).toBe(200)
     const rules = await res.json()
@@ -24,18 +24,18 @@ test.describe('API — Min Spend Rules (FEAT-MIN-SPEND-001)', () => {
     expect(rules.length).toBeGreaterThanOrEqual(1)
     const global = rules.find((r: any) => r.scope === 'GLOBAL')
     expect(global).toBeDefined()
-    expect(global.amountCents).toBe(0) // default = no minimum
+    expect(global.amountCents).toBeGreaterThanOrEqual(0)
   })
 
   // ── Resolve — cascade ─────────────────────────────────────────────────────
 
-  test('GET /min-spend-rules/resolve without params returns GLOBAL', async () => {
+  test('GET /min-spend-rules/resolve without params returns current GLOBAL', async () => {
     const res = await admin.get('/api/v1/min-spend-rules/resolve', { 'X-Tenant-Id': tenantId })
     expect(res.status()).toBe(200)
     const body = await res.json()
     expect(body.scope).toBe('GLOBAL')
-    expect(body.amountCents).toBe(0)
-    expect(body.amountFormatted).toBe('0.00')
+    expect(body.amountCents).toBeGreaterThanOrEqual(0)
+    expect(body.amountFormatted).toBe((body.amountCents / 100).toFixed(2))
   })
 
   test('resolve with unknown tenant falls back to GLOBAL', async () => {

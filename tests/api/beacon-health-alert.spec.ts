@@ -11,11 +11,12 @@ import { test, expect } from '@playwright/test'
  *
  * Preconditions:
  *   - notification-service up on http://localhost:8084  (or $NOTIF_URL)
- *   - BLE_ALERT_WEBHOOK_TOKEN = 'dev-alert-secret' (default dev config)
+ *   - BLE_ALERT_WEBHOOK_TOKEN matches the strong local Compose value
  */
 
 const NOTIF_URL      = process.env.NOTIF_URL           ?? 'http://localhost:8084'
-const WEBHOOK_TOKEN  = process.env.BLE_ALERT_WEBHOOK_TOKEN ?? 'dev-alert-secret'
+const WEBHOOK_TOKEN  = process.env.BLE_ALERT_WEBHOOK_TOKEN
+  ?? 'e2e-alert-webhook-secret-token-2026-not-prod'
 const ALERT_ENDPOINT = `${NOTIF_URL}/v1/alerts/beacon-health`
 
 // ── Auth tests ───────────────────────────────────────────────────────────────

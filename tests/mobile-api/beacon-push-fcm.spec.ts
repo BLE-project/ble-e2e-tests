@@ -37,7 +37,10 @@ import { test, expect, APIRequestContext } from '@playwright/test'
 import { loadSeedDataSync } from '../../fixtures/seed-data'
 
 const BFF      = process.env.BFF_URL      ?? 'http://localhost:8080'
-const WIREMOCK = process.env.WIREMOCK_URL ?? 'http://localhost:8091'
+// WIREMOCK_URL belongs to Docker-internal service configuration
+// (http://wiremock:8091). Tests run on the host/network namespace and need the
+// published admin endpoint instead, so keep a distinct variable.
+const WIREMOCK = process.env.WIREMOCK_ADMIN_URL ?? 'http://localhost:8091'
 const KEYCLOAK = process.env.KEYCLOAK_URL ?? 'http://localhost:8180'
 
 const KC_ADMIN_USER = process.env.KEYCLOAK_ADMIN      ?? 'admin'
@@ -271,14 +274,14 @@ test.describe.serial('Beacon → FCM push pipeline (WireMock stub)', () => {
     const wipe = await request.delete(`${WIREMOCK}/__admin/requests`)
     expect(wipe.ok(), 'wiremock journal reset failed').toBeTruthy()
 
-    // login consumer A — tenant risolto dal claim JWT (deve essere un UUID:
-    // event-ingestion rifiuta claim non-UUID come il wildcard "ANY")
+    // Federated consumers deliberately carry tenant_id=ANY. Resolve the active
+    // E2E tenant from the canonical seed and pass it explicitly in X-Tenant-Id.
     consumerToken = await loginAs(request, CONSUMER_USER)
     const claims = jwtClaims(consumerToken)
     consumerId = String(claims.preferred_username ?? CONSUMER_USER)
-    tenantA = String(claims.tenant_id ?? '')
-    expect(tenantA, `dev-consumer tenant_id claim must be a UUID (got "${tenantA}")`)
-      .toMatch(/^[0-9a-f-]{36}$/i)
+    expect(String(claims.tenant_id ?? claims.ble_tenant_id ?? '')).toBe('ANY')
+    tenantA = loadSeedDataSync()?.tenantId ?? ''
+    expect(tenantA).toMatch(/^[0-9a-f-]{36}$/i)
     expect(tenantA).not.toBe(TENANT_B)
 
     tenantAdminToken = await loginAs(request, TENANT_USER)

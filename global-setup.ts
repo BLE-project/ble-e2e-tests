@@ -55,11 +55,16 @@ async function syncKeycloakUsers(tenantId: string) {
   const users: Record<string, [string, string, string]> = {
     'dev-super-admin': ['Dev', 'SuperAdmin', '*'],
     'dev-tenant-admin': ['Dev', 'TenantAdmin', tenantId],
-    'dev-merchant': ['Dev', 'Merchant', tenantId],
-    'dev-consumer': ['Dev', 'Consumer', tenantId],
-    'dev-pa-analyst': ['Dev', 'Analyst', tenantId],
-    'dev-sales-agent': ['Dev', 'SalesAgent', tenantId],
     'dev-territory-admin': ['Dev', 'TerritoryAdmin', tenantId],
+    'dev-merchant': ['Dev', 'Merchant', tenantId],
+    'dev-pa-analyst': ['Dev', 'Analyst', tenantId],
+    'dev-tnnt-analyst': ['Dev', 'TenantAnalyst', tenantId],
+    'dev-mrch-analyst': ['Dev', 'MerchantAnalyst', tenantId],
+    // Consumer is the only cross-tenant human role; the BFF enforces ANY only here.
+    'dev-consumer': ['Dev', 'Consumer', 'ANY'],
+    'dev-sales-agent': ['Dev', 'SalesAgent', tenantId],
+    'dev-integrator': ['Dev', 'Integrator', tenantId],
+    'dev-dpo': ['Dev', 'DPO', tenantId],
   }
 
   for (const [uname, [fn, ln, tid]] of Object.entries(users)) {
@@ -103,7 +108,7 @@ async function syncKeycloakUsers(tenantId: string) {
     }
   }
 
-  console.log(`[global-setup] KC users synced with ble_tenant_id=${tenantId}`)
+  console.log(`[global-setup] KC tenant roles synced to ${tenantId}; consumer preserved as ANY`)
 }
 
 /**
