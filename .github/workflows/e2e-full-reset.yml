@@ -116,6 +116,17 @@ jobs:
 
       - name: Run Playwright suite
         working-directory: terrio-e2e-tests
+        env:
+          # Diagnosed 2026-07-01 (run 28533634636): 13 of the 15 fixture files
+          # under fixtures/ default BFF_URL to http://localhost:8080 (the
+          # container-internal port), not the host-mapped 8082 that
+          # docker-compose.yml actually publishes. Without an explicit env
+          # here, global-setup's seed step gets ECONNREFUSED on ::1:8080 and
+          # every CRUD-dependent test fails downstream. playwright.config.ts
+          # itself already defaults correctly to 8082 — only the fixtures
+          # disagree, which is why this wasn't caught by the browser tests.
+          BFF_URL: http://localhost:8082
+          KC_URL: http://localhost:8180
         run: npx playwright test
 
       - name: Install Maestro CLI
