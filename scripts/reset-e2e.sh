@@ -41,7 +41,28 @@ for i in $(seq 1 60); do
   fi
   sleep 5
 done
-[ "$ready" = "1" ] || { echo "::error:: critical services not ready after 300s (BFF=${bff_ok:-?} KC=${kc_ok:-?}) — aborting to avoid a partial seed"; exit 1; }
+if [ "$ready" != "1" ]; then
+  echo "::error:: critical services not ready after 300s (BFF=${bff_ok:-?} KC=${kc_ok:-?}) — aborting to avoid a partial seed"
+  echo "==> dumping docker compose state + logs for diagnosis"
+  ( cd "$COMPOSE_DIR" && docker compose ps -a ) || true
+  echo "==> logs: non-running/unhealthy containers"
+  ( cd "$COMPOSE_DIR" && docker compose ps -a --format '{{.Service}}\t{{.State}}' ) | \
+    while IFS=$'\t' read -r svc state; do
+      case "$state" in
+        running) ;;
+        *)
+          echo "---- docker compose logs --tail=200 $svc (state=$state) ----"
+          ( cd "$COMPOSE_DIR" && docker compose logs --no-color --tail=200 "$svc" ) || true
+          ;;
+      esac
+    done
+  echo "==> logs: critical services (postgres, keycloak, api-gateway-bff) regardless of state"
+  for svc in postgres keycloak api-gateway-bff; do
+    echo "---- docker compose logs --tail=200 $svc ----"
+    ( cd "$COMPOSE_DIR" && docker compose logs --no-color --tail=200 "$svc" ) || true
+  done
+  exit 1
+fi
 
 echo "==> base seed (fixtures/seed-all.ts)"
 ( cd "$ROOT" && BFF_URL="$BFF_URL" npx tsx fixtures/seed-all.ts )
