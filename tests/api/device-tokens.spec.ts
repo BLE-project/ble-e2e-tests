@@ -100,7 +100,8 @@ test.describe('T-162 — sales-agent push-token with territories', () => {
 })
 
 test.describe('T-162 — Grafana alert webhook receiver', () => {
-  const WEBHOOK_TOKEN = process.env.BLE_ALERT_WEBHOOK_TOKEN ?? 'dev-alert-secret'
+  const WEBHOOK_TOKEN = process.env.BLE_ALERT_WEBHOOK_TOKEN
+    ?? 'e2e-alert-webhook-secret-token-2026-not-prod'
 
   test('no Bearer returns 401', async () => {
     const res = await fetch(`${NOTIF_URL}/v1/alerts/beacon-health`, {

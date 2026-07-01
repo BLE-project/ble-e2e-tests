@@ -103,10 +103,11 @@ export async function loginViaApi(
 /**
  * Authenticate an OIDC SPA (tenant-web: oidc-client-ts + Keycloak) WITHOUT the
  * interactive redirect. tenant-web's ProtectedRoute gate reads
- * userManager.getUser() (oidc-client-ts store: localStorage key
- * `oidc.user:{authority}:{client_id}`), while its API client reads the bearer
+ * userManager.getUser() (oidc-client-ts store key
+ * `oidc.user:{authority}:{client_id}`; sessionStorage by default), while its API client reads the bearer
  * from sessionStorage `ble_tenant_token`. loginViaApi only set the latter, so the
- * route guard still redirected to Keycloak (#292 finding). This seeds BOTH —
+ * route guard still redirected to Keycloak (#292 finding). This seeds both
+ * supported web storages plus the API bearer —
  * before the SPA boots (addInitScript) — so the guard sees a logged-in user.
  *
  * The access_token is the BFF login token (a real JWT); the stored OIDC profile
@@ -149,6 +150,7 @@ export async function loginViaOidcSession(
     ([k, u, sk, tkn]) => {
       try {
         localStorage.setItem(k, u)
+        sessionStorage.setItem(k, u)
         localStorage.setItem(sk, tkn)
         sessionStorage.setItem(sk, tkn)
       } catch { /* storage unavailable */ }

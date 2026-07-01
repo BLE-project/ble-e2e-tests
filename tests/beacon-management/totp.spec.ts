@@ -288,8 +288,12 @@ test.describe('2FA TOTP — Setup, Verify, Validate', () => {
       data: { code: '999999' },
     })
 
-    // Should fail — 400 or 401
-    expect([400, 401]).toContain(validateRes.status())
+    // The endpoint's documented validation contract is 200 + {valid:false}.
+    // 400/401 remains valid when no server-side enrollment exists.
+    expect([200, 400, 401]).toContain(validateRes.status())
+    if (validateRes.status() === 200) {
+      expect((await validateRes.json()).valid).toBe(false)
+    }
   })
 
   // ── TOTP with non-numeric code ─────────────────────────────────────────

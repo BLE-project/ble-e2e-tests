@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { execFileSync } from 'node:child_process'
+import { loadSeedDataSync } from '../../fixtures/seed-data'
 
 /**
  * #86 — Consumer notification inbox, end-to-end (the half GAP-025 never covered).
@@ -10,7 +11,7 @@ import { execFileSync } from 'node:child_process'
  * the live stack:
  *   1. seed one unread inbox row (fixtures/seed-consumer-notification.ts)
  *   2. GET  /bff/v1/consumer/notifications → the row is present and UNREAD
- *   3. POST /bff/v1/consumer/notifications/{id}/read → 200
+ *   3. PUT  /bff/v1/consumer/notifications/{id}/read → 200
  *   4. GET  again → the same row now carries a non-null readAt
  *
  * Requires the e2e-compose stack (BFF + notification-service + postgres); it is a
@@ -20,12 +21,6 @@ const BFF      = process.env.BFF_URL ?? 'http://localhost:8082'
 const CONSUMER = process.env.CONSUMER_USER ?? 'dev-consumer'
 const PASS     = process.env.DEV_PASS ?? 'dev-pass'
 
-/** tenant claim, mirroring fixtures/seed-consumer-notification.ts. */
-function tenantOf(token: string): string {
-  const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString('utf8'))
-  return String(payload.ble_tenant_id ?? payload.tenant_id ?? '')
-}
-
 interface InboxRow { id: string; title: string; readAt: string | null }
 interface InboxResponse { notifications: InboxRow[]; totalCount: number }
 
@@ -34,8 +29,9 @@ test.describe('Consumer notification inbox — end-to-end (#86)', () => {
   let tenantId = ''
 
   test.beforeAll(async ({ request }) => {
-    // Deterministic: insert one unread inbox row for dev-consumer (resolves the
-    // tenant + consumer from a live login, so a DB reset still seeds the right row).
+    // Deterministic: insert one unread inbox row for dev-consumer. Its JWT carries
+    // tenant_id=ANY, so both the seed and the request use the concrete enrolled
+    // tenant recorded by global setup.
     execFileSync('npx', ['tsx', 'fixtures/seed-consumer-notification.ts'], {
       env: { ...process.env, BFF_URL: BFF },
       stdio: 'inherit',
@@ -46,8 +42,8 @@ test.describe('Consumer notification inbox — end-to-end (#86)', () => {
     expect(res.ok(), `consumer login failed: ${res.status()}`).toBeTruthy()
     token = (await res.json()).token
     expect(token).toBeTruthy()
-    tenantId = tenantOf(token)
-    expect(tenantId, 'tenant claim missing from JWT').toMatch(/^[0-9a-f-]{36}$/i)
+    tenantId = loadSeedDataSync()?.tenantId ?? ''
+    expect(tenantId, 'seed tenant missing').toMatch(/^[0-9a-f-]{36}$/i)
   })
 
   test('seeded notification is unread, then mark-read sets readAt', async ({ request }) => {
@@ -63,7 +59,7 @@ test.describe('Consumer notification inbox — end-to-end (#86)', () => {
     const id = unread!.id
 
     // 3. mark-read (idempotent, ownership-scoped)
-    const mark = await request.post(`${BFF}/bff/v1/consumer/notifications/${id}/read`, { headers })
+    const mark = await request.put(`${BFF}/bff/v1/consumer/notifications/${id}/read`, { headers })
     expect(mark.ok(), `mark-read failed: ${mark.status()}`).toBeTruthy()
 
     // 4. inbox now reflects the read state for that row
@@ -77,7 +73,7 @@ test.describe('Consumer notification inbox — end-to-end (#86)', () => {
 
   test('mark-read on a foreign / non-existent id is 404 (not 403 — no existence oracle)', async ({ request }) => {
     const headers = { Authorization: `Bearer ${token}`, 'X-Tenant-Id': tenantId }
-    const res = await request.post(
+    const res = await request.put(
       `${BFF}/bff/v1/consumer/notifications/00000000-0000-0000-0000-0000000000ff/read`,
       { headers },
     )
