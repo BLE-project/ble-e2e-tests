@@ -109,7 +109,10 @@ jobs:
           # `docker compose up --wait` triggers the Maven-backed image builds
           # using the maven-settings.xml generated above.
           STACK_WAIT_TIMEOUT: '900'
-        run: ./scripts/reset-e2e.sh
+        # bash explicitly: the exec bit on scripts/reset-e2e.sh isn't set in
+        # git (100644, not 100755 — see run 28515500726), and `chmod +x` in a
+        # prior step would be lost/racy across checkout re-clones anyway.
+        run: bash ./scripts/reset-e2e.sh
 
       - name: Run Playwright suite
         working-directory: terrio-e2e-tests
