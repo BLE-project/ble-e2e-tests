@@ -13,6 +13,12 @@ BFF_URL="${BFF_URL:-http://localhost:8082}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 COMPOSE_DIR="${COMPOSE_DIR:-$ROOT/../terrio-e2e-compose}"
 
+echo "==> ensure .env exists (fresh checkout has no .env, only .env.example)"
+if [ ! -f "$COMPOSE_DIR/.env" ] && [ -f "$COMPOSE_DIR/.env.example" ]; then
+  echo "    .env missing in $COMPOSE_DIR — copying from .env.example (dev-safe defaults, no real secrets)"
+  cp "$COMPOSE_DIR/.env.example" "$COMPOSE_DIR/.env"
+fi
+
 echo "==> docker compose down --volumes"
 ( cd "$COMPOSE_DIR" && docker compose down --volumes --remove-orphans )
 
