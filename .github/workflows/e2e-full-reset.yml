@@ -66,11 +66,25 @@ jobs:
         # a token with read:packages, not the interactive `gh auth` OAuth
         # token the Makefile comment warns about (that warning is about local
         # dev machines, not CI). GH_PAT_BACKEND_READ covers packages:read too.
+        #
+        # NOTE: this writes settings.xml directly rather than calling
+        # `make maven-settings` in ble-e2e-compose. That target's pre-flight
+        # curl health-check returned HTTP 302 on GitHub Actions runners (run
+        # https://github.com/BLE-project/ble-e2e-tests/actions/runs/28515349295)
+        # — likely a redirect-following/actor-pairing quirk of that check on
+        # this network path, not proof the PAT itself is invalid. The real
+        # test is Maven actually resolving terrio-platform-commons during the
+        # Docker build below, which surfaces a clear 401 if the token is bad.
         working-directory: terrio-e2e-compose
         env:
-          GITHUB_PACKAGES_TOKEN: ${{ secrets.GH_PAT_BACKEND_READ }}
-          GITHUB_ACTOR: ${{ github.actor }}
-        run: make maven-settings
+          MAVEN_TOKEN: ${{ secrets.GH_PAT_BACKEND_READ }}
+        run: |
+          set -euo pipefail
+          mkdir -p secrets
+          umask 077
+          printf '%s\n' \
+            '<settings><servers><server><id>github</id><username>x-access-token</username><password>'"$MAVEN_TOKEN"'</password></server></servers></settings>' \
+            > secrets/maven-settings.xml
 
       - name: Set up Node
         uses: actions/setup-node@v4
@@ -95,7 +109,10 @@ jobs:
           # `docker compose up --wait` triggers the Maven-backed image builds
           # using the maven-settings.xml generated above.
           STACK_WAIT_TIMEOUT: '900'
-        run: ./scripts/reset-e2e.sh
+        # bash explicitly: the exec bit on scripts/reset-e2e.sh isn't set in
+        # git (100644, not 100755 — see run 28515500726), and `chmod +x` in a
+        # prior step would be lost/racy across checkout re-clones anyway.
+        run: bash ./scripts/reset-e2e.sh
 
       - name: Run Playwright suite
         working-directory: terrio-e2e-tests
