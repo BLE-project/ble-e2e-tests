@@ -127,8 +127,16 @@ export async function loginViaOidcSession(
   const token: string = (await response.json()).token
 
   const claims = JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString('utf8'))
+  // #136: l'authority DEVE combaciare con quella con cui è buildato il container
+  // frontend, perché oidc-client-ts indicizza lo User in storage con la chiave
+  // `oidc.user:${authority}:${clientId}`. I container e2e sono buildati con
+  // `VITE_OIDC_AUTHORITY=http://keycloak:8180/realms/ble` (il browser risolve
+  // `keycloak` via /etc/hosts → 127.0.0.1); il vecchio default `localhost:8180`
+  // produceva una chiave che UserManager.getUser() non trovava mai → utente
+  // null → redirect a Keycloak → contenuto protetto mai montato. Override
+  // possibile via TENANT_OIDC_AUTHORITY se il build cambia host.
   const authority = opts.authority
-    ?? process.env.TENANT_OIDC_AUTHORITY ?? 'http://localhost:8180/realms/ble'
+    ?? process.env.TENANT_OIDC_AUTHORITY ?? 'http://keycloak:8180/realms/ble'
   const clientId = opts.clientId
     ?? process.env.TENANT_OIDC_CLIENT_ID ?? 'ble-backoffice-tenant-web'
   const storageKey = opts.storageKey ?? 'ble_tenant_token'
@@ -148,6 +156,13 @@ export async function loginViaOidcSession(
   await page.addInitScript(
     ([k, u, sk, tkn]) => {
       try {
+        // #136: oidc-client-ts 3.x usa sessionStorage come userStore di DEFAULT
+        // quando `userStore` non è configurato (tenant-web/merchant-portal non lo
+        // configurano). Scrivere lo User solo in localStorage lasciava
+        // UserManager.getUser() a leggere una sessionStorage vuota → utente null
+        // → redirect a Keycloak. Scriverlo in ENTRAMBE copre sia il default
+        // sessionStorage sia eventuali config a localStorage.
+        sessionStorage.setItem(k, u)
         localStorage.setItem(k, u)
         localStorage.setItem(sk, tkn)
         sessionStorage.setItem(sk, tkn)
@@ -180,7 +195,12 @@ export async function loginViaKeycloak(
   username: string,
   password: string,
 ) {
-  const kcUrl = process.env.KC_URL ?? 'http://localhost:8180'
+  // #136: il merchant-portal è buildato con authority `keycloak:8180`, quindi il
+  // click "Sign in" redirige a `http://keycloak:8180/...` (il browser risolve
+  // `keycloak` via /etc/hosts). Il vecchio default `localhost:8180` faceva sì
+  // che il waitForURL(kcUrl) più sotto non matchasse mai → timeout. Override via
+  // KC_URL se il build cambia host.
+  const kcUrl = process.env.KC_URL ?? 'http://keycloak:8180'
   const merchantUrl = process.env.MERCHANT_URL ?? 'http://localhost:5175'
 
   // 1. Navigate to merchant portal
