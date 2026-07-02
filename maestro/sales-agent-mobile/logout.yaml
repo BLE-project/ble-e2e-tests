@@ -32,6 +32,11 @@ appId: it.terrio.salesagent
           id: "login-btn"
       # Iter3-A (iter11): dismiss biometric enrollment modal via testID rather
       # than pressKey:Back — see navigation.yaml comment for rationale.
+      # 2026-07-02: la modale compare async post-auth; attendere modale O Home
+      # prima del dismiss elimina la race che lasciava la modale sopra la Home.
+      - extendedWaitUntil:
+          visible: "Accesso più rapido|Home"
+          timeout: 15000
       - runFlow:
           when:
             visible: "Accesso più rapido"

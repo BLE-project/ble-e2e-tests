@@ -27,11 +27,16 @@ appId: it.terrio.tenant
       - inputText: "dev-pass"
       - hideKeyboard
       - tapOn: { id: "login-btn" }
+      # 2026-07-02: modale async post-auth + enroll-never (non pressKey:Back che
+      # pop-a l'auth-stack). Attendere modale O landing prima del dismiss.
+      - extendedWaitUntil:
+          visible: "Accesso più rapido|Welcome back"
+          timeout: 15000
       - runFlow:
           when:
             visible: "Accesso più rapido"
           commands:
-            - pressKey: Back
+            - tapOn: { id: "enroll-never" }
       - extendedWaitUntil:
           visible: "Welcome back"
           timeout: 15000
@@ -48,11 +53,13 @@ appId: it.terrio.tenant
     text: ".*, Impostazioni"
 - extendedWaitUntil:
     visible:
-      text: ".*(Account|Impostazioni|Settings).*"
+      id: "btn-logout"
     timeout: 5000
 
-# Settings tab exposes a red "Sign out" button directly (no Logout/Esci).
-- tapOn: "Sign out"
+# 2026-07-02: usare il testID btn-logout (settings.tsx) invece del testo
+# "Sign out" — device in locale IT mostra "Esci", il selettore testuale EN
+# non matchava e il logout falliva.
+- tapOn: { id: "btn-logout" }
 
 # KI-S56-01 CLOSED (2026-04-18): declarative <Redirect /> in AuthGuard swaps
 # routes synchronously during render — no more addViewAt race on main.

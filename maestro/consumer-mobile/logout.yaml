@@ -34,20 +34,29 @@ appId: it.terrio.consumer
             visible: "Return to previous programme"
           commands:
             - tapOn: "STAY HERE"
-      # Iter30 (2026-05-06): enroll-never testID instead of Back. Back pops
-      # auth-stack root and breaks downstream Vicini assertion. enroll-never
-      # invokes auth.optOut() purely from JS state, no nav side-effect.
-      # The legacy "Non ora" bug that triggered logout was fixed at the FE level
-      # (BiometricEnrollModal); enroll-never is the proper opt-out path.
-      - runFlow:
-          when:
-            visible: "Accesso più rapido"
+      # 2026-07-02: la modale biometrica "Accesso più rapido" compare async DOPO
+      # l'auth. Un dismiss one-shot subito dopo il tap login la mancava (race).
+      # La landing consumer è il banner scan-status (testID, come login.yaml che
+      # passa) — presente nell'accessibility tree anche quando la modale lo
+      # copre, quindi NON è un marker affidabile per capire se la modale è
+      # ancora aperta. Retry-dismiss con attesa tra i tentativi: cattura la
+      # modale anche se compare in ritardo, no-op se l'opt-out è già persistito.
+      - repeat:
+          times: 5
           commands:
-            - tapOn:
-                id: "enroll-never"
+            - runFlow:
+                when:
+                  visible: "Accesso più rapido"
+                commands:
+                  - tapOn:
+                      id: "enroll-never"
+            - waitForAnimationToEnd:
+                timeout: 1500
+      # enroll-never invoca auth.optOut() da stato JS, nessun side-effect di nav
+      # (a differenza di pressKey:Back che pop-erebbe l'auth-stack root).
       - extendedWaitUntil:
           visible:
-            text: ".*(Vicini|Nearby).*"
+            id: "scan-status-.*"
           timeout: 10000
 
 # FIX-S55-001: dismiss the federation prompt if coming in already logged
@@ -79,14 +88,21 @@ appId: it.terrio.consumer
 # Iter17-B fix (2026-05-04): selector ".*, Home" matched iOS-style accessibility
 # content description format (e.g. "house.fill, Home") that RN Expo Android does
 # NOT expose. Plain "Home" matches the Tab accessibilityLabel directly.
-- tapOn: { id: "tab-home" }
-- extendedWaitUntil:
-    visible: "Sign out"
-    timeout: 5000
-
-- tapOn: "Sign out"
+# 2026-07-02: il bottone logout (index.tsx, testID btn-logout) vive sulla Home
+# dove il consumer atterra dopo il login — non serve il tap su "tab-home" (che
+# non è esposto come testID in tutti gli stati e faceva fallire il flow).
+# scrollUntilVisible è idempotente se già visibile e assorbe il caso "sotto la
+# fold". Asserire il ritorno al login screen via login-btn testID invece della
+# copy EN "Discover nearby offers" (i18n-rot: device in locale IT).
+- scrollUntilVisible:
+    element:
+      id: "btn-logout"
+    direction: DOWN
+    timeout: 8000
+- tapOn: { id: "btn-logout" }
 
 # After logout we should see login screen again.
 - extendedWaitUntil:
-    visible: "Discover nearby offers"
+    visible:
+      id: "login-btn"
     timeout: 8000

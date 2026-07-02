@@ -59,8 +59,18 @@ appId: it.terrio.salesagent
 - tapOn:
     id: "login-btn"
 
-# Biometric enrollment prompt may appear post-login. Use the explicit opt-out
-# testID so Expo Router does not treat a Back press as stack navigation.
+# La modale biometrica "Accesso più rapido" compare in modo ASINCRONO dopo che
+# l'auth completa e SecureStore persiste — non nell'istante del tap login-btn.
+# Un `runFlow when visible` one-shot valutato subito qui quasi sempre NON la
+# trova ancora (race) → viene skippato → poi la modale compare, copre la Home e
+# l'assert successiva fallisce (root cause dei fail login on-device 2026-07-02).
+# Attendere esplicitamente la modale O la Home prima del dismiss elimina la
+# race: su device fisico dove `pm clear` è negato l'opt-out può essere già
+# persistito (compare Home diretta), altrimenti compare la modale e la si chiude
+# con enroll-never (nessun side-effect di nav, a differenza di pressKey:Back).
+- extendedWaitUntil:
+    visible: "Accesso più rapido|Home"
+    timeout: 15000
 - runFlow:
     when:
       visible: "Accesso più rapido"
