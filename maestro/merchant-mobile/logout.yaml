@@ -29,20 +29,24 @@ appId: it.terrio.merchant
       - tapOn:
           id: "login-btn"
       # Sprint14 P3 fix (2026-05-06): pressKey:Back popped Expo Router auth-stack
-      # root → app navigated AWAY from dashboard, breaking post-modal assertion.
-      # Use enroll-never testID instead (auth.optOut() from JS state, no nav
-      # side-effect). Same Iter15 sales-agent + Iter29 territory + Iter30 consumer
-      # fix pattern.
-      - runFlow:
-          when:
-            visible: "Accesso più rapido"
+      # root → app navigated AWAY from dashboard. Use enroll-never testID
+      # instead (auth.optOut() from JS state, no nav side-effect).
+      # 2026-07-02: la modale biometrica compare async post-auth; il dismiss
+      # one-shot la mancava (race) e la copy dashboard EN "Today revenue" non
+      # matcha col device in locale IT. Retry-dismiss con attesa tra i tentativi
+      # (cattura la modale ritardata, no-op se opt-out già persistito); la
+      # landing è verificata più sotto dallo scrollUntilVisible su btn-logout.
+      - repeat:
+          times: 5
           commands:
-            - tapOn:
-                id: "enroll-never"
-      - extendedWaitUntil:
-          visible:
-            text: ".*(Today revenue|Transactions|Merchant).*"
-          timeout: 15000
+            - runFlow:
+                when:
+                  visible: "Accesso più rapido"
+                commands:
+                  - tapOn:
+                      id: "enroll-never"
+            - waitForAnimationToEnd:
+                timeout: 1500
 
 - runFlow:
     when:
@@ -55,12 +59,15 @@ appId: it.terrio.merchant
 
 # Iter3 (2026-05-02): merchant has no Home tab — landing page is the dashboard.
 # Sign out button lives inline on the dashboard.
-- extendedWaitUntil:
-    visible:
-      text: ".*(Today revenue|Transactions).*"
-    timeout: 5000
-
-- tapOn: "Sign out"
+# 2026-07-02: testID btn-logout (index.tsx) invece del testo "Sign out"
+# (device IT mostra "Esci"); scrollUntilVisible assorbe il caso in cui il
+# bottone è sotto la fold della dashboard.
+- scrollUntilVisible:
+    element:
+      id: "btn-logout"
+    direction: DOWN
+    timeout: 8000
+- tapOn: { id: "btn-logout" }
 
 # Back to login screen.
 - extendedWaitUntil:
