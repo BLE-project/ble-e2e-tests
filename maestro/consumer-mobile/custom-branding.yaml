@@ -103,7 +103,7 @@ appId: it.terrio.consumer
 
 # Wait for Nearby tab to be reachable.
 - extendedWaitUntil:
-    visible: "Nearby"
+    visible: "Nearby|Nelle vicinanze"
     timeout: 10000
 
 # Some devices surface a clipboard permission sheet on first input —
@@ -115,9 +115,9 @@ appId: it.terrio.consumer
       - pressKey: Back
 
 # Make sure we're actually on the Nearby screen.
-- tapOn: "Nearby"
+- tapOn: "Nearby|Nelle vicinanze"
 - extendedWaitUntil:
-    visible: "Nearby"
+    visible: "Nearby|Nelle vicinanze"
     timeout: 5000
 
 # ── Brand tag assertion ─────────────────────────────────────────────────
@@ -139,4 +139,4 @@ appId: it.terrio.consumer
 
 # Sanity: the "Nearby" screen title is still visible (we did not replace
 # it, only added the chip beside it).
-- assertVisible: "Nearby"
+- assertVisible: "Nearby|Nelle vicinanze"
