@@ -14,7 +14,7 @@ export MAESTRO_CLI_NO_ANALYTICS=1
 DEV=9ede6d09
 BFF=http://localhost:8082
 OUT=/tmp/maestro_full_2026-06-04.txt
-cd /home/nucjd/dev/Terrio/terrio-e2e-tests
+cd /home/nucjd/dev/give-group/Terrio/terrio-e2e-tests
 : > "$OUT"
 
 declare -A PKG=(

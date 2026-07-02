@@ -8,7 +8,7 @@ export PATH="$HOME/.maestro/bin:$PATH"
 export MAESTRO_CLI_NO_ANALYTICS=1
 DEV=9ede6d09
 OUT=/tmp/maestro_fails_warm_2026-06-03.txt
-cd /home/nucjd/dev/Terrio/terrio-e2e-tests
+cd /home/nucjd/dev/give-group/Terrio/terrio-e2e-tests
 adb -s "$DEV" reverse tcp:8080 tcp:8082 >/dev/null 2>&1
 : > "$OUT"
 

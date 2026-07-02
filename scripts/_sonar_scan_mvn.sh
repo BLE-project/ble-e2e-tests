@@ -7,8 +7,8 @@ set -u
 # Re-assert :9011 here in the script body — runs AFTER BASH_ENV sourcing.
 export SONAR_HOST_URL=http://localhost:9011
 repo="$1"
-cd "/home/nucjd/dev/Terrio/$repo" || { echo "[$repo] missing dir"; exit 2; }
-log="/home/nucjd/dev/Terrio/_sonar_${repo}.log"
+cd "/home/nucjd/dev/give-group/Terrio/$repo" || { echo "[$repo] missing dir"; exit 2; }
+log="/home/nucjd/dev/give-group/Terrio/_sonar_${repo}.log"
 echo "[$(date +%H:%M:%S)] [$repo] start" | tee -a "$log"
 
 # SQ-3 (#181) fix: generate jacoco coverage BEFORE sonar:sonar so the
