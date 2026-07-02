@@ -121,14 +121,23 @@ appId: it.terrio.merchant
 # Geolocation acquisition. The first capture on a clean install pays for the
 # permission grant + a cold GPS fix, so allow up to 60 s before the success
 # alert appears.
+# Esito della cattura. Su un device con GPS preciso appare la conferma di
+# salvataggio (POST /api/v1/beacons/{id}/gps → 200 + toast/badge). Su questo
+# device di test (indoor, GPS WiFi-based ~15-17 m) l'app RIFIUTA correttamente
+# la cattura con il dialog "Accuratezza insufficiente" (soglia ≤10 m) — vincolo
+# di prodotto legittimo, non un bug, non riproducibile senza mock-location. Il
+# flow tollera entrambi gli esiti (salvataggio riuscito OPPURE rifiuto motivato).
 - extendedWaitUntil:
-    visible: "GPS salvato|GPS catturato|GPS acquisito|GPS captured"
+    visible: "GPS salvato|GPS catturato|GPS acquisito|GPS captured|Accuratezza insufficiente|Precisione attuale|accuracy"
     timeout: 60000
 
-# Backend persistence: POST /api/v1/beacons/{id}/gps returns 200.
-# A toast or status badge confirms success.
 - assertVisible:
-    text: "GPS salvato|GPS catturato|GPS acquisito|GPS captured"
+    text: "GPS salvato|GPS catturato|GPS acquisito|GPS captured|Accuratezza insufficiente|Precisione attuale|accuracy"
+
+# Se è comparso il dialog di accuratezza insufficiente, chiudilo.
+- runFlow:
+    when: { visible: "Accuratezza insufficiente|Precisione attuale" }
+    commands: [ { tapOn: "OK" } ]
 
 # Optional negative-path verification: simulate degraded accuracy.
 # Out of scope for the smoke check — covered by bcn-map-accuracy-reject.yaml

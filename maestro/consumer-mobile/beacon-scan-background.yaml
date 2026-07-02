@@ -78,7 +78,7 @@ appId: it.terrio.consumer
           commands:
             - tapOn: "STAY HERE"
       - extendedWaitUntil:
-          visible: "Nearby"
+          visible: "Nearby|Nelle vicinanze"
           timeout: 10000
 
 # FIX-S55-001: dismiss federation prompt on already-auth launch
@@ -98,7 +98,7 @@ appId: it.terrio.consumer
 # tab-mappa was a drift (it leaves the Nearby screen).
 - tapOn: { id: "tab-home" }
 - extendedWaitUntil:
-    visible: "Nearby"
+    visible: "Nearby|Nelle vicinanze"
     timeout: 5000
 
 # Grant permissions if the OS dialog appears.
@@ -164,4 +164,4 @@ appId: it.terrio.consumer
       id: "scan-status-granted"
     timeout: 15000
 
-- assertVisible: "Nearby"
+- assertVisible: "Nearby|Nelle vicinanze"

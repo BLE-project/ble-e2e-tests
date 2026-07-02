@@ -83,9 +83,13 @@ appId: it.terrio.consumer
       - runFlow:
           when: { visible: { id: "tab-home" } }
           commands: [ { tapOn: { id: "tab-home" } } ]
+      # 2026-07-02: il bottone logout usa il testID btn-logout (index.tsx) — il
+      # device è in locale IT e mostra "Esci", non "Sign out": il vecchio
+      # selettore testuale non matchava, il logout non avveniva e login-btn non
+      # compariva mai → assert timeout.
       - runFlow:
-          when: { visible: "Sign out" }
-          commands: [ { tapOn: "Sign out" } ]
+          when: { visible: { id: "btn-logout" } }
+          commands: [ { tapOn: { id: "btn-logout" } } ]
       - runFlow:
           when: { visible: "Accesso più rapido" }
           commands: [ { tapOn: { id: "enroll-never" } } ]
