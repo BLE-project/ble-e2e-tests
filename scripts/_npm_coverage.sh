@@ -2,8 +2,8 @@
 # npm coverage helper for Node Terrio repos
 set -u
 repo="$1"
-cd "/home/nucjd/dev/Terrio/$repo" || exit 2
-log="/home/nucjd/dev/Terrio/_cov_${repo}.log"
+cd "/home/nucjd/dev/give-group/Terrio/$repo" || exit 2
+log="/home/nucjd/dev/give-group/Terrio/_cov_${repo}.log"
 echo "[$(date +%H:%M:%S)] [$repo] coverage start" | tee -a "$log"
 timeout 600 npm test --silent -- --coverage --coverageReporters=lcov >> "$log" 2>&1
 rc=$?

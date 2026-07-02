@@ -6,7 +6,7 @@
 export SDKMAN_DIR="$HOME/.sdkman"
 [ -s "$HOME/.sdkman/bin/sdkman-init.sh" ] && . "$HOME/.sdkman/bin/sdkman-init.sh"
 set -u
-ROOT=/home/nucjd/dev/Terrio
+ROOT=/home/nucjd/dev/give-group/Terrio
 export SONAR_HOST_URL=http://localhost:9011
 SUM="$ROOT/_fulltest_java_summary.txt"
 : > "$SUM"

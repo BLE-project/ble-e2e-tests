@@ -4,7 +4,7 @@
 # (npm test --coverage -> dockerised sonar-scanner-cli). automation-agents (python)
 # handled separately with pytest --cov.
 set -u
-ROOT=/home/nucjd/dev/Terrio
+ROOT=/home/nucjd/dev/give-group/Terrio
 export SONAR_HOST_URL=http://localhost:9011
 SUM="$ROOT/_fulltest_node_summary.txt"
 : > "$SUM"

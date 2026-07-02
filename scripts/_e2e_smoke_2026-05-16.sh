@@ -5,9 +5,9 @@
 DEV=9ede6d09
 ADB=/usr/bin/adb
 MAESTRO="$HOME/.maestro/bin/maestro"
-APKDIR=/home/nucjd/dev/Terrio/apks
-FLOWDIR=/home/nucjd/dev/Terrio/terrio-e2e-tests/maestro
-RES=/home/nucjd/dev/Terrio/_e2e_smoke_results_2026-05-16.txt
+APKDIR=/home/nucjd/dev/give-group/Terrio/apks
+FLOWDIR=/home/nucjd/dev/give-group/Terrio/terrio-e2e-tests/maestro
+RES=/home/nucjd/dev/give-group/Terrio/_e2e_smoke_results_2026-05-16.txt
 export MAESTRO_CLI_NO_ANALYTICS=1 MAESTRO_CLI_ANALYSIS_NOTIFICATION_DISABLED=true
 : > "$RES"
 

@@ -5,7 +5,7 @@ set -u
 export PATH="$HOME/.maestro/bin:$PATH"
 DEV=9ede6d09
 OUT=/tmp/maestro_tally_2026-06-02.txt
-cd /home/nucjd/dev/Terrio/terrio-e2e-tests
+cd /home/nucjd/dev/give-group/Terrio/terrio-e2e-tests
 adb -s "$DEV" reverse tcp:8080 tcp:8082 >/dev/null 2>&1
 : > "$OUT"
 

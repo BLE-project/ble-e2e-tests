@@ -9,7 +9,7 @@
 #
 # Output: /tmp/full_clean_run_2026-06-15.out (tee'd). Device 9ede6d09, BFF 8082.
 set -u
-ROOT=/home/nucjd/dev/Terrio/terrio-e2e-tests
+ROOT=/home/nucjd/dev/give-group/Terrio/terrio-e2e-tests
 OUT=/tmp/full_clean_run_2026-06-15.out
 export PATH="$HOME/.maestro/bin:$HOME/Android/Sdk/platform-tools:$PATH"
 export BFF_URL=http://localhost:8082

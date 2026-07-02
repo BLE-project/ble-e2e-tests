@@ -5,7 +5,7 @@ export SDKMAN_DIR="$HOME/.sdkman"
 # sdkman-init.sh is not `set -u` safe (refs ZSH_VERSION) — source before enabling -u.
 [ -s "$HOME/.sdkman/bin/sdkman-init.sh" ] && . "$HOME/.sdkman/bin/sdkman-init.sh"
 set -u
-ROOT=/home/nucjd/dev/Terrio
+ROOT=/home/nucjd/dev/give-group/Terrio
 RESULTS="$ROOT/_mvn_test_results_2026-05-16.txt"
 : > "$RESULTS"
 echo "mvn test run start $(date -u +%H:%M:%S) — $(mvn -v 2>/dev/null | head -1)" | tee -a "$RESULTS"
