@@ -8,6 +8,7 @@
  */
 import { ensureSeedData } from './fixtures/seed-data'
 import { ensureBeaconFirstConfig } from './fixtures/seed-beacon-first-config'
+import { ensureFourPhysicalBeacons } from './fixtures/seed-four-physical-beacons'
 import { ensureTenantBeaconCrudSlotFree } from './fixtures/seed-tenant-beacon-crud'
 import { ensureBudgetDegradedAdv } from './fixtures/seed-budget-degraded'
 import { ensureModerationQueue } from './fixtures/seed-moderation-queue'
@@ -232,6 +233,21 @@ export default async function globalSetup() {
       console.log(`[global-setup] First-config seed: merchant=${fc.merchantId} store=${fc.storeId} beacon=${fc.beaconId}`)
     } catch (e) {
       console.warn('[global-setup] first-config seed skipped:', (e as Error).message)
+    }
+
+    // Register the 4 physical Holy-IOT beacons (FDA50693 / major 1-2 / minor
+    // 101,102,201,202) in the E2E tenant+territory. Without this the physical
+    // triples only exist in `beacons` if a prior Maestro beacon test happened to
+    // create them; a clean reset-e2e would leave only the first-config beacon
+    // (500/500) → GET /v1/beacons/resolve 404 on the real hardware → the consumer
+    // beacon-event returns NONE → no tenant context → the offers feed never
+    // resolves. Seeding them deterministically closes the beacon→tenant→offers
+    // chain that the real-beacon consumer flow depends on. Idempotent.
+    try {
+      const pb = await ensureFourPhysicalBeacons()
+      console.log(`[global-setup] Physical beacons: ${pb.beacons.map(b => `${b.code}${b.created ? '(new)' : '(reused)'}`).join(' ')} tenant=${pb.tenantId}`)
+    } catch (e) {
+      console.warn('[global-setup] physical-beacons seed skipped:', (e as Error).message)
     }
 
     // Free the tenant beacons CRUD slot (FDA50693/999/1) so beacons.yaml's
