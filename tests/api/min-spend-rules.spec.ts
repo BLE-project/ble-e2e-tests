@@ -4,6 +4,38 @@ import { getDevTenantId } from '../../fixtures/auth'
 
 const BFF = process.env.BFF_URL ?? 'http://localhost:8080'
 
+/**
+ * Seed hygiene: the E2E DB is persistent across runs and the schema allows
+ * multiple GLOBAL min-spend rows. Other suites (admin-web "submit global
+ * min-spend" → 5.00 = 500¢) create extra GLOBAL rows that are never cleaned
+ * up. Since core-registry#108 made MinSpendRule.findGlobal() newest-wins
+ * (validFrom DESC, updatedAt DESC, createdAt DESC), a residual GLOBAL(500)
+ * beats the seed GLOBAL(0), so `resolve` returns 500 and the GLOBAL tests
+ * fail. Reset to exactly one GLOBAL row with amountCents=0 before asserting.
+ * Idempotent: no-op when the DB already holds a single GLOBAL(0).
+ */
+async function resetGlobalMinSpendToZero(admin: ApiClient, tenantId: string): Promise<void> {
+  const listRes = await admin.get('/api/v1/min-spend-rules', { 'X-Tenant-Id': tenantId })
+  if (!listRes.ok()) return // let the test's own assertions surface the failure
+  const rules: Array<{ id: string; scope: string; amountCents: number }> = await listRes.json()
+  const globals = rules.filter((r) => r.scope === 'GLOBAL')
+
+  // Ensure a canonical GLOBAL(0) exists to keep (the DELETE endpoint refuses to
+  // remove the last GLOBAL, so we must have one survivor before deleting).
+  let keep = globals.find((r) => r.amountCents === 0)
+  if (!keep) {
+    const created = await admin.post('/api/v1/min-spend-rules', { amountCents: 0 }, { 'X-Tenant-Id': tenantId })
+    if (created.ok()) keep = await created.json()
+  }
+
+  // Delete every other GLOBAL row (incl. duplicate zeros). Count stays >= 2
+  // until only `keep` remains, so the "last global" guard never trips.
+  for (const g of globals) {
+    if (keep && g.id === keep.id) continue
+    await admin.delete(`/api/v1/min-spend-rules/${g.id}`, { 'X-Tenant-Id': tenantId })
+  }
+}
+
 test.describe('API — Min Spend Rules (FEAT-MIN-SPEND-001)', () => {
   let admin: ApiClient
   let tenantId: string
@@ -12,6 +44,7 @@ test.describe('API — Min Spend Rules (FEAT-MIN-SPEND-001)', () => {
     admin = new ApiClient(request, BFF)
     await admin.login('dev-super-admin', 'dev-pass')
     tenantId = getDevTenantId()
+    await resetGlobalMinSpendToZero(admin, tenantId)
   })
 
   // ── List ──────────────────────────────────────────────────────────────────
