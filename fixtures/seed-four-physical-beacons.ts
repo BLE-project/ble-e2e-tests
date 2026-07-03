@@ -21,19 +21,22 @@
  * units therefore span 3 distinct types with H-04 repeating TRACKING but
  * on a different (uuid, major, minor) triple so test coverage stays high.
  *
- * What it creates (idempotent — reuses existing rows by identity triple):
+ * What it creates (idempotent — reuses existing rows by identity triple).
+ * All four broadcast the SAME factory UUID (FDA50693-…); they are distinguished
+ * by (major, minor), matching what the hardware actually transmits and what the
+ * consumer app parses on-device (verified 2026-07-02: major=1 minor=101 →
+ * Ter1-Merch1, etc.):
  *   - Tenant:    "E2E Dev Tenant"        (via ensureSeedData)
  *   - Territory: "E2E Test Territory"    (reuses the default seed territory)
- *   - 4 beacons:
- *       H-01  TRACKING      Ingresso Principale   uuid=E2E10000-…-01 / 11001 / 1
- *       H-02  MERCHANT      Cassa Bar             uuid=E2E10000-…-02 / 11002 / 2
- *       H-03  TOURIST_INFO  Punto Info            uuid=E2E10000-…-03 / 11003 / 3
- *       H-04  TRACKING      Uscita Parcheggio     uuid=E2E10000-…-04 / 11004 / 4
+ *   - 4 beacons (uuid = FDA50693-A4E2-4FB1-AFCF-C6EB07647825):
+ *       H-01  TRACKING      Ingresso Principale   major 1 / minor 101
+ *       H-02  MERCHANT      Cassa Bar             major 1 / minor 102
+ *       H-03  TOURIST_INFO  Punto Info            major 2 / minor 201
+ *       H-04  TRACKING      Uscita Parcheggio     major 2 / minor 202
  *
- * The first path segment of each UUID ("E2E10000") makes them trivially
- * greppable in the DB or in mobile logs. Major/minor are set to distinct
- * values in the 11000+ range so they can't collide with the dual-territory
- * fixtures (which use 10001/20002).
+ * major = territory-ish, minor = merchant-scoped. These are the on-bench
+ * broadcast values (no re-flash step), NOT the old E2E10000/11001 placeholders
+ * some earlier docstrings referenced.
  *
  * Usage from CLI:
  *   npx tsx fixtures/seed-four-physical-beacons.ts
