@@ -127,16 +127,19 @@ export async function loginViaOidcSession(
   const token: string = (await response.json()).token
 
   const claims = JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString('utf8'))
-  // #136: l'authority DEVE combaciare con quella con cui è buildato il container
-  // frontend, perché oidc-client-ts indicizza lo User in storage con la chiave
-  // `oidc.user:${authority}:${clientId}`. I container e2e sono buildati con
-  // `VITE_OIDC_AUTHORITY=http://keycloak:8180/realms/ble` (il browser risolve
-  // `keycloak` via /etc/hosts → 127.0.0.1); il vecchio default `localhost:8180`
-  // produceva una chiave che UserManager.getUser() non trovava mai → utente
-  // null → redirect a Keycloak → contenuto protetto mai montato. Override
-  // possibile via TENANT_OIDC_AUTHORITY se il build cambia host.
+  // #136: l'authority DEVE combaciare con quella con cui gira la tenant-web,
+  // perché oidc-client-ts indicizza lo User in storage con la chiave
+  // `oidc.user:${authority}:${clientId}` e UserManager.getUser() la rilegge con
+  // la STESSA stringa. La tenant-web NON è un container nello stack e2e: è un
+  // Vite dev server sull'host (scripts/start-frontends.sh) che legge
+  // `.env.local` (copiato da `.env.example`), dove
+  // `VITE_OIDC_AUTHORITY=http://localhost:8180/realms/ble` — lo stesso default
+  // hardcoded in src/auth/oidcConfig.ts. Il vecchio default fixture
+  // `keycloak:8180` produceva una chiave che getUser() non trovava mai →
+  // utente null → redirect a Keycloak → 19 test tenant-web falliti. Override
+  // via TENANT_OIDC_AUTHORITY se un dev usa un host diverso in .env.local.
   const authority = opts.authority
-    ?? process.env.TENANT_OIDC_AUTHORITY ?? 'http://keycloak:8180/realms/ble'
+    ?? process.env.TENANT_OIDC_AUTHORITY ?? 'http://localhost:8180/realms/ble'
   const clientId = opts.clientId
     ?? process.env.TENANT_OIDC_CLIENT_ID ?? 'ble-backoffice-tenant-web'
   const storageKey = opts.storageKey ?? 'ble_tenant_token'
