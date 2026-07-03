@@ -35,6 +35,16 @@ jobs:
   full-reset:
     runs-on: ubuntu-latest
     timeout-minutes: 90
+    env:
+      # Single source for the Grafana webhook shared secret so BOTH the
+      # notification-service container (docker-compose reads
+      # ${BLE_ALERT_WEBHOOK_TOKEN:-e2e-alert-webhook-secret-token-2026-not-prod})
+      # and the Playwright client (tests/api/beacon-health-alert.spec.ts, which
+      # otherwise defaults to 'dev-alert-secret') use the SAME value. Without
+      # this the client sent the wrong Bearer → 401 on all 7 valid-token cases
+      # (beacon-health-alert payload/dispatch), while the 3 negative cases that
+      # expect 401 passed. Ties client+server to one secret, no drift. (#124)
+      BLE_ALERT_WEBHOOK_TOKEN: e2e-alert-webhook-secret-token-2026-not-prod
     steps:
       - name: Checkout ble-e2e-tests
         uses: actions/checkout@v4
