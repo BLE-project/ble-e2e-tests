@@ -25,8 +25,14 @@ echo "==> docker compose down --volumes"
 echo "==> clear stale seed cache"
 rm -f "$ROOT/test-results/.seed-data.json"
 
-echo "==> docker compose up -d --wait"
-( cd "$COMPOSE_DIR" && docker compose up -d --wait --wait-timeout 300 ) || \
+echo "==> docker compose up -d --build --wait"
+# --build is REQUIRED, not optional: `down --volumes` removes containers+volumes
+# but NOT images. On a cache-warm/self-hosted runner the terrio/*:local images
+# from a prior run persist, and a bare `up` reuses them — so merged backend code
+# (e.g. identity-access#105 config-driven brute-force ceiling) never reaches the
+# running stack and the E2E validates a stale jar. Forcing --build makes backend
+# PRs deploy deterministically every run. (Root cause of ble-e2e-tests#146.)
+( cd "$COMPOSE_DIR" && docker compose up -d --build --wait --wait-timeout 300 ) || \
   echo "::warning:: compose --wait timed out on a service; gating on critical-service readiness before seed."
 
 # Gate the seed on the CRITICAL services being actually ready before running it.
