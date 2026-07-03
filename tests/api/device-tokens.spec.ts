@@ -41,7 +41,14 @@ function jwtSub(token: string): string {
 /**
  * `tenant_id` claim — the gateway enforces `X-Tenant-Id === tenant claim`
  * (TENANT_MISMATCH → 403). Tests must send the caller's real tenant, not a
- * hardcoded UUID. The wildcard `ANY` (used by dev-consumer) matches any header.
+ * hardcoded UUID.
+ *
+ * NOTE: dev-consumer is NOT an `ANY`-wildcard consumer in the E2E env. Although
+ * `keycloak/ble-users-0.json` seeds `ble_tenant_id=ANY`, global-setup.ts
+ * (`syncKeycloakUsers`) overwrites every dev user — dev-consumer included — with
+ * the concrete seed tenant so it can be enrolled in the seed tenant. Its JWT
+ * therefore carries a concrete `tenant_id`, and the gateway's SEC-HIGH #29
+ * anti-spoof check correctly 403s a mismatched header. Send `jwtTenant(token)`.
  */
 function jwtTenant(token: string): string {
   return jwtPayload(token).tenant_id ?? TENANT_ID
@@ -56,7 +63,7 @@ test.describe('T-162 — consumer push-token registration', () => {
       method: 'POST',
       headers: {
         'Content-Type':  'application/json',
-        'X-Tenant-Id':   TENANT_ID,
+        'X-Tenant-Id':   jwtTenant(token),   // dev-consumer owns a concrete tenant in E2E (see jwtTenant note)
         'Authorization': `Bearer ${token}`,
       },
       body: JSON.stringify({
