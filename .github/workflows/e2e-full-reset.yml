@@ -183,6 +183,50 @@ jobs:
             -c "SELECT scope, tenant_id, rate, valid_from, valid_to, now() AS db_now FROM commission_rates ORDER BY scope, valid_from;" \
             || echo "::warning:: dump failed (postgres not reachable or query error)"
 
+      - name: Dump FCM beacon pipeline diagnostics (beacon-push-fcm #124)
+        # Boundary evidence for the deterministically-red beacon-push-fcm Step 2
+        # ("no FCM messages:send within 90s"). The error-context artifact carries
+        # neither the WireMock journal nor service logs, so it cannot localise the
+        # broken stage. This step dumps, at teardown, the three signals that pin it:
+        #   1. notification-service beacon metric ble.notification.beacon.events
+        #      {outcome=...} — the single most decisive counter:
+        #        dispatched        → tokens found + orchestrator called (look at logs
+        #                            for consent/rule/cap suppression or FCM error)
+        #        no_tokens         → token lookup (tenantId,consumerId) empty
+        #                            (consumerId/pseudonym mismatch)
+        #        dropped_missing_ids → enriched event had null tenantId/consumerId
+        #        (counter absent / all zero) → event never reached the dispatcher
+        #                            (stream-processing didn't publish, or the
+        #                            enriched-events consumer never consumed it)
+        #   2. WireMock journal — did OAuth /oauth2/token arrive? any messages:send
+        #      at all (maybe with a different token)?
+        #   3. notification-service / event-ingestion / stream-processing logs.
+        if: always()
+        working-directory: terrio-e2e-compose
+        run: |
+          echo "==> [1] notification-service beacon + FCM metrics (host :8084)"
+          curl -s http://localhost:8084/q/metrics \
+            | grep -iE "beacon|fcm|notification_dispatch" || echo "(no beacon metrics — endpoint unreachable or zero events)"
+          echo "==> [2a] WireMock journal — request count by method+url"
+          curl -s http://localhost:8091/__admin/requests \
+            | jq -r '.requests[]? | "\(.request.method) \(.request.url)"' \
+            | sort | uniq -c | sort -rn || echo "::warning:: wiremock journal unreachable"
+          echo "==> [2b] WireMock — messages:send bodies (was a token targeted?)"
+          curl -s http://localhost:8091/__admin/requests \
+            | jq -r '.requests[]? | select(.request.url | test("messages:send")) | .request.body' || true
+          echo "==> [2c] WireMock — OAuth token requests present?"
+          curl -s http://localhost:8091/__admin/requests \
+            | jq -r '.requests[]? | select(.request.url | test("oauth2/token")) | "\(.request.method) \(.request.url)"' | head || true
+          echo "==> [3a] notification-service logs (dispatch / consent / fcm)"
+          docker compose logs --tail=500 notification-service 2>&1 \
+            | grep -iE "beacon|consent|NOTIFY|dispatch|fcm|no_tokens|NO_RULE|CAPPED|GATEWAY|SENT|outcome|token|unreachable" | tail -150 || true
+          echo "==> [3b] event-ingestion logs (ingest / tenant claim / outbox)"
+          docker compose logs --tail=300 event-ingestion 2>&1 \
+            | grep -iE "tenant|consumer|outbox|reject|ANY|RECEIVED|DUPLICATE|publish|dlq|pseudonym" | tail -100 || true
+          echo "==> [3c] stream-processing logs (raw -> enriched publish)"
+          docker compose logs --tail=300 stream-processing 2>&1 \
+            | grep -iE "enrich|raw|tenant|drop|publish|fraud|ADR-003|failed" | tail -100 || true
+
       - name: Install Maestro CLI
         if: always()
         run: |
