@@ -1,0 +1,93 @@
+name: e2e-ios-maestro (simulator, manual)
+
+# SKELETON — issue #125 (parità E2E iOS).
+# workflow_dispatch ONLY, deliberately not scheduled:
+#   - no EAS iOS simulator builds exist yet (previewLocal ios profile just added
+#     in the 5 mobile repos; builds must be launched by an operator after
+#     verifying the EAS plan/quota — iOS builds bill differently from Android).
+#   - macOS runners bill at 10x Linux minutes on the org "team" plan.
+# Limitations (known, accepted for the skeleton):
+#   - Maestro drives iOS *simulators* only (no physical iPhone support) — see
+#     maestro/README-ios.md. Native-capability flows (real BLE scan) stay
+#     Android-physical-device only.
+#   - The e2e docker-compose backend cannot run on GitHub macOS runners; apps
+#     bake their gateway URL at EAS build time, so use builds pointing at a
+#     reachable staging endpoint, or expect backend-dependent flows to fail.
+#     Flows still validate install/launch/UI selectors.
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_urls:
+        description: >-
+          Space-separated app=url pairs of EAS iOS simulator build artifacts
+          (.tar.gz containing the .app), e.g.
+          "consumer-mobile=https://expo.dev/artifacts/... merchant-mobile=https://..."
+          Apps without a URL are skipped by the runner.
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  ios-maestro:
+    runs-on: macos-14
+    # Guard against forks consuming the org's macOS minutes budget
+    if: github.repository == 'BLE-project/ble-e2e-tests'
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java 21 (Maestro requirement)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Install Maestro (pinned)
+        run: |
+          curl -fsSL "https://get.maestro.mobile.dev" | MAESTRO_VERSION=2.5.1 bash
+          echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
+
+      - name: Boot iOS simulator
+        run: |
+          UDID=$(xcrun simctl list devices available -j \
+            | jq -r '[.devices[] | .[] | select(.name | test("^iPhone"))][0].udid')
+          echo "Booting simulator $UDID"
+          xcrun simctl boot "$UDID"
+          xcrun simctl bootstatus "$UDID" -b
+
+      - name: Download simulator .app bundles
+        env:
+          BUILD_URLS: ${{ inputs.build_urls }}
+        run: |
+          mkdir -p "$HOME/Claude/ios-builds"
+          for pair in $BUILD_URLS; do
+            app="${pair%%=*}"; url="${pair#*=}"
+            case "$app" in
+              consumer-mobile|merchant-mobile|tenant-mobile|sales-agent-mobile|territory-mobile) ;;
+              *) echo "::error::Unknown app '$app'"; exit 1 ;;
+            esac
+            echo "Fetching $app"
+            curl -fsSL "$url" -o "/tmp/${app}.tar.gz"
+            mkdir -p "/tmp/${app}-extract"
+            tar xzf "/tmp/${app}.tar.gz" -C "/tmp/${app}-extract"
+            bundle=$(find "/tmp/${app}-extract" -maxdepth 2 -name "*.app" | head -1)
+            if [ -z "$bundle" ]; then echo "::error::No .app in artifact for $app"; exit 1; fi
+            mv "$bundle" "$HOME/Claude/ios-builds/${app}.app"
+          done
+          ls "$HOME/Claude/ios-builds"
+
+      - name: Run Maestro iOS suite
+        run: ./maestro/run-all-ios.sh
+
+      - name: Upload Maestro logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: maestro-ios-logs-${{ github.run_id }}
+          path: /tmp/maestro-ios-*.log
+          if-no-files-found: ignore
+          retention-days: 14
