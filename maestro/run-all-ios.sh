@@ -41,12 +41,14 @@ BOOTED_SIM=$(xcrun simctl list devices | grep "Booted" | head -1)
 echo "Simulator: $BOOTED_SIM"
 echo ""
 
+# Bundle IDs = ios.bundleIdentifier in each app.json (com.terrio.*).
+# NOT the Android package (it.terrio.*) — they differ on this fleet.
 APPS=(
-  "consumer-mobile:it.terrio.consumer"
-  "merchant-mobile:it.terrio.merchant"
-  "tenant-mobile:it.terrio.tenant"
-  "sales-agent-mobile:it.terrio.salesagent"
-  "territory-mobile:it.terrio.territory"
+  "consumer-mobile:com.terrio.consumer"
+  "merchant-mobile:com.terrio.merchant"
+  "tenant-mobile:com.terrio.tenant"
+  "sales-agent-mobile:com.terrio.salesagent"
+  "territory-mobile:com.terrio.territory"
 )
 
 # Flow execution order per app — mirrors run-all.sh for Android.
