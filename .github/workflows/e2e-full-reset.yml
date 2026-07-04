@@ -15,11 +15,12 @@ name: E2E full reset (Playwright + Maestro)
 # to run on every push/PR, so this is scheduled nightly + manually
 # dispatchable, NOT wired into pull_request.
 #
-# marketing-site (Astro, :4321) is NOT covered: it requires Node >=22.12,
-# incompatible with the Node 20 pin the 3 Vite apps and this job share —
-# see scripts/start-frontends.sh header for the full explanation. Its
-# Playwright project will still fail with a clear ECONNREFUSED rather than
-# a false pass.
+# marketing-site (Astro, :4321) IS covered since #151: Astro 6 requires
+# Node >=22.12 while the 3 Vite apps run under the job's Node 20 pin, so
+# the marketing build+preview runs in dedicated steps under a temporary
+# setup-node 22 BEFORE the Node 20 setup. The preview keeps running as a
+# background process (its node binary is resolved at spawn time, so the
+# later PATH switch to Node 20 doesn't affect it).
 
 on:
   workflow_dispatch: {}
@@ -79,13 +80,14 @@ jobs:
           done
 
       - name: Checkout frontend repos (siblings, private)
-        # Needed by scripts/start-frontends.sh — see its header for why
-        # marketing-site is intentionally excluded (Node version conflict).
+        # First 3 are started by scripts/start-frontends.sh (Vite, Node 20);
+        # marketing-site is built+previewed by the dedicated Node 22 steps
+        # below (Astro 6 requires Node >=22.12 — see workflow header).
         env:
           GH_PAT: ${{ secrets.GH_PAT_BACKEND_READ }}
         run: |
           set -euo pipefail
-          repos="backoffice-admin-web backoffice-tenant-web merchant-portal"
+          repos="backoffice-admin-web backoffice-tenant-web merchant-portal marketing-site"
           for svc in $repos; do
             git clone --depth 1 \
               "https://x-access-token:${GH_PAT}@github.com/BLE-project/ble-${svc}.git" \
@@ -118,6 +120,38 @@ jobs:
             '<settings><servers><server><id>github</id><username>x-access-token</username><password>'"$MAVEN_TOKEN"'</password></server></servers></settings>' \
             > secrets/maven-settings.xml
 
+      - name: Set up Node 22 (marketing-site only — Astro 6 requires >=22.12)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Build and start marketing-site preview (Astro, :4321)
+        # Runs while Node 22 is on PATH; the backgrounded preview process
+        # keeps its Node 22 binary after the next setup-node switches the
+        # job to Node 20 (same nohup+disown persistence pattern as
+        # scripts/start-frontends.sh). Static output + node adapter: the 7
+        # marketing-site smoke tests need no BFF/Docker stack.
+        working-directory: terrio-marketing-site
+        run: |
+          set -euo pipefail
+          npm ci
+          npm run build
+          LOG_DIR="${GITHUB_WORKSPACE}/terrio-e2e-tests/test-results/frontend-logs"
+          mkdir -p "$LOG_DIR"
+          nohup npx astro preview --host 127.0.0.1 --port 4321 \
+            > "$LOG_DIR/marketing-site.log" 2>&1 &
+          disown
+          for i in $(seq 1 30); do
+            if curl -sf -o /dev/null http://127.0.0.1:4321/; then
+              echo "marketing-site preview up on :4321"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "::error::marketing-site preview not responding on :4321"
+          cat "$LOG_DIR/marketing-site.log" || true
+          exit 1
+
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
@@ -149,8 +183,8 @@ jobs:
       - name: Start frontend dev servers (admin-web, tenant-web, merchant-portal)
         working-directory: terrio-e2e-tests
         # Started as background processes (nohup + disown) that persist for
-        # the rest of the job — see scripts/start-frontends.sh header for
-        # why marketing-site is excluded (Node version conflict).
+        # the rest of the job. marketing-site is NOT part of this script:
+        # it already runs from the dedicated Node 22 preview step above.
         run: bash ./scripts/start-frontends.sh
 
       - name: Run Playwright suite
@@ -166,6 +200,10 @@ jobs:
           # disagree, which is why this wasn't caught by the browser tests.
           BFF_URL: http://localhost:8082
           KC_URL: http://localhost:8180
+          # 127.0.0.1 explicitly: the preview binds IPv4 only, while the
+          # config default localhost:4321 can resolve to ::1 first on the
+          # runner (same class of failure as the BFF_URL note above).
+          MARKETING_URL: http://127.0.0.1:4321
         run: npx playwright test
 
       - name: Dump commission_rates (diagnose #124 commission-territory 500)

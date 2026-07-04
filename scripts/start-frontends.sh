@@ -8,14 +8,11 @@
 # starts them as background processes (persist across CI steps in the
 # same job) and waits until each responds before returning.
 #
-# marketing-site (Astro, :4321) is intentionally NOT started here: its
-# package.json pins Node ">=22.12.0" (see astro CLI's own runtime check),
-# while the 3 Vite apps below pin "node": ">=20.0.0 <21.0.0" — the two
-# cannot run under the same `actions/setup-node` version in this job.
-# Covering marketing-site needs either a second Node install mid-job or a
-# separate workflow; left as an explicit follow-up, not silently skipped
-# (its Playwright project will still fail with a clear ECONNREFUSED, not
-# a false pass).
+# marketing-site (Astro, :4321) is intentionally NOT started here: Astro 6
+# requires Node >=22.12 while the 3 Vite apps below pin Node 20, so this
+# script stays Node-20/Vite-only. In CI, marketing-site is built and
+# previewed by a dedicated Node 22 step in e2e-full-reset.yml (before the
+# job switches to Node 20) — see that workflow's header.
 #
 # Repos are expected as siblings of this repo's parent dir, same
 # convention as terrio-e2e-compose (see scripts/reset-e2e.sh):
