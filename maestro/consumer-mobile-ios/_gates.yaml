@@ -1,0 +1,59 @@
+# UNVERIFIED: mai eseguito su simulator iOS — vedi #125, richiede sblocco operatore Apple/EAS.
+# iOS port of consumer-mobile/_gates.yaml (Android). File-parity only — never run
+# on an iOS simulator. Selectors adapted but UNVERIFIED against a live build.
+#
+# Shared fresh-install gate handler for consumer flows (iOS).
+# On a clean install the boot order is:
+#   iOS permission dialogs -> FU-10 BLE-consent gate -> login -> home.
+# Call this right after launchApp (and again after login, since the home
+# re-requests BLE/location on mount). Idempotent: every step is conditional.
+#
+# iOS adaptation vs Android:
+#   - iOS location dialog buttons: "Allow While Using App" / "Allow Once" / "Allow"
+#     (no Android "Esatta|Precise" precise-location selector — on iOS precise is an
+#     in-dialog toggle, not a separate button).
+#   - BLE / notification dialogs: "Allow" / "OK".
+#   - consent-toggle / consent-continue / enroll-never are React Native testIDs,
+#     identical across platforms (same app/onboarding/beacon-consent.tsx +
+#     index.tsx) — kept unchanged.
+appId: com.terrio.consumer
+---
+# Dismiss a persisted biometric-enrol modal (testID, cross-platform).
+- runFlow:
+    when:
+      visible:
+        id: "enroll-never"
+    commands:
+      - tapOn:
+          id: "enroll-never"
+
+# Drain the iOS permission dialog chain (location -> bluetooth -> notifications).
+- repeat:
+    times: 5
+    commands:
+      - runFlow:
+          when:
+            visible: "Allow While Using App"
+          commands:
+            - tapOn: "Allow While Using App"
+      - runFlow:
+          when:
+            visible: "Allow Once"
+          commands:
+            - tapOn: "Allow Once"
+      - runFlow:
+          when:
+            visible: "Allow"
+          commands:
+            - tapOn: "Allow"
+
+# Accept the FU-10 BLE-consent gate (toggle the switch, then Continua).
+- runFlow:
+    when:
+      visible:
+        id: "consent-continue"
+    commands:
+      - tapOn:
+          id: "consent-toggle"
+      - tapOn:
+          id: "consent-continue"

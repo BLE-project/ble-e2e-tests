@@ -1,0 +1,53 @@
+# UNVERIFIED: mai eseguito su simulator iOS — vedi #125, richiede sblocco operatore Apple/EAS.
+# iOS port of consumer-mobile/inbox-persist-mark-read.yaml (Android). File-parity
+# only — never run on an iOS simulator. testIDs/selectors adapted but UNVERIFIED.
+appId: com.terrio.consumer
+tags:
+  - inbox
+  - p1
+  - ios
+---
+# #106 / GAP-025 — consumer inbox UI round-trip (iOS): an unread notification is
+# visible in the inbox, tapping it marks it read, and the read state sticks.
+#
+# Precondition: the suite seeds exactly one unread row for dev-consumer just
+# before this flow (run-maestro-suite.sh reseed -> seed-cli consumer-notification).
+# The API-level persistence path is covered separately by
+# tests/mobile-api/beacon-push-fcm.spec.ts Step 2b (#87); this is the mobile UI half.
+#
+# The inbox screen (app/(app)/inbox.tsx, testID notification-inbox) is href:null in
+# the tab bar; its in-app entry point is the header notification bell (testID
+# open-inbox) which router.push('/inbox').
+#
+# iOS adaptation vs Android:
+#   - login.yaml resolves to the iOS login flow in this directory (no change).
+#   - open-inbox / notification-inbox are React Native testIDs, identical across
+#     platforms.
+#   - LOCALE CAVEAT: "Offerta vicino a te" is the seeded notification body (data,
+#     locale-independent). "Segna tutte come lette" is i18n app chrome and renders
+#     in the SIMULATOR's locale — this assertion assumes the sim is set to IT (to
+#     match the Android IT device). On an EN-locale simulator it renders "Mark all
+#     as read"; an operator must either boot the sim in IT or re-cut this assert to
+#     a testID before first green run (#125 follow-up).
+
+# Authenticate + land on home (drains the cold-install onboarding/consent gates).
+- runFlow: login.yaml
+
+# Open the inbox via the header bell.
+- tapOn:
+    id: "open-inbox"
+
+# The seeded unread notification is present in the inbox.
+- assertVisible:
+    id: "notification-inbox"
+- assertVisible: "Offerta vicino a te"
+# "Segna tutte come lette" renders only while there is at least one unread row.
+- assertVisible: "Segna tutte come lette"
+
+# Tap the row -> marks it read (inbox.tsx row onPress -> markRead.mutate).
+- tapOn: "Offerta vicino a te"
+
+# Read state sticks: with no unread rows left the mark-all affordance disappears.
+- extendedWaitUntil:
+    notVisible: "Segna tutte come lette"
+    timeout: 10000

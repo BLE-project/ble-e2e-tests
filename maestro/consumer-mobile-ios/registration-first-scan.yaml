@@ -1,0 +1,204 @@
+# UNVERIFIED: mai eseguito su simulator iOS — vedi #125, richiede sblocco operatore Apple/EAS.
+# iOS port of consumer-mobile/registration-first-scan.yaml (Android). File-parity
+# only — never run on an iOS simulator. testIDs/selectors adapted but UNVERIFIED.
+appId: com.terrio.consumer
+tags:
+  - registration
+  - p1
+  - ios
+---
+# TC-CR-001 — Consumer registration -> auto-login -> first-scan empty state (iOS)
+# Spec: terrio-platform-docs/design_handoff/specs/consumer-registration-flow-2026-05-05.md
+#
+# Same UI arc as the Android flow: cold install -> "Crea account" -> fill unique
+# email -> success -> login -> home (empty OR populated). BLE proximity card
+# creation is hardware-dependent and covered by the JUnit suite
+# (BeaconEarnConsumerTest) — this flow stops at "home reachable post-registration".
+#
+# iOS adaptation vs Android:
+#   - Clean state: on iOS the harness/runner uninstalls+reinstalls the .app before
+#     the flow (run-all-ios.sh reinstall_app) — there is no Android `pm clear`
+#     / CLEAR_APP_USER_DATA constraint here.
+#   - Permission dialogs use iOS vocabulary ("Allow While Using App" / "Allow Once"
+#     / "Allow"); no Android "Mentre usi l'app|While using the app" / precise-location
+#     selector.
+#   - Biometric-enrol modal is dismissed via the enroll-never testID (no iOS
+#     hardware Back key — the Android `pressKey: Back` has no iOS equivalent).
+#   - register-*, login-btn, signup-link, username-input, password-input,
+#     scan-status-* are React Native testIDs, identical across platforms.
+- launchApp:
+    stopApp: true
+
+- runFlow: _gates.yaml
+
+# Drain any remaining cold-install interstitials in a single order-agnostic loop
+# (iOS permission dialogs, the BLE-consent gate, the biometric-enrol modal).
+- repeat:
+    times: 6
+    commands:
+      - runFlow:
+          when:
+            visible: "Allow While Using App"
+          commands:
+            - tapOn: "Allow While Using App"
+      - runFlow:
+          when:
+            visible: "Allow Once"
+          commands:
+            - tapOn: "Allow Once"
+      - runFlow:
+          when:
+            visible: "Allow"
+          commands:
+            - tapOn: "Allow"
+      - runFlow:
+          when:
+            visible:
+              id: "consent-continue"
+          commands:
+            - tapOn:
+                id: "consent-toggle"
+            - tapOn:
+                id: "consent-continue"
+      - runFlow:
+          when:
+            visible:
+              id: "enroll-never"
+          commands:
+            - tapOn:
+                id: "enroll-never"
+
+# Sequential-suite isolation: a prior flow may have left the consumer
+# authenticated (no login screen). If we're not on the login screen, log out via
+# the Home tab "Esci" button (btn-logout testID) to reach it. On a genuine
+# cold/logged-out launch login-btn is present -> this is a no-op.
+- runFlow:
+    when:
+      notVisible:
+        id: "login-btn"
+    commands:
+      - runFlow:
+          when: { visible: { id: "tab-home" } }
+          commands: [ { tapOn: { id: "tab-home" } } ]
+      - runFlow:
+          when: { visible: { id: "btn-logout" } }
+          commands: [ { tapOn: { id: "btn-logout" } } ]
+      - runFlow:
+          when: { visible: { id: "enroll-never" } }
+          commands: [ { tapOn: { id: "enroll-never" } } ]
+
+# 1. Login screen — anchor on stable login testIDs.
+- extendedWaitUntil:
+    visible:
+      id: "login-btn"
+    timeout: 30000
+
+- assertVisible:
+    id: "signup-link"
+
+# 2. Tap "Crea account" link.
+- tapOn:
+    id: "signup-link"
+
+# 3. Register form — fill with a per-run unique email.
+- extendedWaitUntil:
+    visible:
+      id: "register-nome-input"
+    timeout: 10000
+
+# Date.now() is monotonic per invocation -> a fresh email every run (avoids the
+# identity-access 409 "User exists with same email").
+- evalScript: ${output.runToken = Date.now()}
+
+# iOS: no hideKeyboard between fields (existing iOS flows omit it).
+- tapOn:
+    id: "register-nome-input"
+- inputText: "Test"
+
+- tapOn:
+    id: "register-cognome-input"
+- inputText: "Auto"
+
+- tapOn:
+    id: "register-username-input"
+- inputText: "tcr001-${output.runToken}"
+
+- tapOn:
+    id: "register-email-input"
+- inputText: "tcr001-${output.runToken}@terrio.test"
+
+- tapOn:
+    id: "register-password-input"
+- inputText: "Test-Pass-2026!"
+
+- tapOn:
+    id: "register-confirm-input"
+- inputText: "Test-Pass-2026!"
+
+# 4. Submit registration.
+- tapOn:
+    id: "register-submit"
+
+# 5. Success screen — register-success container, then register-goto-login.
+- extendedWaitUntil:
+    visible:
+      id: "register-success"
+    timeout: 20000
+
+- tapOn:
+    id: "register-goto-login"
+
+# 6. Login screen again — fill the credentials we just used.
+- extendedWaitUntil:
+    visible:
+      id: "login-btn"
+    timeout: 15000
+
+- tapOn: { id: "username-input" }
+- inputText: "tcr001-${output.runToken}"
+
+- tapOn: { id: "password-input" }
+- inputText: "Test-Pass-2026!"
+
+- tapOn: { id: "login-btn" }
+
+# Drain post-login interstitials (federation prompt, biometric modal, iOS
+# BLE/location permission dialogs) before asserting Home. Order-agnostic loop.
+- repeat:
+    times: 6
+    commands:
+      - runFlow:
+          when:
+            visible: "Return to previous programme"
+          commands:
+            - tapOn: "STAY HERE"
+      - runFlow:
+          when:
+            visible:
+              id: "enroll-never"
+          commands:
+            - tapOn:
+                id: "enroll-never"
+      - runFlow:
+          when:
+            visible: "Allow While Using App"
+          commands:
+            - tapOn: "Allow While Using App"
+      - runFlow:
+          when:
+            visible: "Allow Once"
+          commands:
+            - tapOn: "Allow Once"
+      - runFlow:
+          when:
+            visible: "Allow"
+          commands:
+            - tapOn: "Allow"
+
+# 7. Land on home — accept BOTH empty (pre-card) and populated (post-card).
+# scan-status-* banner renders for every permState -> state-agnostic "home
+# reachable" signal.
+- extendedWaitUntil:
+    visible:
+      id: "scan-status-.*"
+    timeout: 30000

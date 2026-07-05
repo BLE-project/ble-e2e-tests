@@ -1,0 +1,67 @@
+# UNVERIFIED: mai eseguito su simulator iOS — vedi #125, richiede sblocco operatore Apple/EAS.
+# iOS port of territory-mobile/deep-links.yaml (Android). File-parity only — never
+# run on an iOS simulator. Deep-links + selectors adapted but UNVERIFIED.
+appId: com.terrio.territory
+tags:
+  - deep-links
+  - "291"
+  - ios
+---
+# #291 / #313 / #44 — territory deep-link-only detail screens, validated via
+# openLink (iOS). These screens have NO in-app nav entry (reached only by tapping a
+# notification), so an openLink is the only way to exercise the Expo Router linking
+# + screen mount. Asserts the screen CONTAINER testID (rendered in
+# loading/data/error alike), validating route-resolution + screen mount
+# independently of seed data.
+#
+# openLink uses Expo Router's default file-route linking, NOT the notification
+# resolver (_layout.tsx runs resolveDeepLinkRoute only inside the notification-tap
+# listener), so a raw deep link must use the LITERAL route path. The resolver alias
+# (beacon-health -> beacon) is unit-covered in resolveDeepLinkRoute.test.ts.
+#
+# testIDs (terrio-territory-mobile): beacon/[id] (beacon-detail), kpi/[id]
+# (territory-kpi), footfall/[id] (footfall-density), heatmap/[id] (footfall-heatmap).
+#
+# iOS adaptation vs Android:
+#   - openLink on iOS is delivered via `xcrun simctl openurl`, which handles the
+#     app's CUSTOM URL SCHEME (terrio-territory://) exactly as adb does on Android.
+#     The scheme is cross-platform (Expo `scheme` in app config), kept as-is. This
+#     is NOT an https universal link — no apple-app-site-association is registered,
+#     so universal links would not resolve; the custom scheme is the wired path.
+#   - Android's `- back` between openLinks is dropped: iOS has no hardware Back key.
+#     Each openLink navigates to its route and the target container testID becomes
+#     the top visible screen, so the sequential asserts still hold without popping.
+#   - heatmap's react-native-maps native view cannot render in jest/CI — on-device
+#     (here, simulator) is where footfall-heatmap mount is actually exercised.
+
+# Authenticate first — openLink into an (app)-group route requires a session.
+- runFlow: login.yaml
+
+# beacon/[id] <- terrio-territory://beacon/<id> (literal route; the notification
+# alias beacon-health->beacon is resolver-only, unit-covered separately)
+- openLink: terrio-territory://beacon/e2e-beacon-1
+- extendedWaitUntil:
+    visible:
+      id: "beacon-detail"
+    timeout: 10000
+
+# kpi/[id] <- terrio-territory://kpi/<territoryId>
+- openLink: terrio-territory://kpi/e2e-territory-1
+- extendedWaitUntil:
+    visible:
+      id: "territory-kpi"
+    timeout: 10000
+
+# footfall/[id] <- terrio-territory://footfall/<territoryId>
+- openLink: terrio-territory://footfall/e2e-territory-1
+- extendedWaitUntil:
+    visible:
+      id: "footfall-density"
+    timeout: 10000
+
+# heatmap/[id] <- terrio-territory://heatmap/<territoryId> (Expo Router default)
+- openLink: terrio-territory://heatmap/e2e-territory-1
+- extendedWaitUntil:
+    visible:
+      id: "footfall-heatmap"
+    timeout: 10000
