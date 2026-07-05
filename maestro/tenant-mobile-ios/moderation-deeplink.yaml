@@ -1,0 +1,35 @@
+# UNVERIFIED: mai eseguito su simulator iOS — vedi #125, richiede sblocco operatore Apple/EAS.
+# iOS port of tenant-mobile/moderation-deeplink.yaml (Android). File-parity only —
+# never run on an iOS simulator. Deep-link + selectors adapted but UNVERIFIED.
+appId: com.terrio.tenant
+tags:
+  - deep-links
+  - "291"
+  - ios
+---
+# #291 — tenant moderation/[id] per-review DETAIL route, validated via openLink (iOS).
+# Distinct from moderation-tenant-review.yaml (INLINE queue + approve/TOTP). This
+# detail route has no in-app nav entry — it is reached only by tapping a moderation
+# notification -> terrio-tenant://moderation/<id> (resolveDeepLinkRoute.ts:21).
+# Asserts the screen CONTAINER testID (moderation-detail, rendered in
+# loading/data/error alike) so the check validates route-resolution + screen mount
+# independently of seed data.
+#
+# iOS adaptation vs Android:
+#   - openLink on iOS is delivered via `xcrun simctl openurl`, which handles the
+#     app's CUSTOM URL SCHEME (terrio-tenant://) exactly as adb does on Android.
+#     The scheme is cross-platform (Expo `scheme` in app config), so it is kept
+#     as-is. This is NOT an https universal link — the app registers no
+#     apple-app-site-association / associated-domains, so universal links would not
+#     resolve; the custom scheme is the correct and only wired deep-link path.
+#   - Android's trailing `- back` (hardware Back) is dropped: iOS has no hardware
+#     Back key and this flow performs a single openLink, so cleanup is unneeded.
+#   - moderation-detail is a React Native testID, identical across platforms.
+
+- runFlow: login.yaml
+
+- openLink: terrio-tenant://moderation/e2e-adv-1
+- extendedWaitUntil:
+    visible:
+      id: "moderation-detail"
+    timeout: 10000
