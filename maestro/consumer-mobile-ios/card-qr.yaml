@@ -45,16 +45,18 @@ appId: com.terrio.consumer
       id: "wallet-screen"
     timeout: 15000
 
+# LoyaltyCardWidget naviga a /wallet/:id (wallet-detail-screen); il QR si apre
+# ri-tappando la tessera grande (wallet-card) — parity col flow Android.
 - tapOn:
     id: "loyalty-card"
     index: 0
 - extendedWaitUntil:
     visible:
-      id: "card-detail-screen"
+      id: "wallet-detail-screen"
     timeout: 10000
 
 - tapOn:
-    id: "card-show-barcode-btn"
+    id: "wallet-card"
 - extendedWaitUntil:
     visible:
       id: "barcode-fullscreen"

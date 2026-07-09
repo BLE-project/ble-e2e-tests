@@ -56,7 +56,7 @@ appId: it.terrio.consumer
 
 - extendedWaitUntil:
     visible:
-      text: ".*(TERRIO|Discover nearby offers|Nearby|Accesso più rapido).*"
+      text: ".*(TERRIO|Discover nearby offers|Nearby|Nelle vicinanze|Home|Accesso più rapido).*"
     timeout: 30000
 
 # Login if the login screen is showing.
