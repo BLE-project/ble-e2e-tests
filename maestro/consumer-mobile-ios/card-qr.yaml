@@ -1,0 +1,43 @@
+appId: com.terrio.consumer
+---
+# Consumer Mobile iOS — tessera: mostra il QR reale (#141)
+# Mirror iOS di consumer-mobile/card-qr.yaml. UNVERIFIED: richiede build EAS
+# simulator con react-native-svg (modulo nativo).
+
+- launchApp:
+    stopApp: true
+
+- runFlow:
+    when:
+      visible:
+        id: "enroll-never"
+    commands:
+      - tapOn:
+          id: "enroll-never"
+
+- tapOn:
+    text: "Wallet"
+- extendedWaitUntil:
+    visible:
+      id: "wallet-screen"
+    timeout: 15000
+
+- tapOn:
+    id: "loyalty-card-list"
+    index: 0
+- extendedWaitUntil:
+    visible:
+      id: "card-detail-screen"
+    timeout: 10000
+
+- tapOn:
+    id: "card-show-barcode-btn"
+- extendedWaitUntil:
+    visible:
+      id: "barcode-fullscreen"
+    timeout: 8000
+
+- assertVisible:
+    id: "barcode-qr"
+- assertVisible:
+    id: "barcode-value"

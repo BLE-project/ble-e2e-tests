@@ -1,0 +1,56 @@
+appId: it.terrio.consumer
+---
+# Consumer Mobile — tessera: mostra il QR reale (#141)
+# Verifica il lato consumer del flusso cashback: apertura tessera → "Show barcode"
+# → QR reale scansionabile dal merchant (react-native-qrcode-svg).
+#
+# testID reali:
+#   - app/(app)/wallet.tsx: "wallet-screen", "loyalty-card-list"
+#   - app/(app)/card/[id].tsx: "card-detail-screen", "card-show-barcode-btn"
+#   - src/components/BarcodeFullscreenModal.tsx: "barcode-fullscreen", "barcode-qr", "barcode-value"
+#
+# UNVERIFIED: richiede una build EAS con react-native-svg (modulo nativo) — non
+# eseguibile con APK gradle locale. Selettori allineati al codice #142.
+
+- launchApp:
+    stopApp: true
+
+# Dismiss modale biometrica se compare al relaunch (sessione persistita)
+- runFlow:
+    when:
+      visible:
+        id: "enroll-never"
+    commands:
+      - tapOn:
+          id: "enroll-never"
+
+# Vai al Wallet
+- tapOn:
+    text: "Wallet"
+- extendedWaitUntil:
+    visible:
+      id: "wallet-screen"
+    timeout: 15000
+
+# Apri la prima tessera della lista
+- tapOn:
+    id: "loyalty-card-list"
+    index: 0
+- extendedWaitUntil:
+    visible:
+      id: "card-detail-screen"
+    timeout: 10000
+
+# Mostra il barcode/QR
+- tapOn:
+    id: "card-show-barcode-btn"
+- extendedWaitUntil:
+    visible:
+      id: "barcode-fullscreen"
+    timeout: 8000
+
+# Il QR reale è presente (non più pseudo-barcode) + valore di fallback
+- assertVisible:
+    id: "barcode-qr"
+- assertVisible:
+    id: "barcode-value"
