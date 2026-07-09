@@ -1,0 +1,66 @@
+# UNVERIFIED: mai eseguito su simulator iOS — vedi #125, richiede sblocco operatore Apple/EAS.
+appId: com.terrio.consumer
+---
+# Consumer Mobile iOS — tessera: mostra il QR reale (#141)
+# Mirror iOS di consumer-mobile/card-qr.yaml. Richiede anche build EAS col fix
+# ble-consumer-mobile#142 (react-native-svg, modulo nativo).
+
+- launchApp:
+    stopApp: true
+
+- runFlow: _gates.yaml
+
+# Login condizionale (parity col flusso Android; testID login fleet-wide)
+- runFlow:
+    when:
+      visible: "Discover nearby offers|username-input|Accedi|Sign in"
+    commands:
+      - tapOn: { id: "username-input" }
+      - inputText: "dev-consumer"
+      - hideKeyboard
+      - tapOn: { id: "password-input" }
+      - inputText: "dev-pass"
+      - hideKeyboard
+      - tapOn: { id: "login-btn" }
+
+# Retry-dismiss biometrica (async post-auth, pattern 692cdf1/#139)
+- repeat:
+    times: 5
+    commands:
+      - runFlow:
+          when:
+            visible:
+              id: "enroll-never"
+          commands:
+            - tapOn:
+                id: "enroll-never"
+      - waitForAnimationToEnd:
+          timeout: 1500
+
+# ── Wallet ──
+- tapOn:
+    text: ".*Wallet.*"
+- extendedWaitUntil:
+    visible:
+      id: "wallet-screen"
+    timeout: 15000
+
+- tapOn:
+    id: "loyalty-card"
+    index: 0
+- extendedWaitUntil:
+    visible:
+      id: "card-detail-screen"
+    timeout: 10000
+
+- tapOn:
+    id: "card-show-barcode-btn"
+- extendedWaitUntil:
+    visible:
+      id: "barcode-fullscreen"
+    timeout: 8000
+
+- assertVisible:
+    id: "barcode-qr"
+- assertVisible:
+    id: "barcode-value"

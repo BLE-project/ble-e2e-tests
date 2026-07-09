@@ -95,8 +95,19 @@ test.describe('POS Spend', () => {
       expect(body).toHaveProperty('transactionId')
       expect(body).toHaveProperty('grossAmountCents')
       expect(body).toHaveProperty('netAmountCents')
+      // Contratto SPEND+EARN (#141): net = gross − creditToRedeem. Con credit 0
+      // il netto (base di calcolo dell'EARN) deve eguagliare il lordo.
+      expect(body.netAmountCents).toBe(body.grossAmountCents)
+      expect(body.netAmountCents).toBeLessThanOrEqual(body.grossAmountCents)
     }
   })
+
+  // Happy-path completo consumer→merchant (mostra tessera QR → scan → SPEND+EARN):
+  // richiede una loyalty card consumer seedata con barcode noto (fixture assente
+  // nello stack e2e attuale — la card è auto-creata al primo beacon/registrazione).
+  // Follow-up: seedare una card in global-setup ed esercitare
+  //   GET /bff/v1/merchant/pos/barcode/{value} → POST /pos/spend → assert EARN accrual.
+  test.fixme('POS spend happy-path con barcode consumer reale → EARN accrual', async () => {})
 })
 
 // ── Billing Records ──────────────────────────────────────────────────────────

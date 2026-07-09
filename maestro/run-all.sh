@@ -123,7 +123,7 @@ find_apk() {
 # in an authenticated tenant context when the branding fetch kicks in.
 # It relies on the E2E fixture seeded by seed-custom-branding-fixtures.ts
 # being applied on the active tenant before the suite starts.
-FLOW_ORDER=(login custom-branding navigation beacon-scan beacon-scan-background beacons beacon-reconfig-switch cashback-config pos-scan requests territory-list territory-crud logout)
+FLOW_ORDER=(login custom-branding navigation card-qr beacon-scan beacon-scan-background beacons beacon-reconfig-switch cashback-config pos-scan requests territory-list territory-crud logout)
 
 PASS=0
 FAIL=0

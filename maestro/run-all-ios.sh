@@ -53,7 +53,7 @@ APPS=(
 
 # Flow execution order per app — mirrors run-all.sh for Android.
 # login first (asserts clean state), logout last.
-FLOW_ORDER=(login custom-branding navigation beacon-scan beacon-scan-background beacons beacon-first-config requests adv-list-filter adv-submit adv-appeal adv-takedown cashback-config pos-scan moderation-approve moderation-reject moderation-escalate moderation-budget-degraded moderation-tenant-review territory-list territory-crud merchant-landing notification-preferences logout)
+FLOW_ORDER=(login custom-branding navigation card-qr beacon-scan beacon-scan-background beacons beacon-first-config requests adv-list-filter adv-submit adv-appeal adv-takedown cashback-config pos-scan moderation-approve moderation-reject moderation-escalate moderation-budget-degraded moderation-tenant-review territory-list territory-crud merchant-landing notification-preferences logout)
 
 PASS=0
 FAIL=0

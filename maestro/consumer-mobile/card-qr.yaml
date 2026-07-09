@@ -1,0 +1,122 @@
+appId: it.terrio.consumer
+---
+# Consumer Mobile — tessera: mostra il QR reale (#141)
+# Verifica il lato consumer del flusso cashback: apertura tessera → "Show barcode"
+# → QR reale scansionabile dal merchant (react-native-qrcode-svg).
+#
+# testID reali (ble-consumer-mobile PR #142):
+#   - app/(app)/wallet.tsx: "wallet-screen", "loyalty-card-list"
+#   - src/components/LoyaltyCardWidget.tsx: "loyalty-card" (ripetuto, index 0)
+#   - app/(app)/card/[id].tsx: "card-detail-screen", "card-show-barcode-btn"
+#   - src/components/BarcodeFullscreenModal.tsx: "barcode-fullscreen", "barcode-qr", "barcode-value"
+#
+# UNVERIFIED: richiede una build EAS col fix #142 (react-native-svg è modulo
+# nativo) — non eseguibile con APK gradle locale.
+
+- launchApp:
+    stopApp: true
+
+- runFlow: _gates.yaml
+
+# FU-10: drain cold-launch OS permission dialogs + in-app BLE consent screen
+# (stesso blocco collaudato di custom-branding.yaml — when-guarded, no-op se assenti).
+- repeat:
+    times: 8
+    commands:
+      - runFlow:
+          when:
+            visible: "Precise|Precisa"
+          commands:
+            - tapOn: "Precise|Precisa"
+      - runFlow:
+          when:
+            visible: "Mentre usi l'app|While using the app|Solo questa volta|Only this time"
+          commands:
+            - tapOn: "Mentre usi l'app|While using the app|Solo questa volta|Only this time"
+      - runFlow:
+          when:
+            visible: "Consenti|Allow"
+          commands:
+            - tapOn: "Consenti|Allow"
+      - runFlow:
+          when:
+            visible: "Scan beacon BLE pre-registrazione"
+          commands:
+            - runFlow:
+                when:
+                  visible:
+                    text: "Acconsento all'attivazione dello scan BLE$"
+                    checked: false
+                commands:
+                  - tapOn:
+                      text: "Acconsento all'attivazione dello scan BLE$"
+            - tapOn: "Continua"
+
+- extendedWaitUntil:
+    visible:
+      text: ".*(TERRIO|Discover nearby offers|Accesso più rapido).*"
+    timeout: 30000
+
+# ── Login condizionale (flow precedente può aver lasciato la sessione attiva) ──
+- runFlow:
+    when:
+      visible: "Discover nearby offers|username-input|Accedi|Sign in"
+    commands:
+      - tapOn: { id: "username-input" }
+      - inputText: "dev-consumer"
+      - hideKeyboard
+      - tapOn: { id: "password-input" }
+      - inputText: "dev-pass"
+      - hideKeyboard
+      - tapOn: { id: "login-btn" }
+      - runFlow:
+          when:
+            visible: "Return to previous programme"
+          commands:
+            - tapOn: "STAY HERE"
+
+# 692cdf1 (#139): la modale biometrica compare ASYNC dopo l'auth — retry-dismiss,
+# non one-shot (stesso pattern di logout.yaml).
+- repeat:
+    times: 5
+    commands:
+      - runFlow:
+          when:
+            visible:
+              id: "enroll-never"
+          commands:
+            - tapOn:
+                id: "enroll-never"
+      - waitForAnimationToEnd:
+          timeout: 1500
+
+# ── Wallet ── (content-desc Android = "icona, Wallet" → regex, come navigation.yaml)
+- tapOn:
+    text: ".*Wallet.*"
+- extendedWaitUntil:
+    visible:
+      id: "wallet-screen"
+    timeout: 15000
+
+# Apri la prima tessera
+- tapOn:
+    id: "loyalty-card"
+    index: 0
+- extendedWaitUntil:
+    visible:
+      id: "card-detail-screen"
+    timeout: 10000
+
+# Mostra il QR
+- tapOn:
+    id: "card-show-barcode-btn"
+- extendedWaitUntil:
+    visible:
+      id: "barcode-fullscreen"
+    timeout: 8000
+
+# Il QR reale è presente (non più pseudo-barcode) + valore di fallback
+- assertVisible:
+    id: "barcode-qr"
+- assertVisible:
+    id: "barcode-value"
