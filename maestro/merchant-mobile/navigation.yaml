@@ -37,8 +37,10 @@ appId: it.terrio.merchant
 # Settle wait: the first sentinel matches the login header ("Gestisci il tuo
 # negozio") before the Accedi button renders, so gate on an *actionable*
 # element (login button OR a dashboard tile) before deciding to log in.
+# Dashboard tiles are localized — device in IT shows "Fatturato di oggi" /
+# "Transazioni", never the EN strings (i18n-rot caught on-device 2026-07-10).
 - extendedWaitUntil:
-    visible: "Accedi|Sign in|Today revenue|Transactions"
+    visible: "Accedi|Sign in|Today revenue|Transactions|Fatturato di oggi|Transazioni"
     timeout: 20000
 - runFlow:
     when:
