@@ -2,10 +2,8 @@ appId: it.terrio.tenant
 ---
 # Tenant Mobile — Tab navigation smoke test
 # Iter3 (2026-05-02): tabs realigned to actual app UI captured via uiautomator dump.
-# Redesign nav "4+Altro" (2026-07-10, backup: navigation.pre-redesign.yaml):
-# tab bar = Home | Moderazione | Merchant | Beacon | Altro. Territori/Theme/
-# Impostazioni/Report vivono nell'hub "Altro" (tap ".*, Altro" → item per testo,
-# label invariate). Cambio selettore legittimo da direttiva operatore.
+# Actual tabs (content-desc): Home | Territori | Beacon | Theme | Moderazione | Merchant | Impostazioni | Report
+# (Territories/Beacons/Settings English labels used in older builds.)
 
 - launchApp:
     stopApp: true
@@ -54,20 +52,13 @@ appId: it.terrio.tenant
     commands:
       - pressKey: Back
 
-# ── Tab navigation (primarie) ──────────────────────────────────────────────
+# ── Tab navigation ─────────────────────────────────────────────────────────
 
 - tapOn:
-    text: ".*, Moderazione"
+    text: ".*, Territori"
 - extendedWaitUntil:
     visible:
-      text: ".*Moderazione.*"
-    timeout: 5000
-
-- tapOn:
-    text: ".*, Merchant"
-- extendedWaitUntil:
-    visible:
-      text: ".*Merchant.*"
+      text: ".*Territori.*"
     timeout: 5000
 
 - tapOn:
@@ -77,43 +68,22 @@ appId: it.terrio.tenant
       text: ".*Beacon.*"
     timeout: 5000
 
-# ── Hub "Altro": voci secondarie (label invariate) ─────────────────────────
-
 - tapOn:
-    text: ".*, Altro"
-- extendedWaitUntil:
-    visible:
-      text: "Territori"
-    timeout: 5000
-- tapOn:
-    text: "Territori"
-- extendedWaitUntil:
-    visible:
-      text: ".*Territori.*"
-    timeout: 5000
-
-- tapOn:
-    text: ".*, Altro"
-- tapOn:
-    text: "Theme"
+    text: ".*, Theme"
 - extendedWaitUntil:
     visible:
       text: ".*(Theme|White-label).*"
     timeout: 5000
 
 - tapOn:
-    text: ".*, Altro"
-- tapOn:
-    text: "Impostazioni"
+    text: ".*, Impostazioni"
 - extendedWaitUntil:
     visible:
       text: ".*(Impostazioni|Settings|Account).*"
     timeout: 5000
 
 - tapOn:
-    text: ".*, Altro"
-- tapOn:
-    text: "Report"
+    text: ".*, Report"
 - extendedWaitUntil:
     visible:
       text: ".*(Report Bug|Report).*"
