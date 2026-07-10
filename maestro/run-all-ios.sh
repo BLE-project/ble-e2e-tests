@@ -118,15 +118,31 @@ for entry in "${APPS[@]}"; do
 
   echo "=== Running $app_name iOS flows ==="
 
+  # Build the flow list: FLOW_ORDER first (state-critical ordering), then any
+  # remaining *.yaml alphabetically — files absent from FLOW_ORDER must NOT be
+  # silently skipped (same defect fixed on the Android runner in #159).
+  flow_names=()
   for flow_name in "${FLOW_ORDER[@]}"; do
+    [ -f "$ios_dir/${flow_name}.yaml" ] && flow_names+=("$flow_name")
+  done
+  for f in "$ios_dir"/*.yaml; do
+    base=$(basename "$f" .yaml)
+    case "$base" in _*|*subflow*) continue ;; esac
+    listed=false
+    for n in "${FLOW_ORDER[@]}"; do [ "$n" = "$base" ] && listed=true && break; done
+    [ "$listed" = "false" ] && flow_names+=("$base")
+  done
+
+  for flow_name in "${flow_names[@]}"; do
     flow="$ios_dir/${flow_name}.yaml"
-    [ -f "$flow" ] || continue
 
     echo -n "  $flow_name ... "
     log_file="/tmp/maestro-ios-${app_name}-${flow_name}.log"
 
-    # Fresh install before login to clear SecureStore state
-    if [ "$flow_name" = "login" ]; then
+    # Fresh install before login to clear SecureStore state. Honors
+    # --skip-install (parity with run-all.sh #159): with it, the operator
+    # pinned the installed builds — never swap them mid-suite.
+    if [ "$flow_name" = "login" ] && [ "$SKIP_INSTALL" = false ]; then
       reinstall_app "$bundle_id" "$app_bundle"
     fi
 
