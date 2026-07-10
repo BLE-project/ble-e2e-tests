@@ -253,26 +253,67 @@ seed_custom_branding() {
   fi
 }
 
+# FU-TI-2/FU-TI-4 parity with scripts/run-maestro-suite.sh (CI): re-seed the
+# shared backend data a flow consumes just before it runs. Without this the
+# adv-*/moderation-* flows fail on a drained queue after the first pass.
+# Failures are non-fatal — the flow then fails loudly with a clearer signal.
+seed_cli() {
+  echo -n "  seeding $1 ... "
+  if (cd "$REPO_ROOT/terrio-e2e-tests" \
+      && BFF_URL="${BFF_URL:-http://localhost:8082}" \
+         npx -y tsx fixtures/seed-cli.ts "$1" >"/tmp/seed-$1.log" 2>&1); then
+    echo "OK"
+  else
+    echo "FAIL (log: /tmp/seed-$1.log) — continuing"
+  fi
+}
+
+reseed_for() {
+  case "$1" in
+    # tenant-mobile/moderation-* included: run-all.sh runs tenant BEFORE
+    # sales-agent, so tenant-review can't rely on an escalate flow having
+    # run — the seed provides the ESCALATED_TO_ADMIN row directly.
+    sales-agent-mobile/moderation-*|tenant-mobile/moderation-*) seed_cli moderation ;;
+    merchant-mobile/adv-*)                   seed_cli merchant-adv ;;
+    tenant-mobile/beacons)                   seed_cli tenant-beacon ;;
+    consumer-mobile/custom-branding)         seed_custom_branding ;;
+    consumer-mobile/inbox-persist-mark-read) seed_cli consumer-notification ;;
+  esac
+}
+
 # ── Run Maestro flows sequentially ────────────────────────────────────────
 for entry in "${APPS[@]}"; do
   IFS=':' read -r app_name pkg dir <<<"$entry"
   echo "=== Running $app_name flows ==="
   # find_apk returns release if present, else debug — tolerate either
   apk=$(find_apk "$REPO_ROOT/$dir" || true)
-  # Fase 4.3: ensure the custom-branding fixture is applied before the
-  # consumer-mobile flows run. Scoped to consumer-mobile only because
-  # the other apps never read /bff/v1/consumer/brand.
-  if [ "$app_name" = "consumer-mobile" ]; then
-    seed_custom_branding
-  fi
+  # Build the flow list: FLOW_ORDER first (state-critical ordering), then any
+  # remaining *.yaml alphabetically (parity with scripts/run-maestro-suite.sh).
+  # Before this, files absent from FLOW_ORDER were SILENTLY skipped — 19 of 44
+  # flows never ran while the tally still read "suite green" (2026-07-10).
+  flow_names=()
   for flow_name in "${FLOW_ORDER[@]}"; do
+    [ -f "$SCRIPT_DIR/$app_name/$flow_name.yaml" ] && flow_names+=("$flow_name")
+  done
+  for f in "$SCRIPT_DIR/$app_name"/*.yaml; do
+    base=$(basename "$f" .yaml)
+    case "$base" in _*|*subflow*) continue ;; esac
+    listed=false
+    for n in "${FLOW_ORDER[@]}"; do [ "$n" = "$base" ] && listed=true && break; done
+    [ "$listed" = "false" ] && flow_names+=("$base")
+  done
+  for flow_name in "${flow_names[@]}"; do
     flow="$SCRIPT_DIR/$app_name/$flow_name.yaml"
-    [ -f "$flow" ] || continue
+    reseed_for "$app_name/$flow_name"
     echo -n "  $flow_name ... "
     log_file="/tmp/maestro-${app_name}-${flow_name}.log"
     # The login flow must start from an uninstalled + reinstalled state so
-    # that no prior SecureStore tokens auto-log-in the user.
-    if [ "$flow_name" = "login" ]; then
+    # that no prior SecureStore tokens auto-log-in the user. NEVER with
+    # --skip-install: the fleet is EAS-only, so a leftover local-gradle APK is
+    # stale by definition — reinstalling it silently downgrades the device
+    # build (2026-07-10: an old app-release.apk replaced the EAS build
+    # mid-suite and made card-qr fail on missing testIDs).
+    if [ "$flow_name" = "login" ] && [ "${1:-}" != "--skip-install" ]; then
       reinstall_app "$pkg" "$apk"
     fi
     if run_flow "$flow" "$log_file"; then
