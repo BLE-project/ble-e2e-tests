@@ -1,0 +1,60 @@
+appId: com.terrio.tenant
+tags:
+  - security
+  - settings
+  - ios
+---
+# #291 — TENANT_ADMIN reaches the Security screen via Settings tab (iOS).
+# Mirror of tenant-mobile/security.yaml. testIDs map to accessibilityIdentifier
+# on iOS (tab-impostazioni, link-security, security-screen, biometric-status).
+# UNVERIFIED on simulator until the previewStaging builds land (see #125) —
+# the previewLocal builds bake 127.0.0.1 and never get past the splash on CI.
+
+- launchApp:
+    stopApp: true
+
+- extendedWaitUntil:
+    visible: "TERRIO Tenant|Tenant admin portal|Home|Welcome back"
+    timeout: 30000
+
+# Login only if the login screen is showing (a prior flow may have left the
+# session authenticated — simulator state persists across flows).
+- runFlow:
+    when:
+      visible: "Tenant admin portal|Accedi|Sign in"
+    commands:
+      - tapOn: { id: "username-input" }
+      - inputText: "dev-tenant-admin"
+      - tapOn: { id: "password-input" }
+      - inputText: "dev-pass"
+      - tapOn: { id: "login-btn" }
+      - tapOn:
+          text: "Non ora|Never|Not now"
+          optional: true
+      - extendedWaitUntil:
+          visible: "Home|Welcome back|Bentornato"
+          timeout: 15000
+
+# Settings tab → Security row → Security screen.
+- extendedWaitUntil:
+    visible:
+      id: "tab-impostazioni"
+    timeout: 15000
+- tapOn:
+    id: "tab-impostazioni"
+
+- extendedWaitUntil:
+    visible:
+      id: "link-security"
+    timeout: 10000
+- tapOn:
+    id: "link-security"
+
+# The biometric status field renders even with no Face ID enrolled on the
+# simulator (it reports the unavailable/not-enrolled state).
+- extendedWaitUntil:
+    visible:
+      id: "security-screen"
+    timeout: 10000
+- assertVisible:
+    id: "biometric-status"

@@ -1,0 +1,65 @@
+appId: com.terrio.salesagent
+tags:
+  - beacon
+  - gps
+  - ios
+---
+# Sales Agent Mobile — GPS recapture for a provisioned beacon (iOS).
+# Mirror of sales-agent-mobile/bcn-map-gps-capture.yaml. Simulator location is
+# synthetic (xcrun simctl location) so BOTH outcomes stay legitimate: saved fix
+# OR the app's "Accuratezza insufficiente" rejection (product threshold ≤10 m).
+# UNVERIFIED until previewStaging builds land (see #125).
+
+- launchApp:
+    stopApp: true
+
+- extendedWaitUntil:
+    visible: "TERRIO Sales|Agente Commerciale|Home|Panoramica"
+    timeout: 30000
+
+- runFlow:
+    when:
+      visible: "Agente Commerciale|Accedi|Sign in"
+    commands:
+      - tapOn: { id: "username-input" }
+      - inputText: "dev-sales-agent"
+      - tapOn: { id: "password-input" }
+      - inputText: "dev-pass"
+      - tapOn: { id: "login-btn" }
+      - tapOn:
+          text: "Non ora|Never|Not now"
+          optional: true
+      - extendedWaitUntil:
+          visible: "Home|Panoramica"
+          timeout: 15000
+
+# Navigate to the provisioned beacons list (sales-agent context).
+- tapOn:
+    text: "Beacon|Provisionati|Provisioned"
+- extendedWaitUntil:
+    visible: "Cattura GPS|Capture GPS"
+    timeout: 8000
+
+- tapOn:
+    text: "Cattura GPS"
+
+# First capture triggers the iOS location permission alert (async).
+- extendedWaitUntil:
+    visible: "Allow While Using App|Consenti mentre usi l'app|Allow Once|Consenti una volta"
+    timeout: 12000
+    optional: true
+- runFlow:
+    when: { visible: "Allow While Using App|Consenti mentre usi l'app" }
+    commands: [ { tapOn: "Allow While Using App|Consenti mentre usi l'app" } ]
+
+# Capture outcome: saved fix OR legitimate accuracy rejection.
+- extendedWaitUntil:
+    visible: "GPS salvato|GPS catturato|GPS acquisito|GPS captured|Accuratezza insufficiente|Precisione attuale|accuracy"
+    timeout: 60000
+- assertVisible:
+    text: "GPS salvato|GPS catturato|GPS acquisito|GPS captured|Accuratezza insufficiente|Precisione attuale|accuracy"
+
+# Close the accuracy dialog if it surfaced, leaving the app clean.
+- runFlow:
+    when: { visible: "Accuratezza insufficiente|Precisione attuale" }
+    commands: [ { tapOn: "OK" } ]
