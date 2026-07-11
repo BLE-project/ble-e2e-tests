@@ -68,6 +68,10 @@ appId: it.terrio.merchant
 - inputText: "10"
 - hideKeyboard
 
+- scrollUntilVisible:
+    element: { text: "es. 5.00 (0 = nessun minimo)" }
+    direction: DOWN
+    timeout: 8000
 - tapOn:
     text: "es. 5.00 (0 = nessun minimo)"
 - inputText: "5.00"

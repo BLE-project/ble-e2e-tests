@@ -121,9 +121,13 @@ appId: it.terrio.merchant
       text: ".*Campagne.*"
     timeout: 5000
 
-# Account — hub "Altro"
+# Account — hub "Altro" (card più in basso post-redesign: scroll)
 - tapOn:
     text: ".*, Altro"
+- scrollUntilVisible:
+    element: { text: "Account" }
+    direction: DOWN
+    timeout: 8000
 - tapOn:
     text: "Account"
 - extendedWaitUntil:
