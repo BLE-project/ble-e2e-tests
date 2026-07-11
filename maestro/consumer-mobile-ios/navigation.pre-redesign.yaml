@@ -48,29 +48,9 @@ tags:
     timeout: 5000
 
 - tapOn:
-    text: ".*, Offerte"
-- extendedWaitUntil:
-    visible: "Offerte"
-    timeout: 5000
+    text: ".*, Discover"
 
-- tapOn:
-    text: ".*, Profilo"
-- extendedWaitUntil:
-    visible: "Profilo"
-    timeout: 5000
-
-# Redesign «4 + Altro» (2026-07): Discover / History / Nearby were demoted from
-# the primary tab bar into the "Altro" hub. Open the Altro tab and verify the
-# hub renders its rows, then drill into Mappa (nearby-tenants).
-- tapOn:
-    text: ".*, Altro"
-- extendedWaitUntil:
-    visible: "Cerca|Mappa|Cronologia"
-    timeout: 5000
-
-# Mappa (nearby-tenants) from the hub — triggers the iOS location dialog.
-- tapOn: "Mappa"
-
+# iOS location permission dialog — "Allow While Using App" or "Allow Once"
 - extendedWaitUntil:
     visible: "Allow While Using App|Allow Once|Allow"
     timeout: 5000
@@ -86,13 +66,37 @@ tags:
     commands:
       - tapOn: "Allow Once"
 
-- runFlow:
-    when:
-      visible:
-        text: "^Error$"
-    commands:
-      - tapOn: "OK"
+- extendedWaitUntil:
+    visible:
+      text: "^Error$"
+    timeout: 15000
+
+- tapOn: "OK"
 
 - extendedWaitUntil:
     visible: "Nearby Programmes"
     timeout: 8000
+
+- tapOn:
+    text: ".*, History"
+- runFlow:
+    when:
+      visible:
+        text: "^Error(e)?$"
+    commands:
+      - tapOn: "OK"
+- extendedWaitUntil:
+    visible: "History"
+    timeout: 5000
+
+- tapOn:
+    text: ".*, Nearby"
+- runFlow:
+    when:
+      visible:
+        text: "^Error(e)?$"
+    commands:
+      - tapOn: "OK"
+- extendedWaitUntil:
+    visible: "Nearby"
+    timeout: 5000
