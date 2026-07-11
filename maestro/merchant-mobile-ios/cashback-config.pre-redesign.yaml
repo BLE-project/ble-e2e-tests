@@ -29,8 +29,6 @@ tags:
           visible: "Dashboard"
           timeout: 8000
 
-# Redesign «La Piazza» C2 (2026-07-11): Cashback migrato nell'hub "Altro" (/more).
-- tapOn: "Altro"
 - tapOn: "Cashback"
 - extendedWaitUntil:
     visible: "Configurazione Cashback"

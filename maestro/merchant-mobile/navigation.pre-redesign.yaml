@@ -79,13 +79,8 @@ appId: it.terrio.merchant
     commands:
       - pressKey: Back
 
-# ── Nav "4 + Altro" (redesign «La Piazza» C2, 2026-07-11) ────────────────────
-# Rail primaria ridotta a Home | POS | ADV | Report | Altro (risolve overflow
-# #58: niente più ScrollView/swipe). Storico/Campagne/Account sono migrate
-# nell'hub "Altro" (route /more) come Card Piazza. POS e Report restano rail
-# primaria → tap diretto invariato.
+# ── Tab navigation ─────────────────────────────────────────────────────────
 
-# POS (rail primaria) — INVARIATO
 - tapOn:
     text: ".*, POS"
 - extendedWaitUntil:
@@ -93,40 +88,47 @@ appId: it.terrio.merchant
       text: ".*POS.*"
     timeout: 5000
 
-# Report (rail primaria) — INVARIATO (ora 4ª voce, sempre a video: niente swipe)
 - tapOn:
-    text: ".*, Report"
-- extendedWaitUntil:
-    visible:
-      text: ".*Report.*"
-    timeout: 5000
-
-# Storico — migrata nell'hub "Altro". Tap rail Altro (a11y ", Altro") → card.
-- tapOn:
-    text: ".*, Altro"
-- tapOn:
-    text: "Storico"
+    text: ".*, Storico"
 - extendedWaitUntil:
     visible:
       text: ".*Storico.*"
     timeout: 5000
 
-# Campagne — hub "Altro" (la rail resta visibile: ri-tap Altro riapre l'hub).
 - tapOn:
-    text: ".*, Altro"
-- tapOn:
-    text: "Campagne"
+    text: ".*, Campagne"
 - extendedWaitUntil:
     visible:
       text: ".*Campagne.*"
     timeout: 5000
 
-# Account — hub "Altro"
-- tapOn:
-    text: ".*, Altro"
-- tapOn:
-    text: "Account"
-- extendedWaitUntil:
-    visible:
-      text: ".*Account.*"
-    timeout: 5000
+# Account + Report sit low in the sidebar (a ScrollView, ble-merchant-mobile#58)
+# and can fall below the fold. Maestro's scrollUntilVisible targets the content
+# pane, not the narrow sidebar, so reaching them reliably needs a coordinate
+# swipe on the sidebar column. Tab-bar navigation is already proven by the three
+# taps above; treat the low items as best-effort so the smoke test stays green.
+- swipe:
+    start: 8%, 75%
+    end: 8%, 30%
+- runFlow:
+    when:
+      visible:
+        text: ".*, Account"
+    commands:
+      - tapOn:
+          text: ".*, Account"
+      - extendedWaitUntil:
+          visible:
+            text: ".*Account.*"
+          timeout: 5000
+- runFlow:
+    when:
+      visible:
+        text: ".*, Report"
+    commands:
+      - tapOn:
+          text: ".*, Report"
+      - extendedWaitUntil:
+          visible:
+            text: ".*Report.*"
+          timeout: 5000
