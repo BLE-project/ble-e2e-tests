@@ -115,11 +115,16 @@ appId: it.terrio.tenant
 - extendedWaitUntil:
     visible: "Registro Beacon|Beacon Registry"
     timeout: 10000
+# 2026-07-11 redesign: righe Card più alte + beacon Maestro-CRUD-* accumulati
+# dai run precedenti (il flow non fa delete — ble-e2e-tests#53) → lo scroll a
+# 15s/100% è diventato flaky (2 fail su 3 run). Timeout raddoppiato +
+# visibilità 80%.
 - scrollUntilVisible:
     element:
       text: "Maestro-CRUD-${output.minor}"
     direction: DOWN
-    timeout: 15000
+    timeout: 30000
+    visibilityPercentage: 80
 
 # NOTE (2026-06-01): UPDATE + DELETE phases removed — the current app
 # (beacons.tsx, T-112 "list, create, delete") has NO edit/update UI, and its
