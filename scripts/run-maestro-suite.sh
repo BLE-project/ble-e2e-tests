@@ -49,7 +49,7 @@ for app in "${APPS[@]}"; do
   echo "::group::BATCH $app"
   for f in maestro/$app/*.yaml; do
     base=$(basename "$f")
-    case "$base" in _*|*subflow*) continue;; esac
+    case "$base" in _*|*subflow*|*pre-redesign*) continue;; esac
     # FU-TI-3 equivalent: cold per-flow isolation (emulator allows pm clear).
     adb -s "$DEVICE" shell pm clear "$pkg" >/dev/null 2>&1 || adb -s "$DEVICE" shell am force-stop "$pkg" >/dev/null 2>&1
     reseed_for "$app/$base"

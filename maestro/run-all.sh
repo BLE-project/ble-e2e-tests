@@ -297,7 +297,7 @@ for entry in "${APPS[@]}"; do
   done
   for f in "$SCRIPT_DIR/$app_name"/*.yaml; do
     base=$(basename "$f" .yaml)
-    case "$base" in _*|*subflow*) continue ;; esac
+    case "$base" in _*|*subflow*|*pre-redesign*) continue ;; esac
     listed=false
     for n in "${FLOW_ORDER[@]}"; do [ "$n" = "$base" ] && listed=true && break; done
     [ "$listed" = "false" ] && flow_names+=("$base")

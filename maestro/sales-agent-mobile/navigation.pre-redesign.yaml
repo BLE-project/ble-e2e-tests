@@ -1,9 +1,7 @@
 appId: it.terrio.salesagent
 ---
 # Sales Agent Mobile — Full tab navigation
-# Redesign nav "4+Altro" (2026-07-11, backup: navigation.pre-redesign.yaml):
-# Tab bar: Home | Richieste | Merchant | Beacon | Altro
-# (Royalties/Profilo/Kanban/Mappa/Impostazioni notifiche → hub "Altro")
+# Tab bar: Home | Richieste | Merchant | Royalties | Beacon | Profilo
 
 - launchApp:
     stopApp: true
@@ -78,10 +76,6 @@ appId: it.terrio.salesagent
       - pressKey: Back
 
 # ── Tab navigation (uses tabBarTestID shipped via ble-sales-agent-mobile#36) ─
-# Redesign nav "4+Altro" (2026-07-11, backup: navigation.pre-redesign.yaml):
-# tab bar = Home | Richieste | Merchant | Beacon | Altro. Royalties/Profilo/
-# Kanban/Mappa/Impostazioni notifiche vivono nell'hub "Altro" (card
-# more-item-*, label invariate).
 
 - tapOn: { id: "tab-richieste" }
 - extendedWaitUntil:
@@ -93,29 +87,17 @@ appId: it.terrio.salesagent
     visible: "Merchant"
     timeout: 5000
 
+- tapOn: { id: "tab-royalties" }
+- extendedWaitUntil:
+    visible: "Royalties"
+    timeout: 5000
+
 - tapOn: { id: "tab-beacon" }
 - extendedWaitUntil:
     visible: "Beacon"
     timeout: 5000
 
-# ── Hub "Altro": voci secondarie (label invariate) ──────────────────────────
-
-- tapOn: { id: "tab-altro" }
-- extendedWaitUntil:
-    visible:
-      id: "more-item-royalties"
-    timeout: 5000
-- tapOn: { id: "more-item-royalties" }
-- extendedWaitUntil:
-    visible: "Royalties"
-    timeout: 5000
-
-- tapOn: { id: "tab-altro" }
-- extendedWaitUntil:
-    visible:
-      id: "more-item-profilo"
-    timeout: 5000
-- tapOn: { id: "more-item-profilo" }
+- tapOn: { id: "tab-profilo" }
 - extendedWaitUntil:
     visible: "Profilo"
     timeout: 5000

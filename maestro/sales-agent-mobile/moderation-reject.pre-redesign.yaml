@@ -3,8 +3,7 @@ tags:
   - moderation
   - p0
 ---
-# §9bis M8 P0 — Moderation ESCALATE flow.
-# No TOTP required for escalation (Q9 decision: only approve/reject need 2FA).
+# §9bis M8 P0 — Moderation REJECT flow.
 
 - launchApp:
     stopApp: true
@@ -16,11 +15,7 @@ tags:
 - runFlow:
     when: { visible: "Home" }
     commands:
-      # Redesign nav "4+Altro" (2026-07-11, backup: *.pre-redesign.yaml):
-      # Profilo non è più tab — hub "Altro" (tab-altro) → card more-item-profilo.
-      - tapOn: { id: "tab-altro" }
-      - extendedWaitUntil: { visible: { id: "more-item-profilo" }, timeout: 5000 }
-      - tapOn: { id: "more-item-profilo" }
+      - tapOn: { id: "tab-profilo" }
       - extendedWaitUntil: { visible: "Esci dall'account|Esci|Logout", timeout: 5000 }
       - tapOn: { id: "btn-logout" }
       - extendedWaitUntil: { visible: "TERRIO Sales|Assistenza merchant.*|Agente Commerciale", timeout: 10000 }
@@ -50,23 +45,30 @@ tags:
 - tapOn:
     id: "moderation-row"
 
-- tapOn:
-    id: "btn-escalate"
-
-# Wait on the dialog's reason field (robust) rather than the styled title text.
 - extendedWaitUntil:
-    visible:
-      id: "reason-input"
-    timeout: 10000
+    visible: "ANALISI AI|DESCRIZIONE"
+    timeout: 5000
+
+- tapOn:
+    id: "btn-reject"
+
+- extendedWaitUntil:
+    visible: "Rifiuta ADV"
+    timeout: 3000
 
 - tapOn:
     id: "reason-input"
-- inputText: "Caso borderline - richiede tenant admin"
+- inputText: "Violazione policy prodotti regolamentati"
+- hideKeyboard
+
+- tapOn:
+    id: "totp-input"
+- inputText: "123456"
 - hideKeyboard
 
 - tapOn:
     id: "confirm-action"
 
 - extendedWaitUntil:
-    visible: "Escalata|Moderazioni"
+    visible: "Rifiutata|rifiutata|ADV rifiutata"
     timeout: 10000
