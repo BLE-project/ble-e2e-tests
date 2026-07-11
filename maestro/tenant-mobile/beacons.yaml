@@ -130,7 +130,7 @@ appId: it.terrio.tenant
 # ── Negative-path coverage (optional) ────────────────────────────────────────
 # Cancel-modal-without-save flow retained from prior version for regression.
 - tapOn:
-    text: "\\+ Add|Aggiungi"
+    text: "\\+ Add|Aggiungi|\\+ Aggiungi"
 - extendedWaitUntil:
     visible: "New Beacon|Nuovo Beacon"
     timeout: 5000
