@@ -17,11 +17,7 @@ tags:
 - runFlow:
     when: { visible: "Home" }
     commands:
-      # Redesign nav "4+Altro" (2026-07-11, backup: *.pre-redesign.yaml):
-      # Profilo non è più tab — hub "Altro" (tab-altro) → card more-item-profilo.
-      - tapOn: { id: "tab-altro" }
-      - extendedWaitUntil: { visible: { id: "more-item-profilo" }, timeout: 5000 }
-      - tapOn: { id: "more-item-profilo" }
+      - tapOn: { id: "tab-profilo" }
       - extendedWaitUntil: { visible: "Esci dall'account|Esci|Logout", timeout: 5000 }
       - tapOn: { id: "btn-logout" }
       - extendedWaitUntil: { visible: "TERRIO Sales|Assistenza merchant.*|Agente Commerciale", timeout: 10000 }

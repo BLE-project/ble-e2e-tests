@@ -34,14 +34,8 @@ appId: it.terrio.salesagent
     when:
       visible: "Home"
     commands:
-      # Redesign nav "4+Altro" (2026-07-11, backup: login.pre-redesign.yaml):
-      # Profilo non è più tab — hub "Altro" (tab-altro) → card more-item-profilo.
-      - tapOn: { id: "tab-altro" }
-      - extendedWaitUntil:
-          visible:
-            id: "more-item-profilo"
-          timeout: 5000
-      - tapOn: { id: "more-item-profilo" }
+      # sales-agent uses the Profilo tab for sign out
+      - tapOn: { id: "tab-profilo" }
       - extendedWaitUntil:
           visible: "Esci dall'account|Esci"
           timeout: 5000
