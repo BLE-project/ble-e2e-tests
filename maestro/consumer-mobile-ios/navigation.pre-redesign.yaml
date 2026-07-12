@@ -74,7 +74,7 @@ tags:
 - tapOn: "OK"
 
 - extendedWaitUntil:
-    visible: "Nearby Programmes"
+    visible: "Programmi vicini"
     timeout: 8000
 
 - tapOn:
