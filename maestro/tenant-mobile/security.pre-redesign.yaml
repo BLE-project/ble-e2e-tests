@@ -8,9 +8,9 @@ tags:
 # "link-security" → security-screen). The other #291 screens (moderation/[id],
 # beacon/[id], kpi/[id], footfall, heatmap) are deep-link-only and need on-device
 # `openLink` validation — they are NOT covered here.
-# testIDs verified in terrio-tenant-mobile: app/(app)/_layout.tsx (tab-altro),
-# app/(app)/more.tsx (more-item-impostazioni), app/(app)/settings.tsx
-# (link-security), app/(app)/security.tsx (security-screen, biometric-status).
+# testIDs verified in terrio-tenant-mobile: app/(app)/_layout.tsx (tab-impostazioni),
+# app/(app)/settings.tsx (link-security), app/(app)/security.tsx (security-screen,
+# biometric-status).
 
 - launchApp:
     stopApp: true
@@ -57,21 +57,14 @@ tags:
           visible: "Welcome back|Bentornato|Home|Amministra il tuo programma"
           timeout: 8000
 
-# Redesign nav "4+Altro" (2026-07-10, backup: security.pre-redesign.yaml):
-# Impostazioni non è più tab — hub "Altro" (tab-altro) → item
-# more-item-impostazioni (app/(app)/more.tsx). Wait first (post-login settle).
+# Navigate to Settings tab. The installed APK exposes the tab via the
+# tabBarButtonTestID (tab-impostazioni). Wait on it first (post-login settle).
 - extendedWaitUntil:
     visible:
-      id: "tab-altro"
+      id: "tab-impostazioni"
     timeout: 15000
 - tapOn:
-    id: "tab-altro"
-- extendedWaitUntil:
-    visible:
-      id: "more-item-impostazioni"
-    timeout: 10000
-- tapOn:
-    id: "more-item-impostazioni"
+    id: "tab-impostazioni"
 
 # Settings → Security row.
 - extendedWaitUntil:

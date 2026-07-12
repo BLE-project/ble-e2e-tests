@@ -49,16 +49,8 @@ appId: it.terrio.tenant
     commands:
       - pressKey: Back
 
-# Redesign nav "4+Altro" (2026-07-10, backup: logout.pre-redesign.yaml):
-# Impostazioni non è più tab — si raggiunge via hub "Altro" (label invariata).
 - tapOn:
-    text: ".*, Altro"
-- extendedWaitUntil:
-    visible:
-      text: "Impostazioni"
-    timeout: 5000
-- tapOn:
-    text: "Impostazioni"
+    text: ".*, Impostazioni"
 - extendedWaitUntil:
     visible:
       id: "btn-logout"
