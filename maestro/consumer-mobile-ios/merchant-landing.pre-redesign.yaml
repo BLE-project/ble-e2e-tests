@@ -11,9 +11,7 @@ tags:
     visible: "Home|Discover|Terrio"
     timeout: 30000
 
-# Redesign «4 + Altro» (2026-07): Cerca moved into the "Altro" hub.
-- tapOn: "Altro"
-- tapOn: "Cerca"
+- tapOn: "Discover|Esplora|Cerca"
 - extendedWaitUntil: { visible: "Cerca|Search|merchant", timeout: 5000 }
 
 - tapOn:

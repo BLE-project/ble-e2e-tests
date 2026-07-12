@@ -23,9 +23,19 @@ appId: it.terrio.consumer
 # The seeded unread notification is present in the inbox.
 - assertVisible:
     id: "notification-inbox"
-- assertVisible: "Offerta vicino a te"
+# Pull-to-refresh: the seed writes to the DB while the inbox fetch is async
+# (react-query cache + async persistence path noted in seed-consumer-notification.ts).
+# On a warm/cached inbox the seeded row is not in the first paint — force a refetch.
+- swipe:
+    from: { id: "notification-inbox" }
+    direction: DOWN
+- extendedWaitUntil:
+    visible: "Offerta vicino a te"
+    timeout: 10000
 # "Segna tutte come lette" renders only while there is at least one unread row.
-- assertVisible: "Segna tutte come lette"
+- extendedWaitUntil:
+    visible: "Segna tutte come lette"
+    timeout: 10000
 
 # Tap the row → marks it read (inbox.tsx row onPress → markRead.mutate).
 - tapOn: "Offerta vicino a te"

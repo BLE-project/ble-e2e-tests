@@ -33,10 +33,7 @@ tags:
           commands: [ { tapOn: "Non chiedermelo più" } ]
       - extendedWaitUntil: { visible: "Home|Discover|Nearby", timeout: 8000 }
 
-# Redesign «4 + Altro» (2026-07): Cerca/Discover moved out of the primary tab
-# bar into the "Altro" hub. Open the Altro tab, then the Cerca row — testID
-# `tab-cerca` is preserved on the migrated hub item, so the selector still holds.
-- tapOn: { id: "tab-altro" }
+# Navigate to the Cerca / Discover tab (testID tab-cerca; label "Cerca").
 - tapOn: { id: "tab-cerca" }
 - extendedWaitUntil: { visible: "Cerca|Search|merchant", timeout: 8000 }
 
