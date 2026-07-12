@@ -29,48 +29,36 @@ tags:
           visible: "Dashboard"
           timeout: 8000
 
-# ── Nav "4 + Altro" (redesign «La Piazza» C2, 2026-07-11) ────────────────────
-# Rail primaria: Home | POS | ADV | Report | Altro. Storico/Campagne/Account
-# migrate nell'hub "Altro" (/more). Mirror di merchant-mobile/navigation.yaml.
+- tapOn: "Health"
+- extendedWaitUntil:
+    visible: "Health"
+    timeout: 5000
 
-# POS (rail primaria)
+- tapOn: "Beacons"
+- extendedWaitUntil:
+    visible: "Beacons"
+    timeout: 5000
+
 - tapOn: "POS"
 - extendedWaitUntil:
     visible: "Loyalty POS"
     timeout: 5000
 
-# Report (rail primaria)
+- tapOn: "Billing"
+- extendedWaitUntil:
+    visible: "Billing"
+    timeout: 5000
+
+- tapOn: "Cashback"
+- extendedWaitUntil:
+    visible: "Cashback"
+    timeout: 5000
+
 - tapOn: "Report"
 - extendedWaitUntil:
-    visible:
-      text: ".*Report.*"
+    visible: "Report Bug"
     timeout: 5000
 
-# Storico — hub "Altro"
-- tapOn: "Altro"
-- tapOn: "Storico"
-- extendedWaitUntil:
-    visible:
-      text: ".*Storico.*"
-    timeout: 5000
-
-# Campagne — hub "Altro"
-- tapOn: "Altro"
-- tapOn: "Campagne"
-- extendedWaitUntil:
-    visible:
-      text: ".*Campagne.*"
-    timeout: 5000
-
-# Account — hub "Altro"
-- tapOn: "Altro"
-- tapOn: "Account"
-- extendedWaitUntil:
-    visible:
-      text: ".*Account.*"
-    timeout: 5000
-
-# Home (rail primaria) — ritorno alla dashboard
 - tapOn: "Home"
 - extendedWaitUntil:
     visible: "Dashboard"

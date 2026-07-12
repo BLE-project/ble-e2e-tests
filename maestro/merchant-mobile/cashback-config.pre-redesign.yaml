@@ -46,15 +46,23 @@ appId: it.terrio.merchant
             text: ".*(Dashboard|Panoramica|Today revenue|Transactions|Merchant).*"
           timeout: 15000
 
-# Navigate to Cashback. Redesign «La Piazza» C2 (2026-07-11): Cashback è migrato
-# dalla rail all'hub "Altro" (/more) — niente più overflow/swipe. Tap la voce
-# primaria "Altro" (a11y ", Altro") poi la Card "Cashback" nell'hub. Il tap per
-# label centra la TouchableOpacity e naviga (il tap per id non fira onPress
-# on-device — pattern noto).
+# Navigate to Cashback tab. The sidebar now has 9 items (ADV was added) which
+# overflow the fixed left-rail viewport: Cashback is the 7th item and renders
+# below the fold with collapsed/inverted bounds, so neither a label nor a
+# testID match finds it. Maestro's auto-scroll drives the centre-screen content,
+# not the narrow left rail — so swipe explicitly inside the sidebar (x≈12% of
+# the 2400px-wide landscape canvas; the rail is the leftmost ~25%) to bring
+# Cashback on-screen first.
+- swipe:
+    start: 12%, 78%
+    end: 12%, 30%
+    duration: 400
+# Then tap by the sidebar item's accessibility label (".*, Cashback") — the
+# proven pattern. A `tapOn: {id: tab-cashback-config}` resolves the testID node
+# but does not fire onPress on-device (screen stays on Dashboard); the
+# accessibility-label tap hits the TouchableOpacity centre and navigates.
 - tapOn:
-    text: ".*, Altro"
-- tapOn:
-    text: "Cashback"
+    text: ".*, Cashback"
 - extendedWaitUntil:
     visible: "Configurazione Cashback"
     timeout: 5000
@@ -68,10 +76,6 @@ appId: it.terrio.merchant
 - inputText: "10"
 - hideKeyboard
 
-- scrollUntilVisible:
-    element: { text: "es. 5.00 (0 = nessun minimo)" }
-    direction: DOWN
-    timeout: 8000
 - tapOn:
     text: "es. 5.00 (0 = nessun minimo)"
 - inputText: "5.00"

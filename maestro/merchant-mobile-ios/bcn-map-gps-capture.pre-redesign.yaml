@@ -35,10 +35,8 @@ tags:
           visible: "Dashboard|Panoramica"
           timeout: 15000
 
-# Nav → Fleet Beacon. Redesign «La Piazza» C2 (2026-07-11): "Fleet Beacon"
-# migrato dalla rail all'hub "Altro" (/more). Tap la voce primaria "Altro"
-# poi la Card "Fleet Beacon".
-- tapOn: "Altro"
+# Sidebar → Fleet Beacon. RN composes the item label with a leading comma
+# (icon has no label) on Android; keep the .* anchor for iOS parity.
 - tapOn:
     text: ".*Fleet Beacon"
 - extendedWaitUntil:

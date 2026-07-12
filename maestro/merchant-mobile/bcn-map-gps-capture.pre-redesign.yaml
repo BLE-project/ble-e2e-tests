@@ -71,11 +71,17 @@ appId: it.terrio.merchant
             text: ".*(Dashboard|Panoramica|Today revenue|Transactions|Merchant).*"
           timeout: 15000
 
-# Navigate to Beacons. Redesign «La Piazza» C2 (2026-07-11): "Fleet Beacon" è
-# migrato dalla rail all'hub "Altro" (/more) — niente più overflow/swipe. Tap la
-# voce primaria "Altro" (a11y ", Altro") poi la Card "Fleet Beacon" nell'hub.
-- tapOn:
-    text: ".*, Altro"
+# Navigate to Beacons screen via the left sidebar. With 9 items the rail
+# overflows its viewport and "Fleet Beacon" (6th) sits at/below the fold, so
+# swipe inside the rail (x≈12% of the 2400px landscape canvas) to reveal it
+# first — Maestro's auto-scroll drives the centre content, not the left rail.
+- swipe:
+    start: 12%, 78%
+    end: 12%, 30%
+    duration: 400
+# Match the sidebar item's accessibility label, which RN composes as
+# ", Fleet Beacon" (icon has no label) — anchor with .* so the leading comma
+# doesn't defeat the full-string match.
 - tapOn:
     text: ".*Fleet Beacon"
 - extendedWaitUntil:

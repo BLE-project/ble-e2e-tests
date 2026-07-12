@@ -31,12 +31,12 @@ appId: it.terrio.merchant
 
 # Idempotent — accept splash OR an already-logged-in session as a valid state.
 - extendedWaitUntil:
-    visible: ".*(TERRIO Merchant|Today revenue|Transactions|Dashboard|Storico).*"
+    visible: ".*(TERRIO Merchant|Home|Today revenue|Transazioni|Transactions|Dashboard|Storico).*"
     timeout: 30000
 
 # Only enter credentials if actually on the login screen.
 - runFlow:
-    when: { notVisible: "Today revenue|Transactions|Dashboard|Storico" }
+    when: { notVisible: "Home|Today revenue|Transazioni|Transactions|Dashboard|Storico" }
     commands:
       - assertVisible: ".*(Merchant portal|Gestisci il tuo negozio).*"
       - tapOn: { id: "username-input" }
@@ -51,5 +51,5 @@ appId: it.terrio.merchant
           commands: [ { pressKey: Back } ]
 
 - extendedWaitUntil:
-    visible: "Home|Dashboard|Today revenue|Transactions|Storico"
+    visible: "Home|Dashboard|Today revenue|Transazioni|Transactions|Storico"
     timeout: 15000
