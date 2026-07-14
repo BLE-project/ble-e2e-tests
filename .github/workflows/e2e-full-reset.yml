@@ -129,8 +129,11 @@ jobs:
         # Runs while Node 22 is on PATH; the backgrounded preview process
         # keeps its Node 22 binary after the next setup-node switches the
         # job to Node 20 (same nohup+disown persistence pattern as
-        # scripts/start-frontends.sh). Static output + node adapter: the 7
-        # marketing-site smoke tests need no BFF/Docker stack.
+        # scripts/start-frontends.sh). Static output (output:'static') with
+        # the @astrojs/vercel adapter (SSR API routes → Vercel Functions,
+        # unused by the marketing-site smoke tests). `astro preview` does
+        # NOT support the vercel adapter's build output — serve the static
+        # dist/client/ directly instead (2026-07-14).
         working-directory: terrio-marketing-site
         run: |
           set -euo pipefail
@@ -138,7 +141,7 @@ jobs:
           npm run build
           LOG_DIR="${GITHUB_WORKSPACE}/terrio-e2e-tests/test-results/frontend-logs"
           mkdir -p "$LOG_DIR"
-          nohup npx astro preview --host 127.0.0.1 --port 4321 \
+          nohup npx serve -l 4321 dist/client \
             > "$LOG_DIR/marketing-site.log" 2>&1 &
           disown
           for i in $(seq 1 30); do
