@@ -57,16 +57,17 @@ tags:
       id: "moderation-row"
     timeout: 20000
 
-# Tap a VERDICT-bearing row by the title rendered by the mobile app. The seed
-# source title is prefixed E2E-MOD-01, but the review API/mobile card exposes the
-# normalized campaign title ("Sconto 10% prodotti selezionati").
+# Tap a VERDICT-bearing row by the title rendered by the mobile app. The card
+# shows the RAW seed title ("E2E-MOD-01 Sconto 10% selezione prodotti #<token>-N")
+# — no normalization happens (verified on-device via API + screenshot, #162; the
+# old "prodotti selezionati" regex could never match and hung the scroll).
 - scrollUntilVisible:
     element:
-      text: "Sconto 10% prodotti selezionati.*"
+      text: ".*Sconto 10% selezione prodotti.*"
     direction: DOWN
     timeout: 30000
 - tapOn:
-    text: "Sconto 10% prodotti selezionati.*"
+    text: ".*Sconto 10% selezione prodotti.*"
 
 - extendedWaitUntil:
     visible: "ANALISI AI"
