@@ -31,14 +31,16 @@ appId: it.terrio.merchant
       - pressKey: Back
 
 # Idempotent — accept splash OR post-login as valid starting state.
+# Dashboard tiles are localized — device in IT shows "Fatturato di oggi" /
+# "Transazioni" (same i18n-rot fix as navigation.yaml, 2026-07-10).
 - extendedWaitUntil:
-    visible: ".*(TERRIO Merchant|Today revenue|Transactions|Dashboard|Storico).*"
+    visible: ".*(TERRIO Merchant|Fatturato di oggi|Transazioni|Dashboard|Storico).*"
     timeout: 30000
 
 # Only enter credentials if actually on the login screen.
 - runFlow:
     when:
-      notVisible: "Today revenue|Transactions|Dashboard|Storico"
+      notVisible: "Fatturato di oggi|Transazioni|Dashboard|Storico"
     commands:
       - assertVisible: ".*(Merchant portal|Gestisci il tuo negozio).*"
       - tapOn: { id: "username-input" }
@@ -55,5 +57,5 @@ appId: it.terrio.merchant
             - pressKey: Back
 
 - extendedWaitUntil:
-    visible: "Home|Dashboard|Today revenue|Transactions|Storico"
+    visible: "Home|Dashboard|Fatturato di oggi|Transazioni|Storico"
     timeout: 15000
