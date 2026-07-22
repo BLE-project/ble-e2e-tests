@@ -1,8 +1,11 @@
 /**
  * Enroll dev-consumer in the E2E tenant so the consumer has an ACTIVE tenant
  * context:
- *   1. auto-create a loyalty card (POST /v1/loyalty-cards/auto-create — @PermitAll,
- *      idempotent) binding the consumer to the tenant + territory.
+ *   1. issue a loyalty card (POST /v1/loyalty-cards — authenticated CONSUMER,
+ *      via the consumer bearer token) binding the consumer to the tenant + territory.
+ *      issue() returns 409 CONFLICT if the consumer already has a card for that
+ *      (tenant, territory) — we treat that as "already enrolled" and read the
+ *      existing card back from GET /v1/loyalty-cards/me.
  *   2. switch the consumer's active context (PUT /bff/v1/consumer/context) — this
  *      requires an existing card (else 403 NO_CARD).
  *
@@ -46,15 +49,30 @@ export async function ensureConsumerEnrollment(): Promise<ConsumerEnrollment> {
     'X-Tenant-Id': tenantId,
   }
 
-  // 1. loyalty card (idempotent: returns existing for the same consumer/tenant/territory)
-  const cardRes = await fetch(`${BFF_URL}/api/v1/loyalty-cards/auto-create`, {
+  // 1. loyalty card via authenticated issue(). issue() 409s if the consumer
+  //    already has a card for this (tenant, territory) — treat as already-enrolled
+  //    and read the existing card back from /me (auto-create used to be idempotent).
+  const cardRes = await fetch(`${BFF_URL}/api/v1/loyalty-cards`, {
     method: 'POST', headers,
-    body: JSON.stringify({ consumerId, tenantId, territoryId }),
+    body: JSON.stringify({ consumerId, territoryId }),
   })
-  if (!cardRes.ok) {
-    throw new Error(`auto-create card failed: ${cardRes.status} ${await cardRes.text()}`)
+  let card: { id: string }
+  if (cardRes.status === 409) {
+    const meRes = await fetch(`${BFF_URL}/api/v1/loyalty-cards/me`, { headers })
+    if (!meRes.ok) {
+      throw new Error(`issue 409 + /me lookup failed: ${meRes.status} ${await meRes.text()}`)
+    }
+    const cards = await meRes.json() as { id: string; territoryId: string | null }[]
+    const existing = cards.find((c) => c.territoryId === territoryId)
+    if (!existing) {
+      throw new Error(`issue 409 but no matching card for territory ${territoryId} in /me`)
+    }
+    card = existing
+  } else if (!cardRes.ok) {
+    throw new Error(`issue card failed: ${cardRes.status} ${await cardRes.text()}`)
+  } else {
+    card = await cardRes.json() as { id: string }
   }
-  const card = await cardRes.json() as { id: string }
 
   // 2. switch active tenant context (requires the card above)
   const ctxRes = await fetch(`${BFF_URL}/bff/v1/consumer/context`, {
