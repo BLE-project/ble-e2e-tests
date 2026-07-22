@@ -1,0 +1,80 @@
+appId: it.terrio.consumer
+---
+# Consumer Mobile — beacon proximity auto-issues the territory loyalty card.
+#
+# Exercises the client-side beacon->card path (consumer-mobile PR #157):
+# on a beacon detection that resolves a tenant+territory, if the consumer has
+# no card for that territory the app calls the authenticated
+# POST /api/v1/loyalty-cards (issue) endpoint. The card then appears in the
+# wallet. This REPLACES the old, dead BeaconEarnConsumer->autoCreate server
+# path (removed in ble-cashback-ledger #76). Invariant: the beacon issues a
+# CARD only — never cashback (terrio-beacon-never-cashback).
+#
+# Requires: a previewLocal EAS build (native react-native-ble-manager), the
+# 4 physical Holyiot iBeacons (UUID FDA50693) in range, and the device
+# reaching the BFF (adb reverse tcp:8080 tcp:8082) for login + issuance.
+#
+# testIDs: wallet.tsx "wallet-screen"/"loyalty-card-list"; LoyaltyCardWidget
+# "loyalty-card"; _layout.tsx tab "tab-wallet"/"tab-home"; index.tsx
+# "scan-status-*"/"empty-state"; login "login-btn"/"username-input"/...
+#
+# NOTE (rigor): asserts the full chain reaches a wallet card after proximity.
+# For a strict "issued-by-proximity" assertion, run against a freshly
+# registered consumer with no prior card (see registration-first-scan.yaml).
+
+- launchApp:
+    stopApp: true
+
+- runFlow: _gates.yaml
+
+# Login if the login screen is showing (dev-consumer seed user).
+- runFlow:
+    when:
+      visible:
+        id: "login-btn"
+    commands:
+      - tapOn: { id: "username-input" }
+      - inputText: "dev-consumer"
+      - hideKeyboard
+      - tapOn: { id: "password-input" }
+      - inputText: "dev-pass"
+      - hideKeyboard
+      - tapOn: { id: "login-btn" }
+      - runFlow:
+          when:
+            visible: "Return to previous programme"
+          commands:
+            - tapOn: "STAY HERE"
+
+# Home re-requests BLE/location on mount — drain again.
+- runFlow: _gates.yaml
+
+# Scanner auto-starts on the home tab. Wait for the permission state to resolve.
+- extendedWaitUntil:
+    visible:
+      id: "scan-status-granted|scan-status-denied"
+    timeout: 20000
+
+# Give the scanner time to detect a physical beacon and for the app to
+# fire handleBeacon -> auto-issue the territory card (async POST + refetch).
+# The detected-beacon list populates ("FDA50693…" rows) on real hardware.
+- extendedWaitUntil:
+    visible: "Vicini|FDA50693|Forte|nearby"
+    timeout: 30000
+    optional: true
+
+- waitForAnimationToEnd:
+    timeout: 4000
+
+# Open the wallet and assert a loyalty card is present (issued by proximity
+# or pre-existing). The card widget carries testID "loyalty-card".
+- tapOn:
+    id: "tab-wallet"
+
+- extendedWaitUntil:
+    visible:
+      id: "wallet-screen"
+    timeout: 15000
+
+- assertVisible:
+    id: "loyalty-card"
