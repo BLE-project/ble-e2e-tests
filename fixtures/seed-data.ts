@@ -68,8 +68,21 @@ export async function ensureSeedData(): Promise<SeedData> {
   const fromFile = loadSeedDataSync()
   if (fromFile) {
     fromFile.token = await mintAdminToken()
-    _cache = fromFile
-    return _cache
+    // The file survives `docker compose down -v` but its tenant does not:
+    // ids are server-generated, so on a wiped DB the cached tenant is gone and
+    // every downstream seed insert 500s on FK. Verify before trusting it.
+    const check = await fetch(`${BFF_URL}/api/v1/tenants`, {
+      headers: {
+        'Authorization': `Bearer ${fromFile.token}`,
+        'X-Tenant-Id': fromFile.tenantId,
+      },
+    })
+    const known = check.ok ? await check.json() as Array<{ id: string }> : []
+    if (known.some(t => t.id === fromFile.tenantId)) {
+      _cache = fromFile
+      return _cache
+    }
+    // Stale cache (fresh DB): fall through to find-or-create below.
   }
 
   // 1. Login as SUPER_ADMIN
